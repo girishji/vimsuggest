@@ -13,18 +13,22 @@ export var options: dict<any> = {
         timeout: 200,      #   millisec to search, when non-async is specified
         timeoutasync: 3000,
         async: true,       #   async search
+        highlight: true,
     },
     cmd: {
         enable: true,
         pum: true,         #   'false' for flat and 'true' for stacked popup menu
-        delay: 10,      # delay in ms before showing popup
         fuzzy: false,   # fuzzy completion
         exclude: [],    # keywords excluded from completion (use \c for ignorecase)
-        autoexclude: ["'>", '^\a/', '^\A'], # keywords automatically excluded from completion
         onspace: [],    # show menu for keyword+space (ex. :find , :buffer , etc.)
         timeout: 500,   # max time in ms to search when '**' is specified in path
         editcmdworkaround: false,  # make :edit respect wildignore (without using file_in_path in getcompletion() which is slow)
         alwayson: true, # when 'false' press <tab> to open popup menu
+        popupattrs: {      #   dictionary of attributes passed to popup window
+            maxheight: 12, #   line count of stacked menu (pum=true)
+        },
+        wildignore: true,
+        highlight: true,
     }
 }
 

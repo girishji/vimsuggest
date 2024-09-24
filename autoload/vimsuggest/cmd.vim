@@ -8,7 +8,9 @@ import autoload './popup.vim'
 var options = opt.options.cmd
 var pmenu: popup.PopupMenu = null_object
 var abbreviations: list<any>
-var save_wildmenu: number
+var save_wildmenu: bool
+var autoexclude = ["'>", '^\a/', '^\A'] # Keywords excluded from completion
+var items: list<any>
 
 export def Setup()
     if options.enable
@@ -26,7 +28,7 @@ export def Setup()
                     pmenu.Close()
                     pmenu = null_object
                 endif
-                if save_wildmenu == 1
+                if save_wildmenu
                     :set wildmenu
                 endif
             }
@@ -68,232 +70,121 @@ def GetAbbrevs(): list<any>
 enddef
 
 def Complete()
-    if wildmenumode()
-        return
-    endif
     var context = getcmdline()->strpart(0, getcmdpos() - 1)
     if context == '' || context =~ '^\s\+$'
         return
     endif
-    if context[-1] =~ '\s'
-        var prompt = context->trim()
-        # ignore cmdline abbreviations and such
-        if abbreviations->index(prompt) != -1 ||
-                (options.alwayson && options.onspace->index(prompt) == -1)
-            return
-        endif
+    timer_start(1, function(DoComplete, [context]))
+enddef
+
+def DoComplete(oldcontext: string, timer: number)
+    var context = getcmdline()->strpart(0, getcmdpos() - 1)
+    if context !=# oldcontext
+        # Likely pasted text or coming from keymap.
+        return
     endif
-    for pat in (options.exclude + options.autoexclude)
+    for pat in (options.exclude + autoexclude)
         if context =~ pat
             return
         endif
     endfor
-    DoComplete(context)
-    # var delay = max([10, options.delay])
-    # timer_start(delay, function(DoComplete, [context]))
-enddef
-
-def DoComplete(oldcontext: string, timer: number = 0)
-    var context = getcmdline()->strpart(0, getcmdpos() - 1)
-    if context !=# oldcontext
-        # likely pasted text or coming from keymap, wait till all chars are gathered
+    if context[-1] =~ '\s'
+        var prompt = context->trim()
+        # Ignore cmdline abbreviations and such.
+        if abbreviations->index(prompt) != -1 ||
+                (options.alwayson && options.onspace->index(prompt) == -1)
+            pmenu.Hide()
+            :redraw
+            return
+        endif
+    endif
+    var completions: list<any> = []
+    if options.wildignore && context =~# '\v^(e|ed|edi|edit|f|fi|fin|find)\s+'
+        # 'file_in_path' respects wildignore, 'cmdline' does not. However, it is
+        # slower than wildmenu (<tab> completion).
+        completions = context->matchstr('^\S\+\s\+\zs.*')->getcompletion('file_in_path')
+    else
+        completions = context->getcompletion('cmdline')
+    endif
+    if completions->len() == 0 ||
+            completions->len() == 1 && context->strridx(completions[0]) != -1
+            # This completion is already inserted
         return
     endif
-    var p = props
-    p.context = context
-    if &incsearch # find first match to highlight (vim issue 12538)
-        p.firstmatch = GetFirstMatch()
-    endif
-    p.candidates = []
-    p.items = []
-    if p.async
-        var attr = {
-            starttime: reltime(),
-            batches: Batches(),
-            index: 0,
-        }
-        SearchWorker(attr)
+    if !options.highlight || context[-1] =~ '\s'
+        items = [completions]
     else
-        p.items = options.fuzzy ? BufFuzzyMatches() : Batches()->BufMatches()->MakeUnique()->Itemify()
-        if len(p.items[0]) > 0
-            ShowPopupMenu()
-        endif
-    endif
-enddef
-
-
-
-
-
-# var popup_winid: number
-export def Setup()
-    if options.enable
-        if !wildsave.saved
-            wildsave.saved = true
-            wildsave.wildmode = &wildmode
-            wildsave.wildoptions = &wildoptions
-        endif
-        :set wildchar=<Tab>
-        :set wildmenu
-        :set wildmode=full
-        if  options.fuzzy
-            :set wildoptions+=fuzzy
-        else
-            :set wildoptions-=fuzzy
-        endif
-        if options.pum
-            :set wildoptions+=pum
-        else
-            :set wildoptions-=pum
-        endif
-        augroup CmdCompleteAutocmds | autocmd!
-            autocmd CmdlineEnter   : Init()
-            autocmd CmdlineChanged : options.alwayson ? Complete() : TabComplete()
-            autocmd CmdlineLeave   : Clear()
-        augroup END
-    endif
-enddef
-
-export def Teardown()
-    if wildsave.saved
-        exec $'set wildmode={wildsave.wildmode}'
-        exec $'set wildoptions={wildsave.wildoptions}'
-        wildsave.saved = false
-    endif
-    augroup CmdCompleteAutocmds | autocmd!
-    augroup END
-enddef
-
-def CmdlineEnable()
-    autocmd CmdlineChanged : options.alwayson ? Complete() : TabComplete()
-enddef
-
-def CmdlineDisable()
-    autocmd! CmdCompleteAutocmds CmdlineChanged :
-enddef
-
-def PopupCreate()
-    var attr = {
-        cursorline: false, # Do not automatically select the first item
-        pos: 'botleft',
-        line: &lines - &cmdheight,
-        col: 1,
-        drag: false,
-        border: [0, 0, 0, 0],
-        filtermode: 'c',
-        hidden: true,
-        filter: (winid: number, key: string) => {
-            if key ==? "\<c-n>"
-                feedkeys("\<tab>", 'tn')
-                return true
-            elseif key ==? "\<c-p>"
-                feedkeys("\<s-tab>", 'tn')
-                return true
+        var mstr = context->matchstr('\S\+$')
+        echom 'mstr' mstr
+        var success = true
+        var cols = []
+        var mlens = []
+        var mlen = mstr->len()
+        for text in completions
+            var cnum = text->stridx(mstr)
+            if cnum == -1
+                success = false
+                break
             endif
-            winid->popup_hide()
-            :redraw
-            CmdlineEnable()
-            return false
-        },
-        callback: (_, result) => {
-            if result == -1 # popup force closed due to <c-c>
-                feedkeys("\<c-c>", 'n')
-                CmdlineEnable()
-            endif
-        },
-    }
-    if options.pum
-        attr->extend({ minwidth: 14, maxheight: &pumheight })
-    else
-        attr->extend({ scrollbar: 0, padding: [0, 0, 0, 0], highlight: 'statusline' })
-    endif
-    popup_winid = popup_menu([], attr)
-enddef
-
-def PopupShow(position: number, completions: list<any>)
-    if options.pum
-        popup_winid->popup_move({ col: position })
-        popup_winid->popup_settext(completions)
-    else
-        var hmenu = completions->join('  ')
-        if hmenu->len() > winwidth(0)
-            hmenu = hmenu->slice(0, winwidth(0) - 2)
-            var spacechar = hmenu->match('.*\zs\s')
-            hmenu = (spacechar == -1 ? hmenu : hmenu->slice(0, spacechar)) .. ' >'
-        endif
-        hmenu->setbufline(popup_winid->winbufnr(), 1)
-    endif
-    popup_winid->popup_show()
-    # XXX: In v9.1(aug,2024) 'redraw' causes hiccup as characters are typed.
-    # this is noticeable when large files are open. screen redrawing should not
-    # depend on size of buffer. this needs to be investigated in vim code.
-    :redraw
-    CmdlineDisable()
-enddef
-
-def Overlap(context: string, completion: string): list<number>
-    var contextt = context->matchstr('\v.*/\ze[^/]*') # remove anything after last '/'
-    var matchcol = contextt->stridx(completion[0])
-    while matchcol != -1
-        var matchlen = contextt->len() - matchcol
-        if contextt->slice(matchcol) == completion->slice(0, matchlen)
-            return [matchcol, matchlen]
-        endif
-        matchcol = contextt->stridx(completion[0], matchcol + 1)
-    endwhile
-    return [-1, -1]
-enddef
-
-# Return the column nr where popup menu should be displayed. Relevant only for
-# stacked popup menu (not flat menu).
-# Completion candidates for file are obtained as full path. Extract relevant
-# portion of path for display.
-def ExtractShowable(context: string, completions: list<any>): number
-    var fpath: string = ''
-    try
-        # <spath> throws error E1245
-        fpath = expand(completions[0])
-    catch /^Vim\%((\a\+)\)\=:E/	 # catch all Vim errors
-    endtry
-    if !fpath->empty() && (isdirectory(fpath) || filereadable(fpath))
-        if context =~ '\\ '
-            completions->map((_, v) => v->escape(' '))
-        endif
-        var [matchcol, matchlen] = Overlap(context, completions[0])
-        if matchcol == -1
-            return max([1, context->stridx(' ') + 2])
-        endif
-        completions->map((_, val) => val->slice(matchlen))
-        return matchcol + matchlen + 1
-    endif
-    if !options.pum || context !~ '\s'
-        return 1
-    endif
-    var pos = max([context->strridx('$'), context->strridx('&'), context->strridx(' ')])
-    return max([1, pos + 2])
-enddef
-
-def ShowFiles(timer: number)
-    if wildmenumode()
-        for _ in range(pum_getpos().size)
-            feedkeys("\<tab>", 'tn')
+            cols->add([cnum])
+            mlens->add(mlen)
         endfor
+        echom success
+        items = success ? [completions, cols, mlens] : [completions]
+    endif
+    echom items
+    ShowPopupMenu(options.pum ? context->strridx(' ') + 2 : 1)
+enddef
+
+def ShowPopupMenu(position: number)
+    pmenu.SetText(items, position)
+    pmenu.Show()
+    # Note: If command-line is not disabled here, it will intercept key inputs 
+    # before the popup does. This prevents the popup from handling certain keys, 
+    # such as <Tab> properly.
+    DisableCmdline()
+enddef
+
+def PostSelectItem(index: number)
+    var context = getcmdline()->strpart(0, getcmdpos() - 1)
+    setcmdline(context->matchstr('^.*\s\ze') .. items[0][index])
+    :redraw  # Needed for <tab> selected menu item highlighting to work
+enddef
+
+def FilterFn(winid: number, key: string): bool
+    # Note: Do not include arrow keys since they are used for history lookup.
+    if key == "\<Tab>" || key == "\<C-n>"
+        pmenu.SelectItem('j', PostSelectItem) # Next item
+    elseif key == "\<S-Tab>" || key == "\<C-p>"
+        pmenu.SelectItem('k', PostSelectItem) # Prev item
+    elseif key == "\<C-e>"
+        pmenu.Hide()
+        :redraw
+        EnableCmdline()
+    elseif key == "\<CR>" || key == "\<ESC>"
+        return false # Let Vim process these keys further
+    else
+        pmenu.Hide()
+        # Note: Enable command-line handling to process key inputs first.
+        # This approach is safer as it avoids the need to manage various
+        # control characters and the up/down arrow keys used for history recall.
+        EnableCmdline()
+        return false # Let Vim handle process this and handle search highlighting
+    endif
+    return true
+enddef
+
+def CallbackFn(winid: number, result: any)
+    if result == -1 # Popup force closed due to <c-c> or cursor mvmt
+        feedkeys("\<c-c>", 'n')
     endif
 enddef
 
-# Verify that this completion does not take a long time (does not hang)
+# Verify that this completion does not take a long time (does not hang).
 var vjob: job
 def Verify(context: string): bool
     if context !~ '\*\*'
         return true
-    elseif options.editcmdworkaround && context =~ '\v^(e|ed|edi|edit) '
-        # getcompletion('edit **', 'cmdline') does not respect wildignore just
-        # like 'file' instead of 'cmdline'. However 'file_in_path' respects
-        # wildignore but takes too long (5x longer compared to <tab>
-        # completion which also respects wildignore).
-        feedkeys("\<tab>", 'tn')
-        timer_start(1, function(ShowFiles))
-        return false
     else
         if vjob->job_status() ==? 'run'
             return false
@@ -316,98 +207,5 @@ def Verify(context: string): bool
         return true
     endif
 enddef
-
-def DoComplete(oldcontext: string, timer: number)
-    var context = getcmdline()->strpart(0, getcmdpos() - 1)
-    if context !=# oldcontext
-        # Likely pasted text or coming from keymap
-        return
-    endif
-    var completions: list<any> = []
-    if Verify(context)
-        if context =~# '\v^(e|ed|edi|edit|f|fi|fin|find)\s+'
-            # 'file_in_path' respects wildignore, 'cmdline' does not.
-            completions = context->matchstr('^\S\+\s\+\zs.*')->getcompletion('file_in_path')
-        else
-            completions = context->getcompletion('cmdline')
-        endif
-    endif
-    if completions->empty()
-        return
-    endif
-    var pos = ExtractShowable(context, completions)
-    if completions->len() == 1 && context->strridx(completions[0]) != -1
-        # This completion is already inserted
-        return
-    endif
-    PopupShow(pos, completions)
-enddef
-
-def Init()
-    PopupCreate()
-    abbreviations = GetAbbrevs()
-    CmdlineEnable()
-enddef
-
-def Clear()
-    ## fix for Vim bug #12634
-    popup_winid->popup_move({ pos: 'center' })
-    :redraw
-    ##
-    popup_winid->popup_close()
-    abbreviations = []
-enddef
-
-def GetAbbrevs(): list<any>
-    var lines = execute('ca', 'silent!')
-    if lines =~? 'No abbreviation found'
-        return []
-    endif
-    var abb = []
-    for line in lines->split("\n")
-        abb->add(line->matchstr('\v^c\s+\zs\S+\ze'))
-    endfor
-    return abb
-enddef
-
-def Complete()
-    if wildmenumode()
-        return
-    endif
-    var context = getcmdline()->strpart(0, getcmdpos() - 1)
-    if context == '' || context =~ '^\s\+$'
-        return
-    endif
-    if context[-1] =~ '\s'
-        var prompt = context->trim()
-        # ignore cmdline abbreviations and such
-        if abbreviations->index(prompt) != -1 ||
-                (options.alwayson && options.onspace->index(prompt) == -1)
-            return
-        endif
-    endif
-    for pat in (options.exclude + options.autoexclude)
-        if context =~ pat
-            return
-        endif
-    endfor
-    var delay = max([10, options.delay])
-    timer_start(delay, function(DoComplete, [context]))
-enddef
-
-var wildsave = {
-    saved: false,
-    wildmode: '',
-    wildoptions: '',
-}
-
-def TabComplete()
-    var lastcharpos = getcmdpos() - 2
-    if getcmdline()[lastcharpos] ==? "\<tab>"
-        setcmdline(getcmdline()->slice(0, lastcharpos))
-        Complete()
-    endif
-enddef
-
 
 # vim: tabstop=8 shiftwidth=4 softtabstop=4

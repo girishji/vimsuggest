@@ -8,7 +8,6 @@ export class PopupMenu
     var _pum: bool
     var _selMatchId: number = 0
     var _items: list<any>
-    var _context: string
     var _index: number # index to items array
     var _hmenu = {text: '', ibegin: 0, iend: 0, selHiId: 0}
 
@@ -42,10 +41,10 @@ export class PopupMenu
     def _Printify(): list<any>
         var items = this._items
         if items->len() <= 1
-            def ToDict(idx: number, v: string): dict<any>
+            def MakeDict(idx: number, v: string): dict<any>
                 return {text: v}
             enddef
-            return this._pum ? items[0]->mapnew(ToDict) : [{text: this._hmenu.text}]
+            return this._pum ? items[0]->mapnew(MakeDict) : [{text: this._hmenu.text}]
         endif
         if this._pum
             return items[0]->mapnew((idx, v) => {
@@ -77,8 +76,7 @@ export class PopupMenu
         this._selMatchId = 0
     enddef
 
-    def SetText(context: string, items: list<any>, moveto: number = 0)
-        this._context = context
+    def SetText(items: list<any>, moveto: number = 0)
         this._items = items
         this._ClearMatches()
         if this._pum
@@ -147,11 +145,13 @@ export class PopupMenu
                 this._winid->popup_setoptions({cursorline: true})
                 this._index = 0
             endif
-            var mlen = items[2][this._index]
             if items->len() > 1
-                var pos = items[1][this._index]->mapnew((_, v) => [this._index + 1, v + 1, mlen])
-                if !pos->empty()
-                    this._selMatchId = matchaddpos('VimSuggestMatchSel', pos, 13, -1, {window: this._winid})
+                var mlen = items[2][this._index]
+                if items->len() > 1
+                    var pos = items[1][this._index]->mapnew((_, v) => [this._index + 1, v + 1, mlen])
+                    if !pos->empty()
+                        this._selMatchId = matchaddpos('VimSuggestMatchSel', pos, 13, -1, {window: this._winid})
+                    endif
                 endif
             endif
         enddef

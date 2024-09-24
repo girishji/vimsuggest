@@ -10,14 +10,14 @@ vim9script
 g:loaded_vimsuggest = true
 
 import autoload '../autoload/vimsuggest/options.vim' as opt
-import autoload '../autoload/vimsuggest/search.vim' as ser
-# import autoload '../autoload/vimsuggest/cmd.vim'
+import autoload '../autoload/vimsuggest/search.vim'
+import autoload '../autoload/vimsuggest/cmd.vim'
 
 def Reset()
-    ser.Teardown()
-    ser.Setup()
-    # cmd.Teardown()
-    # cmd.Setup()
+    search.Teardown()
+    search.Setup()
+    cmd.Teardown()
+    cmd.Setup()
 enddef
 
 autocmd VimEnter * Reset()
@@ -29,7 +29,7 @@ def! g:VimSuggestSetOptions(opts: dict<any>)
         endif
     }
     Update('search')
-    # Update('cmd')
+    Update('cmd')
     if opt.options.search.fuzzy
         opt.options.search.async = false
     endif
@@ -42,7 +42,7 @@ enddef
 
 def VimSuggestEnable(flag: bool)
     opt.options.search.enable = flag
-    # opt.options.cmd.enable = flag
+    opt.options.cmd.enable = flag
     Reset()
 enddef
 command! VimSuggestEnable  VimSuggestEnable(true)

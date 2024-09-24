@@ -110,7 +110,7 @@ enddef
 
 def ShowPopupMenu()
     var p = props
-    p.pmenu.SetText(p.context, p.items)
+    p.pmenu.SetText(p.items)
     p.pmenu.Show()
     # Note: If command-line is not disabled here, it will intercept key inputs 
     # before the popup does. This prevents the popup from handling certain keys, 
@@ -140,7 +140,6 @@ def FilterFn(winid: number, key: string): bool
         timer_start(0, (_) => EnableCmdline()) # Timer will que this after feedkeys
     elseif key == "\<CR>" || key == "\<ESC>"
         IncSearchHighlightClear()
-        EnableCmdline()
         return false
     else
         IncSearchHighlightClear()
@@ -157,7 +156,6 @@ enddef
 def CallbackFn(winid: number, result: any)
     IncSearchHighlightClear()
     if result == -1 # Popup force closed due to <c-c> or cursor mvmt
-        EnableCmdline()
         feedkeys("\<c-c>", 'n')
     endif
 enddef
@@ -205,15 +203,20 @@ def Itemify(matches: list<any>): list<any>
     var text = []
     var colnum = []
     var mlen = []
-    var has_submatches = !matches->empty() && matches[0]->has_key('submatches')
-    for item in matches
-        text->add(item.text)
-        if has_submatches
+    var items = []
+    if !options.highlight || matches->empty()
+        items = [matches->mapnew('v:val.text')]
+    elseif matches[0]->has_key('submatches')
+        for item in matches
+            text->add(item.text)
             colnum->add([item.submatches[0]->len()])
             mlen->add(item.submatches[1]->len())
-        endif
-    endfor
-    return has_submatches ? [text, colnum, mlen] : [text]
+        endfor
+        items = [text, colnum, mlen]
+    else
+        items = [matches->mapnew('v:val.text')]
+    endif
+    return items
 enddef
 
 def GetFirstMatch(): list<any>

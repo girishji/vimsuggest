@@ -32,3 +32,9 @@ multiple highlighting when one pattern has highlighting and next one is searched
 during hls
 &redrawtime=2000 
 	'redrawtime' specifies the maximum time spent on finding matches.
+
+complete(range-command)
+
+  -- The `vim.fn.getcompletion` does not return `*no*cursorline` option.
+      -- cmp-cmdline corrects `no` prefix for option name.
+      local is_option_name_completion = OPTION_NAME_COMPLETION_REGEX:match_str(cmdline) ~= nil
