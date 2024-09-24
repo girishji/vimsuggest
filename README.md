@@ -26,3 +26,9 @@ Autocompletion for Vim's command-line.
 		cnoremap <Left> <Space><BS><Left>
 		cnoremap <Right> <Space><BS><Right>
 
+async: folding and highlighting
+multiple highlighting when one pattern has highlighting and next one is searched
+
+during hls
+&redrawtime=2000 
+	'redrawtime' specifies the maximum time spent on finding matches.
