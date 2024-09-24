@@ -1,12 +1,168 @@
 vim9script
 
-# Autocomplete Vimscript commands, functions, variables, etc.
+# Autocomplete Vimscript commands, functions, variables, help, filenames, buffers, etc.
 
 import autoload './options.vim' as opt
+import autoload './popup.vim'
 
 var options = opt.options.cmd
-var popup_winid: number
+var pmenu: popup.PopupMenu = null_object
 var abbreviations: list<any>
+var save_wildmenu: number
+
+export def Setup()
+    if options.enable
+        augroup VimSuggestCmdAutocmds | autocmd!
+            autocmd CmdlineEnter    :  {
+                pmenu = popup.PopupMenu.new(FilterFn, CallbackFn, options.popupattrs, options.pum)
+                EnableCmdline()
+                abbreviations = GetAbbrevs()
+                save_wildmenu = &wildmenu
+                :set nowildmenu
+            }
+            autocmd CmdlineChanged  :  options.alwayson ? Complete() : TabComplete()
+            autocmd CmdlineLeave    :  {
+                if pmenu != null_object
+                    pmenu.Close()
+                    pmenu = null_object
+                endif
+                if save_wildmenu == 1
+                    :set wildmenu
+                endif
+            }
+        augroup END
+    endif
+enddef
+
+export def Teardown()
+    augroup VimSuggestCmdAutocmds | autocmd!
+    augroup END
+enddef
+
+def EnableCmdline()
+    autocmd! VimSuggestCmdAutocmds CmdlineChanged : options.alwayson ? Complete() : TabComplete()
+enddef
+
+def DisableCmdline()
+    autocmd! VimSuggestCmdAutocmds CmdlineChanged :
+enddef
+
+def TabComplete()
+    var lastcharpos = getcmdpos() - 2
+    if getcmdline()[lastcharpos] ==? "\<tab>"
+        setcmdline(getcmdline()->slice(0, lastcharpos))
+        Complete()
+    endif
+enddef
+
+def GetAbbrevs(): list<any>
+    var lines = execute('ca', 'silent!')
+    if lines =~? gettext('No abbreviation found')
+        return []
+    endif
+    var abb = []
+    for line in lines->split("\n")
+        abb->add(line->matchstr('\v^c\s+\zs\S+\ze'))
+    endfor
+    return abb
+enddef
+
+def Complete()
+    if wildmenumode()
+        return
+    endif
+    var context = getcmdline()->strpart(0, getcmdpos() - 1)
+    if context == '' || context =~ '^\s\+$'
+        return
+    endif
+    if context[-1] =~ '\s'
+        var prompt = context->trim()
+        # ignore cmdline abbreviations and such
+        if abbreviations->index(prompt) != -1 ||
+                (options.alwayson && options.onspace->index(prompt) == -1)
+            return
+        endif
+    endif
+    for pat in (options.exclude + options.autoexclude)
+        if context =~ pat
+            return
+        endif
+    endfor
+    DoComplete(context)
+    # var delay = max([10, options.delay])
+    # timer_start(delay, function(DoComplete, [context]))
+enddef
+
+def DoComplete(oldcontext: string, timer: number = 0)
+    var context = getcmdline()->strpart(0, getcmdpos() - 1)
+    if context !=# oldcontext
+        # likely pasted text or coming from keymap, wait till all chars are gathered
+        return
+    endif
+    var p = props
+    p.context = context
+    if &incsearch # find first match to highlight (vim issue 12538)
+        p.firstmatch = GetFirstMatch()
+    endif
+    p.candidates = []
+    p.items = []
+    if p.async
+        var attr = {
+            starttime: reltime(),
+            batches: Batches(),
+            index: 0,
+        }
+        SearchWorker(attr)
+    else
+        p.items = options.fuzzy ? BufFuzzyMatches() : Batches()->BufMatches()->MakeUnique()->Itemify()
+        if len(p.items[0]) > 0
+            ShowPopupMenu()
+        endif
+    endif
+enddef
+
+
+
+
+
+# var popup_winid: number
+export def Setup()
+    if options.enable
+        if !wildsave.saved
+            wildsave.saved = true
+            wildsave.wildmode = &wildmode
+            wildsave.wildoptions = &wildoptions
+        endif
+        :set wildchar=<Tab>
+        :set wildmenu
+        :set wildmode=full
+        if  options.fuzzy
+            :set wildoptions+=fuzzy
+        else
+            :set wildoptions-=fuzzy
+        endif
+        if options.pum
+            :set wildoptions+=pum
+        else
+            :set wildoptions-=pum
+        endif
+        augroup CmdCompleteAutocmds | autocmd!
+            autocmd CmdlineEnter   : Init()
+            autocmd CmdlineChanged : options.alwayson ? Complete() : TabComplete()
+            autocmd CmdlineLeave   : Clear()
+        augroup END
+    endif
+enddef
+
+export def Teardown()
+    if wildsave.saved
+        exec $'set wildmode={wildsave.wildmode}'
+        exec $'set wildoptions={wildsave.wildoptions}'
+        wildsave.saved = false
+    endif
+    augroup CmdCompleteAutocmds | autocmd!
+    augroup END
+enddef
 
 def CmdlineEnable()
     autocmd CmdlineChanged : options.alwayson ? Complete() : TabComplete()
@@ -253,42 +409,5 @@ def TabComplete()
     endif
 enddef
 
-export def Setup()
-    if options.enable
-        if !wildsave.saved
-            wildsave.saved = true
-            wildsave.wildmode = &wildmode
-            wildsave.wildoptions = &wildoptions
-        endif
-        :set wildchar=<Tab>
-        :set wildmenu
-        :set wildmode=full
-        if  options.fuzzy
-            :set wildoptions+=fuzzy
-        else
-            :set wildoptions-=fuzzy
-        endif
-        if options.pum
-            :set wildoptions+=pum
-        else
-            :set wildoptions-=pum
-        endif
-        augroup CmdCompleteAutocmds | autocmd!
-            autocmd CmdlineEnter   : Init()
-            autocmd CmdlineChanged : options.alwayson ? Complete() : TabComplete()
-            autocmd CmdlineLeave   : Clear()
-        augroup END
-    endif
-enddef
-
-export def Teardown()
-    if wildsave.saved
-        exec $'set wildmode={wildsave.wildmode}'
-        exec $'set wildoptions={wildsave.wildoptions}'
-        wildsave.saved = false
-    endif
-    augroup CmdCompleteAutocmds | autocmd!
-    augroup END
-enddef
 
 # vim: tabstop=8 shiftwidth=4 softtabstop=4

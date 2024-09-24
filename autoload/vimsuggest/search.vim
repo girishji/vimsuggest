@@ -12,9 +12,10 @@ class Properties
     public var candidates: list<any>  #  candidates for completion (could be phrases)
     public var context = ''           #  cached cmdline contents
     public var firstmatch = []        #  workaround for vim issue 12538
-    var pmenu: popup.PopupMenu
+    var pmenu: popup.PopupMenu = null_object
     var isfwd: bool                   #  true for '/' and false for '?'
     var async: bool
+    var curpos: list<any>
 
     def new()
         this.isfwd = getcmdtype() == '/' ? true : false
@@ -22,7 +23,10 @@ class Properties
         # Issue: Due to vim issue 12538 highlighting has to be provoked explicitly during
         # async search. The redraw command causes some flickering of highlighted
         # text. So do async search only when file is large.
-        this.async = line('$') < 1000 ? false : options.async
+        this.async = line('$') < 1500 ? false : options.async
+        if this.async
+            this.curpos = getcurpos()
+        endif
     enddef
 
     def Clear()
@@ -55,14 +59,6 @@ export def Teardown()
     augroup END
 enddef
 
-def TabComplete()
-    var lastcharpos = getcmdpos() - 2
-    if getcmdline()[lastcharpos] ==? "\<tab>"
-        setcmdline(getcmdline()->slice(0, lastcharpos))
-        Complete()
-    endif
-enddef
-
 def EnableCmdline()
     autocmd! VimSuggestSearchAutocmds CmdlineChanged /,\? options.alwayson ? Complete() : TabComplete()
 enddef
@@ -71,34 +67,38 @@ def DisableCmdline()
     autocmd! VimSuggestSearchAutocmds CmdlineChanged /,\?
 enddef
 
+def TabComplete()
+    var lastcharpos = getcmdpos() - 2
+    if getcmdline()[lastcharpos] ==? "\<tab>"
+        setcmdline(getcmdline()->slice(0, lastcharpos))
+        Complete()
+    endif
+enddef
+
 def Complete()
     var p = props
     var context = getcmdline()->strpart(0, getcmdpos() - 1)
     if context == '' || context =~ '^\s\+$'
         return
     endif
-    DoComplete(context)
-enddef
-
-def DoComplete(oldcontext: string, timer: number = 0)
-    var context = getcmdline()->strpart(0, getcmdpos() - 1)
-    if context !=# oldcontext
-        # likely pasted text or coming from keymap, wait till all chars are gathered
-        return
-    endif
-    var p = props
+    # note:
+    # 1) when pasting text from clipboard, CompleteChanged event is called
+    #    only once instead of for every character pasted.
+    # 2) when pasting a long line of text, search appears to be slow for the first time
+    #    (likely because functions are getting compiled). it will be fast afterwards.
     p.context = context
-    if &incsearch # find first match to highlight (vim issue 12538)
-        p.firstmatch = GetFirstMatch()
-    endif
     p.candidates = []
     p.items = []
     if p.async
         var attr = {
             starttime: reltime(),
+            context: context,
             batches: Batches(),
             index: 0,
         }
+        if &incsearch # find first match to highlight (vim issue 12538)
+            attr->extend({firstmatch: GetFirstMatch()})
+        endif
         SearchWorker(attr)
     else
         p.items = options.fuzzy ? BufFuzzyMatches() : Batches()->BufMatches()->MakeUnique()->Itemify()
@@ -112,49 +112,26 @@ def ShowPopupMenu()
     var p = props
     p.pmenu.SetText(p.context, p.items)
     p.pmenu.Show()
+    # note: if command-line is not disabled here, it will receive keys before
+    # popup receives. this prevents popup from handling <tab> for instance.
     DisableCmdline()
-    var show = false
-    if !&incsearch # redraw only when noincsearch, otherwise highlight flickers
-        show = true
-    endif
-    # workaround for vim issue 12538: https://github.com/vim/vim/issues/12538
-    if &hlsearch
-        matchadd('Search', &ignorecase ? $'\c{p.context}' : p.context, 11)
-        show = true
-    endif
-    if &incsearch && !p.firstmatch->empty()
-        matchaddpos('IncSearch', p.firstmatch, 12)
-        show = true
-    endif
-    if show
-        :redraw
-    endif
 enddef
 
 def PostSelectItem(index: number)
     var p = props
-    clearmatches()
     setcmdline(p.items[0][index]->escape('~/'))
-    if &hlsearch
-        matchadd('Search', &ignorecase ? $'\c{p.context}' : p.context, 11)
-    endif
     :redraw  # needed for <tab> selected menu item highlighting to work
-enddef
-
-def ProcessKey(key: string)
-    var context = getcmdline()->strpart(0, getcmdpos() - 1) .. key
-    timer_start(1, function(DoComplete, [context]))
 enddef
 
 def FilterFn(winid: number, key: string): bool
     var p = props
+    IncSearchHighlightClear()
     # note: do not include arrow keys since they are used for history lookup
     if key == "\<Tab>" || key == "\<C-n>"
         p.pmenu.SelectItem('j', PostSelectItem) # next item
     elseif key == "\<S-Tab>" || key == "\<C-p>"
         p.pmenu.SelectItem('k', PostSelectItem) # prev item
     elseif key == "\<C-e>"
-        clearmatches()
         p.pmenu.Hide()
         setcmdline('')
         feedkeys(p.context, 'n')
@@ -164,9 +141,12 @@ def FilterFn(winid: number, key: string): bool
         EnableCmdline()
         return false
     else
-        clearmatches()
         p.pmenu.Hide()
-        key->ProcessKey()
+        # key->ProcessKey()
+        
+        # note: enable command-line so that it handles the keys first. this is
+        # more conservative since we do not want to deal with various control
+        # characters and up/down arrow keys (history recall).
         EnableCmdline()
         return false # Let vim's usual mechanism (ex. search highlighting) handle this
     endif
@@ -174,7 +154,7 @@ def FilterFn(winid: number, key: string): bool
 enddef
 
 def CallbackFn(winid: number, result: any)
-    clearmatches()
+    IncSearchHighlightClear()
     if result == -1 # popup force closed due to <c-c> or cursor mvmt
         EnableCmdline()
         feedkeys("\<c-c>", 'n')
@@ -237,27 +217,31 @@ enddef
 
 def GetFirstMatch(): list<any>
     var p = props
+    var pos = []
+    var save_cursor = getcurpos()
+    setpos('.', p.curpos)
     try
         var [blnum, bcol] = p.context->searchpos(p.isfwd ? 'nw' : 'nwb')
         if [blnum, bcol] != [0, 0]
-            var [elnum, ecol] = p.context->searchpos(p.isfwd ? 'nwe' : 'nweb')
+            var [elnum, ecol] = p.context->searchpos(p.isfwd ? 'nwe' : 'nwbe')
             if [elnum, ecol] != [0, 0]
                 if blnum == elnum
-                    return [[blnum, bcol, ecol - bcol + 1]]
+                    pos = [[blnum, bcol, ecol - bcol + 1]]
+                else
+                    pos = [[blnum, bcol, 1000]]
+                    for lnum in range(blnum + 1, elnum - 1)
+                        pos->add([lnum])
+                    endfor
+                    pos->add([elnum, 1, ecol])
                 endif
-                var pos = [[blnum, bcol, 1000]]
-                for lnum in range(blnum + 1, elnum - 1)
-                    pos->add([lnum])
-                endfor
-                pos->add([elnum, 1, ecol])
-                return pos
             endif
         endif
     catch
         # E33 is thrown when '~' is the first character of search. '~' stands
         # for previously substituted pattern in ':s'.
     endtry
-    return []
+    setpos('.', save_cursor)
+    return pos
 enddef
 
 # return a list of strings (can have spaces) that match the pattern
@@ -304,7 +288,7 @@ def BufMatchLine(batches: list<dict<any>>): list<any>
 enddef
 
 # search across line breaks. less efficient and probably not very useful.
-# Note: not supporting syntax highlighting for now.
+# note: not supporting syntax highlighting for now.
 def BufMatchMultiLine(batch: dict<any>): list<any>
     var p = props
     var timeout = max([10, options.timeout])
@@ -405,15 +389,49 @@ def BufFuzzyMatches(): list<any>
     return matches
 enddef
 
+# workaround for vim issue 12538: https://github.com/vim/vim/issues/12538
+var matchids = {sid: 0, iid: 0}
+def IncSearchHighlight(firstmatch: list<any>, context: string)
+    var show = false
+    if &hlsearch
+        matchids.sid = matchadd('Search', &ignorecase ? $'\c{context}' : context, 101)
+        show = true
+    endif
+    if &incsearch && firstmatch != null_list
+        matchids.iid = matchaddpos('IncSearch', firstmatch, 102)
+        show = true
+    endif
+    if show
+        :redraw
+    endif
+enddef
+
+def IncSearchHighlightClear()
+    var p = props
+    if p.async
+        if matchids.sid > 0
+            matchids.sid->matchdelete()
+            matchids.sid = 0
+        endif
+        if matchids.iid > 0
+            matchids.iid->matchdelete()
+            matchids.iid = 0
+        endif
+    endif
+enddef
+
 # a worker task for async search
 def SearchWorker(attr: dict<any>, timer: number = 0)
     var p = props
     var context = getcmdline()->strpart(0, getcmdpos() - 1)
     var timeoutasync = max([10, options.timeoutasync])
-    if context !=# p.context ||
+    if context !=# attr.context ||
             (attr.starttime->reltime()->reltimefloat() * 1000) > timeoutasync ||
             attr.index >= attr.batches->len()
         return
+    endif
+    if attr.index == 0
+        IncSearchHighlight(attr.firstmatch, context)
     endif
     var batch = attr.batches[attr.index]
     var matches = BufMatches([batch])

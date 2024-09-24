@@ -77,17 +77,16 @@ export class PopupMenu
         this._selMatchId = 0
     enddef
 
-    def SetText(context: string, items: list<any>)
+    def SetText(context: string, items: list<any>, moveto: number = 0)
         this._context = context
         this._items = items
         this._ClearMatches()
         if this._pum
-            # var colnum = context->match('\S\+$') + 1
-            # if colnum > 0
-            #     this._winid->popup_move({col: colnum})
-                this._winid->popup_settext(this._Printify())
-                win_execute(this._winid, "normal! gg")
-            # endif
+            if moveto > 0
+                this._winid->popup_move({col: moveto})
+            endif
+            this._winid->popup_settext(this._Printify())
+            win_execute(this._winid, "normal! gg")
         else
             this._HMenu(0, 'left')
             try

@@ -1,7 +1,7 @@
-" CmdLine completion plugin for Vim >= v9.0
+" Command-line completion plugin
 
-if !has('vim9script') || v:version < 900
-    " Needs Vim version 9.0 and above
+if !has('vim9script') || v:version < 901
+    " Needs Vim version 9.1 and above
     finish
 endif
 
