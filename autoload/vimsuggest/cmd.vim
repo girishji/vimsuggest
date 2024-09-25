@@ -4,6 +4,8 @@ vim9script
 
 import autoload './options.vim' as opt
 import autoload './popup.vim'
+import autoload './extras/buffer.vim' as buf
+# import autoload './extras/find.vim'
 
 var options = opt.options.cmd
 var pmenu: popup.PopupMenu = null_object
@@ -11,6 +13,8 @@ var abbreviations: list<any>
 var save_wildmenu: bool
 var autoexclude = ["'>", '^\a/', '^\A'] # Keywords excluded from completion
 var items: list<any>
+var setup_callbacks = {}
+var setup_callback_done = {}
 
 export def Setup()
     if options.enable
@@ -21,6 +25,7 @@ export def Setup()
                 abbreviations = GetAbbrevs()
                 save_wildmenu = &wildmenu
                 :set nowildmenu
+                foreach(setup_callbacks->keys(), 'setup_callback_done[v:val] = false')
             }
             autocmd CmdlineChanged  :  options.alwayson ? Complete() : TabComplete()
             autocmd CmdlineLeave    :  {
@@ -33,12 +38,16 @@ export def Setup()
                 endif
             }
         augroup END
+        if options.extras
+            buf.Setup()
+        endif
     endif
 enddef
 
 export def Teardown()
     augroup VimSuggestCmdAutocmds | autocmd!
     augroup END
+    setup_callbacks = {}
 enddef
 
 def EnableCmdline()
@@ -90,12 +99,17 @@ def DoComplete(oldcontext: string, timer: number)
     endfor
     if context[-1] =~ '\s'
         var prompt = context->trim()
-        # Ignore cmdline abbreviations and such.
+        var Callback = setup_callbacks->get(prompt, null_function)
         if abbreviations->index(prompt) != -1 ||
-                (options.alwayson && options.onspace->index(prompt) == -1)
+                (options.alwayson && options.onspace->index(prompt) == -1 &&
+                Callback == null_function)
             pmenu.Hide()
             :redraw
             return
+        endif
+        if Callback != null_function && !setup_callback_done[prompt]
+            Callback()
+            setup_callback_done[prompt] = true
         endif
     endif
     var completions: list<any> = []
@@ -179,32 +193,8 @@ def CallbackFn(winid: number, result: any)
     endif
 enddef
 
-# Verify that this completion does not take a long time (does not hang).
-var vjob: job
-def Verify(context: string): bool
-    if context !~ '\*\*'
-        return true
-    else
-        if vjob->job_status() ==? 'run'
-            return false
-        endif
-        var start = reltime()
-        var cmd = ['vim', '-es', $'+:silent! call getcompletion("{context}", "cmdline") | q!']
-        vjob = job_start(cmd)
-        while start->reltime()->reltimefloat() * 1000 < options.timeout
-            if vjob->job_status() ==? 'run'
-                :sleep 10m
-            else
-                break
-            endif
-        endwhile
-        if vjob->job_status() ==? 'run'
-            vjob->job_stop('kill')
-            # echom 'Aborted job, taking too long: ' .. context
-            return false
-        endif
-        return true
-    endif
+export def RegisterSetupCallback(cmd: string, Callback: func())
+    setup_callbacks[cmd] = Callback
 enddef
 
 # vim: tabstop=8 shiftwidth=4 softtabstop=4

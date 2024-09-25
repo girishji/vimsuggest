@@ -20,9 +20,6 @@ class Properties
 
     def new()
         this.pmenu = popup.PopupMenu.new(FilterFn, CallbackFn, options.popupattrs, options.pum)
-        # Issue: Due to Vim issue #12538 (see below), search highlighting
-        # must be manually triggered during asynchronous search.
-        # Perform asynchronous search only for large files to avoid this complication.
         this.async = line('$') < options.asyncminlines ? false : options.async
         if this.async
             this.curpos = getcurpos()
@@ -98,10 +95,10 @@ def Complete()
     if context == '' || context =~ '^\s\+$'
         return
     endif
-    # note:
-    # 1) when pasting text from clipboard, CompleteChanged event is called
+    # Note:
+    # 1) When pasting text from clipboard, CompleteChanged event is called
     #    only once instead of for every character pasted.
-    # 2) when pasting a long line of text, search appears to be slow for the first time
+    # 2) When pasting a long line of text, search appears to be slow for the first time
     #    (likely because functions are getting compiled). it will be fast afterwards.
     p.context = context
     p.candidates = []
@@ -425,8 +422,8 @@ def BufFuzzyMatches(): list<any>
 enddef
 
 # Workaround for Vim issue #12538: https://github.com/vim/vim/issues/12538
-# - After `timer_start()` expires, the window is redrawn, causing search
-#   highlighting (incsearch, hlsearch) to be lost.
+# - During async search, after `timer_start()` expires, the window is redrawn,
+#   causing search highlighting (incsearch, hlsearch) to be lost.
 # - This workaround restores both `incsearch` and `hlsearch` highlighting, which
 #   are removed on redraw.
 # - Note: If previous highlighting exists during a new search, both search

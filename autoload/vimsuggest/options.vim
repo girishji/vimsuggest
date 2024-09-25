@@ -29,6 +29,7 @@ export var options: dict<any> = {
         },
         wildignore: true,
         highlight: true,
+        extras: true,
     }
 }
 
