@@ -405,7 +405,6 @@ enddef
 #   which is non-trivial.
 var matchids = {sid: 0, iid: 0}
 def IncSearchHighlight(firstmatch: list<any>, context: string)
-    echom 'IncSearchHighlight'
     var show = false
     if &hlsearch
         matchids.sid = matchadd('Search', &ignorecase ? $'\c{context}' : context, 101)
@@ -421,7 +420,6 @@ def IncSearchHighlight(firstmatch: list<any>, context: string)
 enddef
 
 def IncSearchHighlightClear()
-    echom 'IncSearchHighlightClear'
     var p = props
     if p.async
         if matchids.sid > 0

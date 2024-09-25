@@ -1,6 +1,6 @@
 # VimSuggest
 Autocompletion for Vim's command-line.
-
+<div style="display: none;">
 (video=pattern search, alwayson, border, searching defs, multiword search)
 ❯ video=keymaps
 
@@ -33,8 +33,18 @@ during hls
 &redrawtime=2000 
 	'redrawtime' specifies the maximum time spent on finding matches.
 
+:{count}fin[d][!] [++opt] [+cmd] {file}
+
 complete(range-command)
 
   -- The `vim.fn.getcompletion` does not return `*no*cursorline` option.
       -- cmp-cmdline corrects `no` prefix for option name.
       local is_option_name_completion = OPTION_NAME_COMPLETION_REGEX:match_str(cmdline) ~= nil
+o
+
+- boost productiviryt
+  if you hate plugin this is the one you want.
+you may dislike popup that covers your buffer, but you have horizontal menu
+not just about saving a tab, but saving many tabs and <bs>
+
+</div>

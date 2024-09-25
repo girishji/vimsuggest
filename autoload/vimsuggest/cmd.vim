@@ -99,9 +99,9 @@ def DoComplete(oldcontext: string, timer: number)
         endif
     endif
     var completions: list<any> = []
-    if options.wildignore && context =~# '\v^(e|ed|edi|edit|f|fi|fin|find)\s+'
+    if options.wildignore && context =~# '^\(e\%[dit]!\?\|fin\%[d]!\?\)\s'
         # 'file_in_path' respects wildignore, 'cmdline' does not. However, it is
-        # slower than wildmenu (<tab> completion).
+        # slower than wildmenu <tab> completion.
         completions = context->matchstr('^\S\+\s\+\zs.*')->getcompletion('file_in_path')
     else
         completions = context->getcompletion('cmdline')
@@ -115,7 +115,6 @@ def DoComplete(oldcontext: string, timer: number)
         items = [completions]
     else
         var mstr = context->matchstr('\S\+$')
-        echom 'mstr' mstr
         var success = true
         var cols = []
         var mlens = []
@@ -129,11 +128,11 @@ def DoComplete(oldcontext: string, timer: number)
             cols->add([cnum])
             mlens->add(mlen)
         endfor
-        echom success
         items = success ? [completions, cols, mlens] : [completions]
     endif
-    echom items
-    ShowPopupMenu(options.pum ? context->strridx(' ') + 2 : 1)
+    # '&' and '$' completes Vim options and env variables respectively.
+    var pos = max([' ', '&', '$']->mapnew((_, v) => context->strridx(v)))
+    ShowPopupMenu(options.pum ? pos + 2 : 1)
 enddef
 
 def ShowPopupMenu(position: number)
