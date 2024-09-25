@@ -228,4 +228,9 @@ export class PopupMenu
     def Hide()
         this._winid->popup_hide()
     enddef
+
+    def Hidden(): bool
+        var opts = this._winid->popup_getpos()
+        return opts == null_dict || !opts.visible
+    enddef
 endclass

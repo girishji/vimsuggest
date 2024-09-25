@@ -12,29 +12,46 @@ class Properties
     public var items: list<any>       # Items displayed in the popup menu
     public var candidates: list<any>  # Completion candidates (saved for async invocation)
     public var context = null_string  # Cached command-line contents
+    public var save_searchreg = null_string
+    public var save_esc_keymap = null_dict
     var pmenu: popup.PopupMenu = null_object
-    var isfwd: bool                   # True if searching forward ('/'), false for backward ('?')
     var async: bool
     var curpos: list<any>
 
     def new()
-        this.isfwd = getcmdtype() == '/' ? true : false
         this.pmenu = popup.PopupMenu.new(FilterFn, CallbackFn, options.popupattrs, options.pum)
         # Issue: Due to Vim issue #12538 (see below), search highlighting
         # must be manually triggered during asynchronous search.
         # Perform asynchronous search only for large files to avoid this complication.
-        this.async = line('$') < 1500 ? false : options.async
+        this.async = line('$') < options.asyncminlines ? false : options.async
         if this.async
             this.curpos = getcurpos()
+        endif
+        if this.async && v:hlsearch
+            this.save_searchreg = getreg('/')
+            this.save_esc_keymap = maparg('<esc>', 'c', 0, 1)
+            cnoremap <esc> <c-r>=<SID>RestoreHLSearch()<cr><c-c>
         endif
     enddef
 
     def Clear()
         this.pmenu.Close()
+        if this.save_esc_keymap != null_dict
+            mapset('c', 0, this.save_esc_keymap)
+        endif
     enddef
 endclass
 
 var props: Properties
+
+# During async search <esc> after a failed search (where pattern does not exist
+# in buffer) should restore previous hlsearch if any.
+def RestoreHLSearch(): string
+    if props.pmenu.Hidden() && props.save_searchreg != null_string
+        setreg('/', props.save_searchreg)
+    endif
+    return null_string
+enddef
 
 export def Setup()
     if options.enable
@@ -99,6 +116,11 @@ def Complete()
         if &incsearch
             attr->extend({firstmatch: GetFirstMatch()})
         endif
+        # If hlsearch highlighting from a previous search is present, temporarily remove it.
+        # Otherwise, highlights from both the current and previous searches will be displayed simultaneously.
+        if v:hlsearch
+            setreg('/', '')
+        endif
         SearchWorker(attr)
     else
         p.items = options.fuzzy ? BufFuzzyMatches() : Batches()->BufMatches()->MakeUnique()->Itemify()
@@ -112,8 +134,8 @@ def ShowPopupMenu()
     var p = props
     p.pmenu.SetText(p.items)
     p.pmenu.Show()
-    # Note: If command-line is not disabled here, it will intercept key inputs 
-    # before the popup does. This prevents the popup from handling certain keys, 
+    # Note: If command-line is not disabled here, it will intercept key inputs
+    # before the popup does. This prevents the popup from handling certain keys,
     # such as <Tab> properly.
     DisableCmdline()
 enddef
@@ -137,9 +159,18 @@ def FilterFn(winid: number, key: string): bool
         setcmdline('')
         feedkeys(p.context, 'n')
         :redraw!
+        if p.save_searchreg != null_string
+            setreg('/', p.save_searchreg) # Needed by <c-e><esc> to restore previous hlsearch
+        endif
         timer_start(0, (_) => EnableCmdline()) # Timer will que this after feedkeys
-    elseif key == "\<CR>" || key == "\<ESC>"
+    elseif key == "\<CR>"
         IncSearchHighlightClear()
+        return false
+    elseif key == "\<ESC>"
+        IncSearchHighlightClear()
+        if p.save_searchreg != null_string
+            setreg('/', p.save_searchreg) # Restore previous hlsearch
+        endif
         return false
     else
         IncSearchHighlightClear()
@@ -168,7 +199,7 @@ def Batches(): list<any>
     var iabove = []
     var startl = line('.')
     while startl <= line('$')
-        if p.isfwd
+        if v:searchforward
             ibelow->add({startl: startl, endl: min([startl + range, line('$')])})
         else
             ibelow->insert({startl: startl, endl: min([startl + range, line('$')])})
@@ -177,14 +208,14 @@ def Batches(): list<any>
     endwhile
     startl = 1
     while startl <= line('.')
-        if p.isfwd
+        if v:searchforward
             iabove->add({startl: startl, endl: min([startl + range, line('.')])})
         else
             iabove->insert({startl: startl, endl: min([startl + range, line('.')])})
         endif
         startl += range
     endwhile
-    return p.isfwd ? ibelow + iabove : iabove + ibelow
+    return v:searchforward ? ibelow + iabove : iabove + ibelow
 enddef
 
 def MakeUnique(lst: list<any>): list<any>
@@ -225,9 +256,9 @@ def GetFirstMatch(): list<any>
     var save_cursor = getcurpos()
     setpos('.', p.curpos)
     try
-        var [blnum, bcol] = p.context->searchpos(p.isfwd ? 'nw' : 'nwb')
+        var [blnum, bcol] = p.context->searchpos(v:searchforward ? 'nw' : 'nwb')
         if [blnum, bcol] != [0, 0]
-            var [elnum, ecol] = p.context->searchpos(p.isfwd ? 'nwe' : 'nwbe')
+            var [elnum, ecol] = p.context->searchpos(v:searchforward ? 'nwe' : 'nwbe')
             if [elnum, ecol] != [0, 0]
                 if blnum == elnum
                     pos = [[blnum, bcol, ecol - bcol + 1]]
@@ -254,8 +285,8 @@ def BufMatches(batches: list<dict<any>>): list<any>
     if p.context =~ '[^\\]\+\\n\|^\\n'  # Contains a newline char
         var save_cursor = getcurpos()
         if p.async
-            var startl = p.isfwd ? max([1, batches[0].startl - 5]) : min([line('$'), batches[0].endl + 5])
-            cursor(startl, p.isfwd ? 1 : 1000)
+            var startl = v:searchforward ? max([1, batches[0].startl - 5]) : min([line('$'), batches[0].endl + 5])
+            cursor(startl, v:searchforward ? 1 : 1000)
         endif
         var matches = BufMatchMultiLine(batches[0])
         setpos('.', save_cursor)
@@ -277,7 +308,7 @@ def BufMatchLine(batches: list<dict<any>>): list<any>
             if m->len() > 0 && m[0].submatches[1] =~ '^\s*$' # ignore searches for only space characters
                 break
             endif
-            if !p.isfwd
+            if !v:searchforward
                 m->reverse()
             endif
             matches->extend(m)
@@ -296,13 +327,13 @@ enddef
 def BufMatchMultiLine(batch: dict<any>): list<any>
     var p = props
     var timeout = max([10, options.timeout])
-    var flags = p.async ? (p.isfwd ? '' : 'b') : (p.isfwd ? 'w' : 'wb')
+    var flags = p.async ? (v:searchforward ? '' : 'b') : (v:searchforward ? 'w' : 'wb')
     var pattern = p.context =~ '\s' ? $'{p.context}\k*' : $'\k*{p.context}\k*'
     var [lnum, cnum] = [0, 0]
     var [startl, startc] = [0, 0]
     var stopl = 0
     if p.async
-        stopl = p.isfwd ? batch.endl : batch.startl
+        stopl = v:searchforward ? batch.endl : batch.startl
     endif
     try
         if p.async
@@ -437,7 +468,7 @@ enddef
 def SearchWorker(attr: dict<any>, timer: number = 0)
     var p = props
     var context = getcmdline()->strpart(0, getcmdpos() - 1)
-    var timeoutasync = max([10, options.timeoutasync])
+    var timeoutasync = max([10, options.asynctimeout])
     if context !=# attr.context ||
             (attr.starttime->reltime()->reltimefloat() * 1000) > timeoutasync ||
             attr.index >= attr.batches->len()
