@@ -5,12 +5,12 @@ import autoload '../cmd.vim'
 var buffers = []
 
 export def Setup()
-    cmd.RegisterSetupCallback('VSBuffer', () => {
+    cmd.RegisterSetupCallback('VimSuggestBuffer', () => {
         buffers = Buffers()
     })
 enddef
 
-command! -nargs=* -complete=customlist,Completor VSBuffer DoCommand(<f-args>)
+command! -nargs=* -complete=customlist,Completor VimSuggestBuffer DoCommand(<f-args>)
 
 def Buffers(list_all_buffers: bool = false): list<any>
     var blist = list_all_buffers ? getbufinfo({buloaded: 1}) : getbufinfo({buflisted: 1})

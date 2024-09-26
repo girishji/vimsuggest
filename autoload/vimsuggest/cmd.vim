@@ -4,8 +4,8 @@ vim9script
 
 import autoload './options.vim' as opt
 import autoload './popup.vim'
-import autoload './extras/vsbuffer.vim'
-import autoload './extras/vscmd.vim'
+import autoload './extras/fzbuffer.vim'
+import autoload './extras/docmd.vim'
 
 export var pmenu: popup.PopupMenu = null_object
 var options = opt.options.cmd
@@ -39,8 +39,8 @@ export def Setup()
             }
         augroup END
         if options.extras
-            vsbuffer.Setup()
-            vscmd.Setup()
+            fzbuffer.Setup()
+            docmd.Setup()
         endif
     endif
 enddef
@@ -104,8 +104,6 @@ def DoComplete(oldcontext: string, timer: number)
         if abbreviations->index(prompt) != -1 ||
                 (options.alwayson && options.onspace->index(prompt) == -1 &&
                 !setup_callback->has_key(prompt))
-            pmenu.Hide()
-            :redraw
             return
         endif
     endif
@@ -123,8 +121,6 @@ def DoComplete(oldcontext: string, timer: number)
         completions = context->getcompletion('cmdline')
     endif
     if completions->len() == 0
-        pmenu.Hide()
-        :redraw
         return
     endif
     if completions->len() == 1 && context->strridx(completions[0]) != -1
@@ -158,8 +154,8 @@ enddef
 def ShowPopupMenu(position: number)
     pmenu.SetText(items, position)
     pmenu.Show()
-    # Note: If command-line is not disabled here, it will intercept key inputs 
-    # before the popup does. This prevents the popup from handling certain keys, 
+    # Note: If command-line is not disabled here, it will intercept key inputs
+    # before the popup does. This prevents the popup from handling certain keys,
     # such as <Tab> properly.
     DisableCmdline()
 enddef
@@ -184,6 +180,7 @@ def FilterFn(winid: number, key: string): bool
         return false # Let Vim process these keys further
     else
         pmenu.Hide()
+        :redraw
         # Note: Enable command-line handling to process key inputs first.
         # This approach is safer as it avoids the need to manage various
         # control characters and the up/down arrow keys used for history recall.

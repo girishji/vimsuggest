@@ -231,6 +231,7 @@ export class PopupMenu
 
     def Hidden(): bool
         var opts = this._winid->popup_getpos()
+        echom opts
         return opts == null_dict || !opts.visible
     enddef
 endclass
