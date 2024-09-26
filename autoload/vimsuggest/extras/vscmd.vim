@@ -14,7 +14,7 @@ def DoCommand(action: string, cmd: string, arg1: string, arg2: string = null_str
         arg18: string = null_string, arg19: string = null_string, arg20: string = null_string)
     for arg in [arg20, arg19, arg18, arg17, arg16, arg15, arg14, arg13, arg12,
             arg11, arg10, arg9, arg8, arg7, arg6, arg5, arg4, arg3, arg2, arg1]
-        if items->index(arg) != -1
+        if arg != null_string && items->index(arg) != -1
             exe $'{action} {arg}'
             return
         endif
@@ -27,8 +27,8 @@ enddef
 def Completor(context: string, line: string, cursorpos: number): list<any>
     items = []
     # Note: 'line' arg above contains text up to cursorpos only. So use getcmdline().
-    #       Split across spaces except for escaped spaces ("\ ").
-    var space_escaped = getcmdline()->substitute('vim9\S*\s', '', '')->substitute('\\ ', 'ば', 'g')
+    #       Split across spaces except for escaped spaces ("\ "), after removing ':vim9[cmd]'.
+    var space_escaped = getcmdline()->substitute('\(^\|\s\)vim9\%[cmd]!\?\s\+', '', '')->substitute('\\ ', '', 'g')
     var parts = space_escaped->split()  # Split across spaces except for "\ "
     if parts->len() > 3
         items = systemlist(parts[2 : ]->join(' '))

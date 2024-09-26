@@ -36,6 +36,7 @@ class Properties
         if this.save_esc_keymap != null_dict
             mapset('c', 0, this.save_esc_keymap)
         endif
+        IncSearchHighlightClear()
     enddef
 endclass
 
@@ -185,6 +186,9 @@ def CallbackFn(winid: number, result: any)
     IncSearchHighlightClear()
     if result == -1 # Popup force closed due to <c-c> or cursor mvmt
         feedkeys("\<c-c>", 'n')
+        if props.save_searchreg != null_string
+            setreg('/', props.save_searchreg) # Restore previous hlsearch
+        endif
     endif
 enddef
 
