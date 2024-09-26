@@ -4,17 +4,17 @@ vim9script
 
 import autoload './options.vim' as opt
 import autoload './popup.vim'
-import autoload './extras/buffer.vim' as buf
-# import autoload './extras/find.vim'
+import autoload './extras/vsbuffer.vim'
+import autoload './extras/vscmd.vim'
 
+export var pmenu: popup.PopupMenu = null_object
 var options = opt.options.cmd
-var pmenu: popup.PopupMenu = null_object
 var abbreviations: list<any>
 var save_wildmenu: bool
 var autoexclude = ["'>", '^\a/', '^\A'] # Keywords excluded from completion
 var items: list<any>
-var setup_callbacks = {}
-var setup_callback_done = {}
+var setup_callback = {}  # 'cmd' -> Callback()
+var setup_callback_done = {}  # 'cmd' -> bool
 
 export def Setup()
     if options.enable
@@ -25,7 +25,7 @@ export def Setup()
                 abbreviations = GetAbbrevs()
                 save_wildmenu = &wildmenu
                 :set nowildmenu
-                foreach(setup_callbacks->keys(), 'setup_callback_done[v:val] = false')
+                foreach(setup_callback->keys(), 'setup_callback_done[v:val] = false')
             }
             autocmd CmdlineChanged  :  options.alwayson ? Complete() : TabComplete()
             autocmd CmdlineLeave    :  {
@@ -39,7 +39,8 @@ export def Setup()
             }
         augroup END
         if options.extras
-            buf.Setup()
+            vsbuffer.Setup()
+            vscmd.Setup()
         endif
     endif
 enddef
@@ -47,7 +48,7 @@ enddef
 export def Teardown()
     augroup VimSuggestCmdAutocmds | autocmd!
     augroup END
-    setup_callbacks = {}
+    setup_callback = {}
 enddef
 
 def EnableCmdline()
@@ -97,38 +98,43 @@ def DoComplete(oldcontext: string, timer: number)
             return
         endif
     endfor
-    if context[-1] =~ '\s'
-        var prompt = context->trim()
-        var Callback = setup_callbacks->get(prompt, null_function)
+    var cmdstr = context->substitute('vim9\S*\s', '', '')
+    if cmdstr[-1] =~ '\s'
+        var prompt = cmdstr->trim()
         if abbreviations->index(prompt) != -1 ||
                 (options.alwayson && options.onspace->index(prompt) == -1 &&
-                Callback == null_function)
+                !setup_callback->has_key(prompt))
             pmenu.Hide()
             :redraw
             return
         endif
-        if Callback != null_function && !setup_callback_done[prompt]
-            Callback()
-            setup_callback_done[prompt] = true
-        endif
+    endif
+    var cmdname = cmdstr->matchstr('^\S\+')
+    if setup_callback->has_key(cmdname) && !setup_callback_done[cmdname]  # call Callback() only once
+        setup_callback[cmdname]()
+        setup_callback_done[cmdname] = true
     endif
     var completions: list<any> = []
-    if options.wildignore && context =~# '^\(e\%[dit]!\?\|fin\%[d]!\?\)\s'
+    if options.wildignore && cmdstr =~# '^\(e\%[dit]!\?\|fin\%[d]!\?\)\s'
         # 'file_in_path' respects wildignore, 'cmdline' does not. However, it is
         # slower than wildmenu <tab> completion.
-        completions = context->matchstr('^\S\+\s\+\zs.*')->getcompletion('file_in_path')
+        completions = cmdstr->matchstr('^\S\+\s\+\zs.*')->getcompletion('file_in_path')
     else
         completions = context->getcompletion('cmdline')
     endif
-    if completions->len() == 0 ||
-            completions->len() == 1 && context->strridx(completions[0]) != -1
-            # This completion is already inserted
+    if completions->len() == 0
+        pmenu.Hide()
+        :redraw
+        return
+    endif
+    if completions->len() == 1 && context->strridx(completions[0]) != -1
+        # This completion is already inserted
         return
     endif
     if !options.highlight || context[-1] =~ '\s'
         items = [completions]
-    else
-        var mstr = context->matchstr('\S\+$')
+    else  # Add properties for syntax highlighting
+        var mstr = cmdstr->matchstr('\S\+$')
         var success = true
         var cols = []
         var mlens = []
@@ -194,7 +200,7 @@ def CallbackFn(winid: number, result: any)
 enddef
 
 export def RegisterSetupCallback(cmd: string, Callback: func())
-    setup_callbacks[cmd] = Callback
+    setup_callback[cmd] = Callback
 enddef
 
 # vim: tabstop=8 shiftwidth=4 softtabstop=4

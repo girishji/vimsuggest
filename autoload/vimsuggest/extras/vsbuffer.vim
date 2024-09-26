@@ -10,6 +10,8 @@ export def Setup()
     })
 enddef
 
+command! -nargs=* -complete=customlist,Completor VSBuffer DoCommand(<f-args>)
+
 def Buffers(list_all_buffers: bool = false): list<any>
     var blist = list_all_buffers ? getbufinfo({buloaded: 1}) : getbufinfo({buflisted: 1})
     var buffer_list = blist->mapnew((_, v) => {
@@ -24,12 +26,10 @@ def Buffers(list_all_buffers: bool = false): list<any>
     return buffer_list
 enddef
 
-command -nargs=* -complete=customlist,Completor VSBuffer DoCommand(<f-args>)
-
 def DoCommand(arg: string = null_string)
     if buffers->indexof($'v:val.text == "{arg}"') != -1
         exe $'b {arg}'
-    else
+    else  # Select the first item in the menu (no need to press <tab>)
         var items = (arg == null_string) ? buffers : buffers->matchfuzzy(arg, {matchseq: 1, key: 'text'})
         if !items->empty()
             exe $"b {items[0].bufnr}"
