@@ -230,7 +230,9 @@ export class PopupMenu
     enddef
 
     def Hide()
-        this._winid->popup_hide()
+        if !this.Hidden()
+            this._winid->popup_hide()
+        endif
     enddef
 
     def Hidden(): bool

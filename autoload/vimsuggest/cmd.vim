@@ -59,14 +59,6 @@ def DisableCmdline()
     autocmd! VimSuggestCmdAutocmds CmdlineChanged :
 enddef
 
-def TabComplete()
-    var lastcharpos = getcmdpos() - 2
-    if getcmdline()[lastcharpos] ==? "\<tab>"
-        setcmdline(getcmdline()->slice(0, lastcharpos))
-        Complete()
-    endif
-enddef
-
 def GetAbbrevs(): list<any>
     var lines = execute('ca', 'silent!')
     if lines =~? gettext('No abbreviation found')
@@ -79,16 +71,26 @@ def GetAbbrevs(): list<any>
     return abb
 enddef
 
+def TabComplete()
+    var lastcharpos = getcmdpos() - 2
+    if getcmdline()[lastcharpos] ==? "\<tab>"
+        setcmdline(getcmdline()->slice(0, lastcharpos))
+        Complete()
+    endif
+enddef
+
 def Complete()
-    var context = getcmdline()->strpart(0, getcmdpos() - 1)
+    var context = getcmdline()
     if context == '' || context =~ '^\s\+$'
+        pmenu.Hide()
+        :redraw
         return
     endif
     timer_start(1, function(DoComplete, [context]))
 enddef
 
 def DoComplete(oldcontext: string, timer: number)
-    var context = getcmdline()->strpart(0, getcmdpos() - 1)
+    var context = getcmdline()
     if context !=# oldcontext
         # Likely pasted text or coming from keymap.
         return
@@ -134,7 +136,7 @@ export def SetPopupMenu(completions: list<any>)
     if completions->empty()
         return
     endif
-    var context = getcmdline()->strpart(0, getcmdpos() - 1)
+    var context = getcmdline()
     var cmdstr = context->substitute('vim9\S*\s', '', '')
     if !options.highlight || context[-1] =~ '\s'
         items = [completions]
@@ -166,7 +168,7 @@ export def SetPopupMenu(completions: list<any>)
 enddef
 
 def PostSelectItem(index: number)
-    var context = getcmdline()->strpart(0, getcmdpos() - 1)
+    var context = getcmdline()
     setcmdline(context->matchstr('^.*\s\ze') .. items[0][index])
     :redraw  # Needed for <tab> selected menu item highlighting to work
 enddef
@@ -185,8 +187,11 @@ def FilterFn(winid: number, key: string): bool
         return false # Let Vim process these keys further
     else
         pmenu.Hide()
-        :redraw
-        # Note: Enable command-line handling to process key inputs first.
+        # Note: Redrawing after Hide() causes the popup to disappear after
+        # <left>/<right> arrow keys are pressed. Arrow key events are not
+        # captured by this function. Calling Hide() without triggering a redraw
+        # ensures that EnableCmdline works properly, allowing the command line
+        # to handle the keys first, and decide it popup needs to be updated.
         # This approach is safer as it avoids the need to manage various
         # control characters and the up/down arrow keys used for history recall.
         EnableCmdline()
