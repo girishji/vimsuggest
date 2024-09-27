@@ -104,7 +104,16 @@ def Complete()
     p.context = context
     p.candidates = []
     p.items = []
-    if p.async
+    const withspace = p.context =~ '[^\\]\+\\n\|^\\n' # Pattern contains spaces, resort to searchpos().
+    const MatchFn = withspace ? BufMatchMultiLine : BufMatchLine
+
+    if p.context =~# '^\\%' # \%V to search visual region only, etc.
+        p.items = BufMatchMultiLine()->MakeUnique()->Itemify()
+    elseif options.fuzzy
+        p.items = BufFuzzyMatches()
+    elseif !p.async
+        p.items = MatchFn()->MakeUnique()->Itemify()
+    else  # async
         var attr = {
             starttime: reltime(),
             context: context,
@@ -119,12 +128,11 @@ def Complete()
         if v:hlsearch
             setreg('/', '')
         endif
-        SearchWorker(attr)
-    else
-        p.items = options.fuzzy ? BufFuzzyMatches() : Batches()->BufMatches()->MakeUnique()->Itemify()
-        if len(p.items[0]) > 0
-            ShowPopupMenu()
-        endif
+        SearchWorker(attr, MatchFn)
+        return
+    endif
+    if p.items[0]->len() > 0
+        ShowPopupMenu()
     endif
 enddef
 
@@ -192,33 +200,6 @@ def CallbackFn(winid: number, result: any)
     endif
 enddef
 
-# Return a list containing range of lines to search.
-def Batches(): list<any>
-    var p = props
-    var range = max([10, options.range])
-    var ibelow = []
-    var iabove = []
-    var startl = line('.')
-    while startl <= line('$')
-        if v:searchforward
-            ibelow->add({startl: startl, endl: min([startl + range, line('$')])})
-        else
-            ibelow->insert({startl: startl, endl: min([startl + range, line('$')])})
-        endif
-        startl += range
-    endwhile
-    startl = 1
-    while startl <= line('.')
-        if v:searchforward
-            iabove->add({startl: startl, endl: min([startl + range, line('.')])})
-        else
-            iabove->insert({startl: startl, endl: min([startl + range, line('.')])})
-        endif
-        startl += range
-    endwhile
-    return v:searchforward ? ibelow + iabove : iabove + ibelow
-enddef
-
 def MakeUnique(lst: list<any>): list<any>
     var unq = []
     var found = {} # uniq() does not work when list is not sorted, so remove duplicates using a set
@@ -280,32 +261,45 @@ def GetFirstMatch(): list<any>
     return pos
 enddef
 
-# Return a list of strings (can have spaces) that match the pattern.
-def BufMatches(batches: list<dict<any>>): list<any>
+# Return a list containing range of lines to search.
+def Batches(): list<any>
     var p = props
-    if p.context =~ '[^\\]\+\\n\|^\\n'  # Contains a newline char
-        var save_cursor = getcurpos()
-        if p.async
-            var startl = v:searchforward ? max([1, batches[0].startl - 5]) : min([line('$'), batches[0].endl + 5])
-            cursor(startl, v:searchforward ? 1 : 1000)
+    var range = max([10, options.range])
+    var ibelow = []
+    var iabove = []
+    var startl = line('.')
+    while startl <= line('$')
+        if v:searchforward
+            ibelow->add({startl: startl, endl: min([startl + range, line('$')])})
+        else
+            ibelow->insert({startl: startl, endl: min([startl + range, line('$')])})
         endif
-        var matches = BufMatchMultiLine(batches[0])
-        setpos('.', save_cursor)
-        return matches
-    else
-        return BufMatchLine(batches)
-    endif
+        startl += range
+    endwhile
+    startl = 1
+    while startl <= line('.')
+        if v:searchforward
+            iabove->add({startl: startl, endl: min([startl + range, line('.')])})
+        else
+            iabove->insert({startl: startl, endl: min([startl + range, line('.')])})
+        endif
+        startl += range
+    endwhile
+    return v:searchforward ? ibelow + iabove : iabove + ibelow
 enddef
 
-def BufMatchLine(batches: list<dict<any>>): list<any>
+def BufMatchLine(batch: dict<any> = null_dict): list<any>
     var p = props
     var pat = (p.context =~ '\(\\s\| \)' ? '\(\)' : '\(\k*\)') .. $'\({p.context}\)\(\k*\)'
     var matches = []
     var timeout = max([10, options.timeout])
     var starttime = reltime()
+    var notasync_batches = v:searchforward ? [{startl: line('.'), endl: line('$')}, {startl: 1, endl: line('.')}] :
+        [{startl: line('.'), endl: 1}, {startl: line('$'), endl: line('.')}]
+    var batches = batch == null_dict ? notasync_batches : [batch]
     try
-        for batch in batches
-            var m = bufnr()->matchbufline(pat, batch.startl, batch.endl, {submatches: true})
+        for b in batches
+            var m = bufnr()->matchbufline(pat, b.startl, b.endl, {submatches: true})
             if m->len() > 0 && m[0].submatches[1] =~ '^\s*$' # ignore searches for only space characters
                 break
             endif
@@ -324,20 +318,24 @@ def BufMatchLine(batches: list<dict<any>>): list<any>
 enddef
 
 # Search across line breaks. This is less efficient and likely not very useful.
-# Note: Syntax highlighting is not supported at the moment.
-def BufMatchMultiLine(batch: dict<any>): list<any>
+# Warning: Syntax highlighting inside popup is not supported by this function.
+def BufMatchMultiLine(batch: dict<any> = null_dict): list<any>
+    var save_cursor = getcurpos()
     var p = props
     var timeout = max([10, options.timeout])
     var flags = p.async ? (v:searchforward ? '' : 'b') : (v:searchforward ? 'w' : 'wb')
     var pattern = p.context =~ '\s' ? $'{p.context}\k*' : $'\k*{p.context}\k*'
     var [lnum, cnum] = [0, 0]
     var [startl, startc] = [0, 0]
+    var dobatch = batch != null_dict
     var stopl = 0
-    if p.async
+    if dobatch
+        var startline = v:searchforward ? max([1, batch.startl - 5]) : min([line('$'), batch.endl + 5])
+        cursor(startline, v:searchforward ? 1 : 1000)
         stopl = v:searchforward ? batch.endl : batch.startl
     endif
     try
-        if p.async
+        if dobatch
             [lnum, cnum] = pattern->searchpos(flags, stopl)
         else
             [lnum, cnum] = pattern->searchpos(flags, 0, timeout)
@@ -345,6 +343,7 @@ def BufMatchMultiLine(batch: dict<any>): list<any>
         endif
     catch # '*' with magic can throw E871
         # echom v:exception
+        setpos('.', save_cursor)
         return []
     endtry
     var matches = []
@@ -353,26 +352,29 @@ def BufMatchMultiLine(batch: dict<any>): list<any>
     while [lnum, cnum] != [0, 0]
         var [endl, endc] = pattern->searchpos('ceW') # End of matching string
         var lines = getline(lnum, endl)
-        var mstr = '' # Fragment that matches pattern (can be multiline)
-        if lines->len() == 1
-            mstr = lines[0]->strpart(cnum - 1, endc - cnum + 1)
-        else
-            var mlist = [lines[0]->strpart(cnum - 1)] + lines[1 : -2] + [lines[-1]->strpart(0, endc)]
-            mstr = mlist->join('\n')
-        endif
-        if !found->has_key(mstr)
-            found[mstr] = 1
-            matches->add(mstr)
+        if !lines->empty()
+            var mstr = '' # Fragment that matches pattern (can be multiline)
+            if lines->len() == 1
+                mstr = lines[0]->strpart(cnum - 1, endc - cnum + 1)
+            else
+                var mlist = [lines[0]->strpart(cnum - 1)] + lines[1 : -2] + [lines[-1]->strpart(0, endc)]
+                mstr = mlist->join('\n')
+            endif
+            if !found->has_key(mstr)
+                found[mstr] = 1
+                matches->add(mstr)
+            endif
         endif
         cursor(lnum, cnum) # Restore cursor to beginning of pattern, otherwise '?' does not work
-        [lnum, cnum] = p.async ? pattern->searchpos(flags, stopl) :
+        [lnum, cnum] = dobatch ? pattern->searchpos(flags, stopl) :
             pattern->searchpos(flags, 0, timeout)
 
-        if !p.async && ([startl, startc] == [lnum, cnum] ||
-                (starttime->reltime()->reltimefloat() * 1000) > timeout)
+        if !dobatch &&
+                ([startl, startc] == [lnum, cnum] || (starttime->reltime()->reltimefloat() * 1000) > timeout)
             break
         endif
     endwhile
+    setpos('.', save_cursor)
     return matches->mapnew((_, v) => {
         return {text: v}
     })
@@ -437,15 +439,21 @@ enddef
 #   which is non-trivial.
 var matchids = {sid: 0, iid: 0}
 def IncSearchHighlight(firstmatch: list<any>, context: string)
+    IncSearchHighlightClear()
     var show = false
-    if &hlsearch
-        matchids.sid = matchadd('Search', &ignorecase ? $'\c{context}' : context, 101)
-        show = true
-    endif
-    if &incsearch && firstmatch != null_list
-        matchids.iid = matchaddpos('IncSearch', firstmatch, 102)
-        show = true
-    endif
+    try
+        matchids.winid = win_getid()
+        if &hlsearch
+            matchids.sid = matchadd('Search', &ignorecase ? $'\c{context}' : context, 101)
+            show = true
+        endif
+        if &incsearch && firstmatch != null_list
+            matchids.iid = matchaddpos('IncSearch', firstmatch, 102)
+            show = true
+        endif
+    catch # /\%V throws error
+        IncSearchHighlightClear()
+    endtry
     if show
         :redraw
     endif
@@ -455,18 +463,18 @@ def IncSearchHighlightClear()
     var p = props
     if p.async
         if matchids.sid > 0
-            matchids.sid->matchdelete()
+            matchids.sid->matchdelete(matchids.winid)
             matchids.sid = 0
         endif
         if matchids.iid > 0
-            matchids.iid->matchdelete()
+            matchids.iid->matchdelete(matchids.winid)
             matchids.iid = 0
         endif
     endif
 enddef
 
 # A worker task for async search.
-def SearchWorker(attr: dict<any>, timer: number = 0)
+def SearchWorker(attr: dict<any>, MatchFn: func(dict<any>): list<any>, timer: number = 0)
     var p = props
     var context = getcmdline()->strpart(0, getcmdpos() - 1)
     var timeoutasync = max([10, options.asynctimeout])
@@ -479,14 +487,14 @@ def SearchWorker(attr: dict<any>, timer: number = 0)
         IncSearchHighlight(attr.firstmatch, context)
     endif
     var batch = attr.batches[attr.index]
-    var matches = BufMatches([batch])
-    p.candidates = MakeUnique(p.candidates + matches)
-    p.items = Itemify(p.candidates)
-    if len(p.items[0]) > 0
+    var matches = MatchFn(batch)
+    if matches->len() > 0
+        p.candidates = MakeUnique(p.candidates + matches)
+        p.items = Itemify(p.candidates)
         ShowPopupMenu()
     endif
     attr.index += 1
-    timer_start(0, function(SearchWorker, [attr]))
+    timer_start(0, function(SearchWorker, [attr, MatchFn]))
 enddef
 
 # vim: tabstop=8 shiftwidth=4 softtabstop=4

@@ -212,6 +212,10 @@ export class PopupMenu
         endif
     enddef
 
+    def Closed(): bool
+        return this._winid->popup_getoptions() == {}
+    enddef
+
     def Close()
         if this._winid->popup_getoptions() != {} # popup exists
             this._winid->popup_close()
@@ -231,7 +235,6 @@ export class PopupMenu
 
     def Hidden(): bool
         var opts = this._winid->popup_getpos()
-        echom opts
         return opts == null_dict || !opts.visible
     enddef
 endclass

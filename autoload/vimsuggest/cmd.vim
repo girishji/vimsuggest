@@ -4,8 +4,8 @@ vim9script
 
 import autoload './options.vim' as opt
 import autoload './popup.vim'
-import autoload './extras/fzbuffer.vim'
-import autoload './extras/docmd.vim'
+import autoload './extras/vsbuffer.vim'
+import autoload './extras/vscmd.vim'
 
 export var pmenu: popup.PopupMenu = null_object
 var options = opt.options.cmd
@@ -39,8 +39,8 @@ export def Setup()
             }
         augroup END
         if options.extras
-            fzbuffer.Setup()
-            docmd.Setup()
+            vsbuffer.Setup()
+            vscmd.Setup()
         endif
     endif
 enddef
@@ -127,6 +127,15 @@ def DoComplete(oldcontext: string, timer: number)
         # This completion is already inserted
         return
     endif
+    SetPopupMenu(completions)
+enddef
+
+export def SetPopupMenu(completions: list<any>)
+    if completions->empty()
+        return
+    endif
+    var context = getcmdline()->strpart(0, getcmdpos() - 1)
+    var cmdstr = context->substitute('vim9\S*\s', '', '')
     if !options.highlight || context[-1] =~ '\s'
         items = [completions]
     else  # Add properties for syntax highlighting
@@ -148,11 +157,7 @@ def DoComplete(oldcontext: string, timer: number)
     endif
     # '&' and '$' completes Vim options and env variables respectively.
     var pos = max([' ', '&', '$']->mapnew((_, v) => context->strridx(v)))
-    ShowPopupMenu(options.pum ? pos + 2 : 1)
-enddef
-
-def ShowPopupMenu(position: number)
-    pmenu.SetText(items, position)
+    pmenu.SetText(items, options.pum ? pos + 2 : 1)
     pmenu.Show()
     # Note: If command-line is not disabled here, it will intercept key inputs
     # before the popup does. This prevents the popup from handling certain keys,
