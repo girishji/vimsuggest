@@ -13,8 +13,10 @@ var abbreviations: list<any>
 var save_wildmenu: bool
 var autoexclude = ["'>", '^\a/', '^\A'] # Keywords excluded from completion
 var items: list<any>
-var setup_callback = {}  # 'cmd' -> Callback()
-var setup_callback_done = {}  # 'cmd' -> bool
+var setup_hook = {}  # 'cmd' -> Callback()
+var setup_hook_done = {}  # 'cmd' -> bool
+var highlight_hook = {}
+var onspace_hook = {}
 
 export def Setup()
     if options.enable
@@ -25,7 +27,7 @@ export def Setup()
                 abbreviations = GetAbbrevs()
                 save_wildmenu = &wildmenu
                 :set nowildmenu
-                foreach(setup_callback->keys(), 'setup_callback_done[v:val] = false')
+                foreach(setup_hook->keys(), 'setup_hook_done[v:val] = false')
             }
             autocmd CmdlineChanged  :  options.alwayson ? Complete() : TabComplete()
             autocmd CmdlineLeave    :  {
@@ -48,7 +50,9 @@ enddef
 export def Teardown()
     augroup VimSuggestCmdAutocmds | autocmd!
     augroup END
-    setup_callback = {}
+    setup_hook = {}
+    highlight_hook = {}
+    onspace_hook = {}
 enddef
 
 def EnableCmdline()
@@ -100,19 +104,19 @@ def DoComplete(oldcontext: string, timer: number)
             return
         endif
     endfor
-    var cmdstr = context->substitute('vim9\S*\s', '', '')
+    var cmdstr = CmdStr()
     if cmdstr[-1] =~ '\s'
         var prompt = cmdstr->trim()
         if abbreviations->index(prompt) != -1 ||
                 (options.alwayson && options.onspace->index(prompt) == -1 &&
-                !setup_callback->has_key(prompt))
+                !onspace_hook->has_key(prompt))
             return
         endif
     endif
     var cmdname = cmdstr->matchstr('^\S\+')
-    if setup_callback->has_key(cmdname) && !setup_callback_done[cmdname]  # call Callback() only once
-        setup_callback[cmdname]()
-        setup_callback_done[cmdname] = true
+    if setup_hook->has_key(cmdname) && !setup_hook_done[cmdname]  # call Callback() only once
+        setup_hook[cmdname]()
+        setup_hook_done[cmdname] = true
     endif
     var completions: list<any> = []
     if options.wildignore && cmdstr =~# '^\(e\%[dit]!\?\|fin\%[d]!\?\)\s'
@@ -132,22 +136,28 @@ def DoComplete(oldcontext: string, timer: number)
     SetPopupMenu(completions)
 enddef
 
+def CmdStr(): string
+    return getcmdline()->substitute('\(^\|\s\)vim9\%[cmd]!\?\s*', '', '')
+enddef
+
 export def SetPopupMenu(completions: list<any>)
     if completions->empty()
         return
     endif
     var context = getcmdline()
-    var cmdstr = context->substitute('vim9\S*\s', '', '')
+    var cmdname = CmdStr()->matchstr('^\S\+')
+    var cmdsuffix = context->matchstr('\S\+$')
     if !options.highlight || context[-1] =~ '\s'
         items = [completions]
+    elseif highlight_hook->has_key(cmdname)
+        items = highlight_hook[cmdname](cmdsuffix, completions)
     else  # Add properties for syntax highlighting
-        var mstr = cmdstr->matchstr('\S\+$')
         var success = true
         var cols = []
         var mlens = []
-        var mlen = mstr->len()
+        var mlen = cmdsuffix->len()
         for text in completions
-            var cnum = text->stridx(mstr)
+            var cnum = text->stridx(cmdsuffix)
             if cnum == -1
                 success = false
                 break
@@ -206,8 +216,16 @@ def CallbackFn(winid: number, result: any)
     endif
 enddef
 
-export def RegisterSetupCallback(cmd: string, Callback: func())
-    setup_callback[cmd] = Callback
+export def AddSetupHook(cmd: string, Callback: func())
+    setup_hook[cmd] = Callback
+enddef
+
+export def AddHighlightHook(cmd: string, Callback: func(string, list<any>): list<any>)
+    highlight_hook[cmd] = Callback
+enddef
+
+export def AddOnspaceHook(cmd: string)
+    onspace_hook[cmd] = 1
 enddef
 
 # vim: tabstop=8 shiftwidth=4 softtabstop=4
