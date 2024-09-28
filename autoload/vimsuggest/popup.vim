@@ -8,7 +8,7 @@ export class PopupMenu
     var _pum: bool
     var _selMatchId: number = 0
     var _items: list<any>
-    var _index: number # index to items array
+    var _index: number = -1 # index to items array
     var _hmenu = {text: '', ibegin: 0, iend: 0, selHiId: 0}
 
     def new(FilterFn: func(number, string): bool, CallbackFn: func(number, any), attributes: dict<any>, pum: bool)
@@ -238,5 +238,9 @@ export class PopupMenu
     def Hidden(): bool
         var opts = this._winid->popup_getpos()
         return opts == null_dict || !opts.visible
+    enddef
+
+    def SelectedItem(): string
+        return this._index < 0 ? null_string : this._items[0][this._index]
     enddef
 endclass

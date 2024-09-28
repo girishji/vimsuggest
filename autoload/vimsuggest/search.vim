@@ -421,7 +421,7 @@ def BufFuzzyMatches(): list<any>
     var matches = words->matchfuzzypos(p.context, { matchseq: 1, limit: 100 }) # Max 100 matches
     matches[2]->map((_, _) => 1)
     matches[1]->map((idx, v) => {
-	# Char to byte index (needed by matchaddpos)
+        # Char to byte index (needed by matchaddpos)
         return v->mapnew((_, c) => matches[0][idx]->byteidx(c))
     })
     return matches

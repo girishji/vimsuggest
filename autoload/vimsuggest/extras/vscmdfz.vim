@@ -14,14 +14,9 @@ var job: job
 command! -nargs=+ -complete=customlist,Completor VSCmdFz DoCommand(<f-args>)
 
 def DoCommand(action: string, cmdstr: string, pat: string)
-    for arg in [arg20, arg19, arg18, arg17, arg16, arg15, arg14, arg13, arg12,
-            arg11, arg10, arg9, arg8, arg7, arg6, arg5, arg4, arg3, arg2, arg1]
-        if arg != null_string && items->index(arg) != -1
-            exe $'{action} {arg}'
-            return
-        endif
-    endfor
-    if !items->empty()
+    if pat != null_string && items->index(pat) != -1
+        exe $'{action} {pat}'
+    elseif !items->empty()
         exe $'{action} {items[0]}'
     endif
 enddef

@@ -17,6 +17,8 @@ var setup_hook = {}  # 'cmd' -> Callback()
 var setup_hook_done = {}  # 'cmd' -> bool
 var highlight_hook = {}
 var onspace_hook = {}
+var teardown_hook = {}
+var post_select_hook = {}
 
 export def Setup()
     if options.enable
@@ -32,6 +34,10 @@ export def Setup()
             autocmd CmdlineChanged  :  options.alwayson ? Complete() : TabComplete()
             autocmd CmdlineLeave    :  {
                 if pmenu != null_object
+                    var cmdname = CmdStr()->matchstr('^\S\+')
+                    if teardown_hook->has_key(cmdname)
+                        teardown_hook[cmdname](pmenu.SelectedItem())
+                    endif
                     pmenu.Close()
                     pmenu = null_object
                 endif
@@ -51,6 +57,7 @@ export def Teardown()
     augroup VimSuggestCmdAutocmds | autocmd!
     augroup END
     setup_hook = {}
+    teardown_hook = {}
     highlight_hook = {}
     onspace_hook = {}
 enddef
@@ -86,8 +93,10 @@ enddef
 def Complete()
     var context = getcmdline()
     if context == '' || context =~ '^\s\+$'
-        pmenu.Hide()
-        :redraw
+        if !pmenu.Hidden()
+            pmenu.Hide()
+            :redraw
+        endif
         return
     endif
     timer_start(1, function(DoComplete, [context]))
@@ -178,8 +187,11 @@ export def SetPopupMenu(completions: list<any>)
 enddef
 
 def PostSelectItem(index: number)
-    var context = getcmdline()
-    setcmdline(context->matchstr('^.*\s\ze') .. items[0][index])
+    var cmdname = CmdStr()->matchstr('^\S\+')
+    if !post_select_hook->has_key(cmdname) || !post_select_hook[cmdname](items[0][index])
+        var context = getcmdline()
+        setcmdline(context->matchstr('^.*\s\ze') .. items[0][index])
+    endif
     :redraw  # Needed for <tab> selected menu item highlighting to work
 enddef
 
@@ -218,6 +230,14 @@ enddef
 
 export def AddSetupHook(cmd: string, Callback: func())
     setup_hook[cmd] = Callback
+enddef
+
+export def AddTeardownHook(cmd: string, Callback: func(string))
+    teardown_hook[cmd] = Callback
+enddef
+
+export def AddPostSelectHook(cmd: string, Callback: func(string): bool)
+    post_select_hook[cmd] = Callback
 enddef
 
 export def AddHighlightHook(cmd: string, Callback: func(string, list<any>): list<any>)
