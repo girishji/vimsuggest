@@ -66,4 +66,4 @@ export def Stop(how: string = '')
     endif
 enddef
 
-# vim: tabstop=8 shiftwidth=4 softtabstop=4
+# vim: tabstop=8 shiftwidth=4 softtabstop=4 expandtab

@@ -54,4 +54,4 @@ if empty(prop_type_get('VimSuggestMatch'))
 endif
 :highlight default link VimSuggestMatchSel PmenuMatchSel
 
-# vim: tabstop=8 shiftwidth=4 softtabstop=4
+# vim: tabstop=8 shiftwidth=4 softtabstop=4 expandtab

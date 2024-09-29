@@ -53,4 +53,4 @@ def DoCommand(arg: string = null_string)
     endif
 enddef
 
-# vim: tabstop=8 shiftwidth=4 softtabstop=4
+# vim: tabstop=8 shiftwidth=4 softtabstop=4 expandtab

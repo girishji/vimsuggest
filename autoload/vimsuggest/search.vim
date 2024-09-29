@@ -27,6 +27,12 @@ class Properties
         if this.async && v:hlsearch
             this.save_searchreg = getreg('/')
             this.save_esc_keymap = maparg('<esc>', 'c', 0, 1)
+        endif
+    enddef
+
+    def Setup()
+        if this.async && v:hlsearch
+            # RestoreHLSearch requires that this object is already created by new()
             cnoremap <esc> <c-r>=<SID>RestoreHLSearch()<cr><c-c>
         endif
     enddef
@@ -57,13 +63,14 @@ export def Setup()
         augroup VimSuggestSearchAutocmds | autocmd!
             autocmd CmdlineEnter    /,\?  {
                 allprops[win_getid()] = Properties.new()
+                allprops[win_getid()].Setup()
                 EnableCmdline()
             }
             autocmd CmdlineChanged  /,\?  options.alwayson ? Complete() : TabComplete()
             autocmd CmdlineLeave    /,\?  {
                 if allprops->has_key(win_getid())
-                    allprops[win_getid()]->Clear()
-                    allprops->remove(win_getid()]
+                    allprops[win_getid()].Clear()
+                    remove(allprops, win_getid())
                 endif
             }
         augroup END
@@ -292,7 +299,7 @@ enddef
 
 def BufMatchLine(batch: dict<any> = null_dict): list<any>
     var p = allprops[win_getid()]
-    var pat = (p.context =~ '\(\\s\| \)' ? '\(\)' : '\(\k*\)') .. $'\({p.context}\)\(\k*\)'
+    var pat = (p.context =~ '\(\\s\| \)' ? '\(\)' : '\(\w*\)') .. $'\({p.context}\)\(\w*\)' # \k includes 'foo.' and 'foo,'
     var matches = []
     var timeout = max([10, options.timeout])
     var starttime = reltime()
@@ -326,7 +333,7 @@ def BufMatchMultiLine(batch: dict<any> = null_dict): list<any>
     var p = allprops[win_getid()]
     var timeout = max([10, options.timeout])
     var flags = p.async ? (v:searchforward ? '' : 'b') : (v:searchforward ? 'w' : 'wb')
-    var pattern = p.context =~ '\s' ? $'{p.context}\k*' : $'\k*{p.context}\k*'
+    var pattern = p.context =~ '\s' ? $'{p.context}\w*' : $'\w*{p.context}\w*'
     var [lnum, cnum] = [0, 0]
     var [startl, startc] = [0, 0]
     var dobatch = batch != null_dict
@@ -499,4 +506,4 @@ def SearchWorker(attr: dict<any>, MatchFn: func(dict<any>): list<any>, timer: nu
     timer_start(0, function(SearchWorker, [attr, MatchFn]))
 enddef
 
-# vim: tabstop=8 shiftwidth=4 softtabstop=4
+# vim: tabstop=8 shiftwidth=4 softtabstop=4 expandtab

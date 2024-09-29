@@ -244,3 +244,5 @@ export class PopupMenu
         return this._index < 0 ? null_string : this._items[0][this._index]
     enddef
 endclass
+
+# vim: tabstop=8 shiftwidth=4 softtabstop=4 expandtab

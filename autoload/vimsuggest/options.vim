@@ -33,4 +33,4 @@ export var options: dict<any> = {
     }
 }
 
-# vim: tabstop=8 shiftwidth=4 softtabstop=4
+# vim: tabstop=8 shiftwidth=4 softtabstop=4 expandtab

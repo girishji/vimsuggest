@@ -62,16 +62,16 @@ export def Setup()
             autocmd CmdlineEnter    :  {
                 allprops[win_getid()] = Properties.new()
                 EnableCmdline()
-		if options.extras
-		    vsbuffer.Setup()
-		    vsfind.Setup()
-		endif
+                if options.extras
+                    vsbuffer.Setup()
+                    vsfind.Setup()
+                endif
             }
             autocmd CmdlineChanged  :  options.alwayson ? Complete() : TabComplete()
             autocmd CmdlineLeave    :  {
                 if allprops->has_key(win_getid())
                     allprops[win_getid()].Clear()
-                    allprops->remove(win_getid())
+                    remove(allprops, win_getid())
                 endif
             }
         augroup END
@@ -113,12 +113,19 @@ def Complete()
 enddef
 
 def DoComplete(oldcontext: string, timer: number)
-    var p = allprops[win_getid()]
     var context = getcmdline()
     if context !=# oldcontext
-        # Likely pasted text or coming from keymap.
+        # Likely pasted text or coming from a keymap (if {rhs} is, say, 'nohls',
+        # then this function gets called for every letter).
         return
     endif
+    # Note: If <esc> is mapped to Ex cmd (say 'nohls') in normal mode, then Vim
+    # calls DoComplete after CmdlineLeave (because of timer), and props will not
+    # be available. Use allprops[win_getid()] only after 'oldcontext' above.
+    if !allprops->has_key(win_getid())  # Additional check
+        return
+    endif
+    var p = allprops[win_getid()]
     for pat in (options.exclude + p.autoexclude)
         if context =~ pat
             return
@@ -262,4 +269,4 @@ export def AddOnspaceHook(cmd: string)
     allprops[win_getid()].onspace_hook[cmd] = 1
 enddef
 
-# vim: tabstop=8 shiftwidth=4 softtabstop=4
+# vim: tabstop=8 shiftwidth=4 softtabstop=4 expandtab
