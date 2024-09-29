@@ -9,7 +9,7 @@ export def Setup()
             matches[0]->map((_, v) => v.text)
             matches[2]->map((_, _) => 1)
             matches[1]->map((idx, v) => {
-		# Char to byte index (needed by matchaddpos)
+                # Char to byte index (needed by matchaddpos)
                 return v->mapnew((_, c) => matches[0][idx]->byteidx(c))
             })
             return matches

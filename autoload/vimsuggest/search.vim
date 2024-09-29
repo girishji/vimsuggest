@@ -40,11 +40,12 @@ class Properties
     enddef
 endclass
 
-var props: Properties
+var allprops: dict<Properties> = {}  # one per windid
 
 # During async search <esc> after a failed search (where pattern does not exist
 # in buffer) should restore previous hlsearch if any.
 def RestoreHLSearch(): string
+    props = allprops[win_getid()]
     if props.pmenu.Hidden() && props.save_searchreg != null_string
         setreg('/', props.save_searchreg)
     endif
@@ -55,14 +56,14 @@ export def Setup()
     if options.enable
         augroup VimSuggestSearchAutocmds | autocmd!
             autocmd CmdlineEnter    /,\?  {
-                props = Properties.new()
+                allprops[win_getid()] = Properties.new()
                 EnableCmdline()
             }
             autocmd CmdlineChanged  /,\?  options.alwayson ? Complete() : TabComplete()
             autocmd CmdlineLeave    /,\?  {
-                if props != null_object
-                    props.Clear()
-                    props = null_object
+                if allprops->has_key(win_getid())
+                    allprops[win_getid()]->Clear()
+                    allprops->remove(win_getid()]
                 endif
             }
         augroup END
@@ -91,7 +92,7 @@ def TabComplete()
 enddef
 
 def Complete()
-    var p = props
+    var p = allprops[win_getid()]
     var context = getcmdline()->strpart(0, getcmdpos() - 1)
     if context == '' || context =~ '^\s\+$'
         return
@@ -137,7 +138,7 @@ def Complete()
 enddef
 
 def ShowPopupMenu()
-    var p = props
+    var p = allprops[win_getid()]
     p.pmenu.SetText(p.items)
     p.pmenu.Show()
     # Note: If command-line is not disabled here, it will intercept key inputs
@@ -147,13 +148,13 @@ def ShowPopupMenu()
 enddef
 
 def PostSelectItem(index: number)
-    var p = props
+    var p = allprops[win_getid()]
     setcmdline(p.items[0][index]->escape('~/'))
     :redraw  # Needed for <tab> selected menu item highlighting to work
 enddef
 
 def FilterFn(winid: number, key: string): bool
-    var p = props
+    var p = allprops[win_getid()]
     # Note: Do not include arrow keys since they are used for history lookup.
     if key == "\<Tab>" || key == "\<C-n>"
         p.pmenu.SelectItem('j', PostSelectItem) # Next item
@@ -193,9 +194,10 @@ enddef
 def CallbackFn(winid: number, result: any)
     IncSearchHighlightClear()
     if result == -1 # Popup force closed due to <c-c> or cursor mvmt
+        var p = allprops[win_getid()]
         feedkeys("\<c-c>", 'n')
-        if props.save_searchreg != null_string
-            setreg('/', props.save_searchreg) # Restore previous hlsearch
+        if p.save_searchreg != null_string
+            setreg('/', p.save_searchreg) # Restore previous hlsearch
         endif
     endif
 enddef
@@ -233,7 +235,7 @@ def Itemify(matches: list<any>): list<any>
 enddef
 
 def GetFirstMatch(): list<any>
-    var p = props
+    var p = allprops[win_getid()]
     var pos = []
     var save_cursor = getcurpos()
     setpos('.', p.curpos)
@@ -263,7 +265,7 @@ enddef
 
 # Return a list containing range of lines to search.
 def Batches(): list<any>
-    var p = props
+    var p = allprops[win_getid()]
     var range = max([10, options.range])
     var ibelow = []
     var iabove = []
@@ -289,7 +291,7 @@ def Batches(): list<any>
 enddef
 
 def BufMatchLine(batch: dict<any> = null_dict): list<any>
-    var p = props
+    var p = allprops[win_getid()]
     var pat = (p.context =~ '\(\\s\| \)' ? '\(\)' : '\(\k*\)') .. $'\({p.context}\)\(\k*\)'
     var matches = []
     var timeout = max([10, options.timeout])
@@ -321,7 +323,7 @@ enddef
 # Warning: Syntax highlighting inside popup is not supported by this function.
 def BufMatchMultiLine(batch: dict<any> = null_dict): list<any>
     var save_cursor = getcurpos()
-    var p = props
+    var p = allprops[win_getid()]
     var timeout = max([10, options.timeout])
     var flags = p.async ? (v:searchforward ? '' : 'b') : (v:searchforward ? 'w' : 'wb')
     var pattern = p.context =~ '\s' ? $'{p.context}\k*' : $'\k*{p.context}\k*'
@@ -382,7 +384,7 @@ enddef
 
 # Return a list of strings that fuzzy match the pattern.
 def BufFuzzyMatches(): list<any>
-    var p = props
+    var p = allprops[win_getid()]
     var found = {}
     var words = []
     var starttime = reltime()
@@ -460,7 +462,7 @@ def IncSearchHighlight(firstmatch: list<any>, context: string)
 enddef
 
 def IncSearchHighlightClear()
-    var p = props
+    var p = allprops[win_getid()]
     if p.async
         if matchids.sid > 0
             matchids.sid->matchdelete(matchids.winid)
@@ -475,7 +477,7 @@ enddef
 
 # A worker task for async search.
 def SearchWorker(attr: dict<any>, MatchFn: func(dict<any>): list<any>, timer: number = 0)
-    var p = props
+    var p = allprops[win_getid()]
     var context = getcmdline()->strpart(0, getcmdpos() - 1)
     var timeoutasync = max([10, options.asynctimeout])
     if context !=# attr.context ||

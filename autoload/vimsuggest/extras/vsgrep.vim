@@ -1,7 +1,8 @@
 vim9script
 
 var selected_item = null_string
-command! -nargs=+ -complete=customlist,Completor VSCmdI DoActionI(<f-args>)
+
+command! -nargs=+ -complete=customlist,Completor VSGrep DoAction(<f-args>)
 
 export def DoActionI(action: string, cmdstr: string, arg1: string, arg2: string = null_string,
         arg3: string = null_string, arg4: string = null_string, arg5: string = null_string,
@@ -10,18 +11,24 @@ export def DoActionI(action: string, cmdstr: string, arg1: string, arg2: string 
         arg12: string = null_string, arg13: string = null_string, arg14: string = null_string,
         arg15: string = null_string, arg16: string = null_string, arg17: string = null_string,
         arg18: string = null_string, arg19: string = null_string, arg20: string = null_string)
-    if selected_item != null_string
-
-    endif
-        
-    var args = [arg20, arg19, arg18, arg17, arg16, arg15, arg14, arg13, arg12,
-            arg11, arg10, arg9, arg8, arg7, arg6, arg5, arg4, arg3, arg2, arg1]
-    var idx = args->indexof("v:val != null_string")
-    if idx != -1 && items->index(args[idx]) != -1
-        exe $'{action} {args[idx]}'
+    var text = selected
+    if text == null_string
     elseif !items->empty()
         exe $'{action} {items[0]}'
     endif
+    endif
+    if selected != null_string
+        var qfitem = getqflist({lines: [selected]}).items[0]
+        if qfitem->has_key('bufnr')
+            util.VisitBuffer(key, qfitem.bufnr, qfitem.lnum, qfitem.col, qfitem.vcol > 0)
+            if !qfitem.bufnr->getbufvar('&buflisted')
+                # getqflist keeps buffer unlisted
+                setbufvar(qfitem.bufnr, '&buflisted', 1)
+            endif
+        endif
+
+    endif
+        
 enddef
 
 export def Setup()
