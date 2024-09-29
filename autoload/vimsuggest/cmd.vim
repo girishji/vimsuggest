@@ -14,6 +14,7 @@ class Properties
     var abbreviations: list<any>
     var save_wildmenu: bool
     public var items: list<any>
+    public var disabled = false
     # Following callback hooks are used by 'extras/*'.
     var setup_hook = {}  # 'cmd' -> Callback()
     var setup_hook_done = {}  # 'cmd' -> bool
@@ -95,12 +96,21 @@ def TabComplete()
     var lastcharpos = getcmdpos() - 2
     if getcmdline()[lastcharpos] ==? "\<tab>"
         setcmdline(getcmdline()->slice(0, lastcharpos))
+        allprops[win_getid()].disabled = false
         Complete()
     endif
 enddef
 
 def Complete()
     var p = allprops[win_getid()]
+    # echom 'Complete' getcmdline() 'd' p.disabled
+    # if p.disabled
+    #     if getcmdline()[getcmdpos() - 2] ==? "\<tab>"
+    #         p.disabled = false
+    #     else
+    #         return
+    #     endif
+    # endif
     var context = Context()
     if context == '' || context =~ '^\s\+$'
         :redraw  # Needed to hide popup after <bs> and cmdline is empty
@@ -145,8 +155,7 @@ def DoComplete(oldcontext: string, timer: number)
     endif
     var completions: list<any> = []
     if options.wildignore && cmdstr =~# '\(^\|\s\)\(e\%[dit]!\?\|fin\%[d]!\?\)\s'
-        # 'file_in_path' respects wildignore, 'cmdline' does not. However, it is
-        # slower than wildmenu <tab> completion.
+        # 'file_in_path' respects wildignore, 'cmdline' does not.
         completions = cmdstr->matchstr('^\S\+\s\+\zs.*')->getcompletion('file_in_path')
     else
         completions = context->getcompletion('cmdline')
@@ -179,15 +188,14 @@ export def SetPopupMenu(completions: list<any>)
         var success = true
         var cols = []
         var mlens = []
-        var mlen = cmdsuffix->len()
         for text in completions
-            var cnum = text->stridx(cmdsuffix)
-            if cnum == -1
+            var [_, st, en] = text->matchstrpos(cmdsuffix)
+            if st == -1
                 success = false
                 break
             endif
-            cols->add([cnum])
-            mlens->add(mlen)
+            cols->add([st])
+            mlens->add(en - st)
         endfor
         p.items = success ? [completions, cols, mlens] : [completions]
     endif
@@ -218,14 +226,17 @@ def FilterFn(winid: number, key: string): bool
         p.pmenu.SelectItem('j', PostSelectItem) # Next item
     elseif key == "\<S-Tab>" || key == "\<C-p>"
         p.pmenu.SelectItem('k', PostSelectItem) # Prev item
-    elseif key == "\<C-e>"
+    elseif key == "\<C-e>" || key == "\<End>" # Vim bug: <C-e> sends <End>(<80>@7, :h t_@7)) due to timer_start.
+        # echom 'c-e end' key
         p.pmenu.Hide()
         :redraw
-        # XXX make index -1
+        p.disabled = true
         EnableCmdline()
-    elseif key == "\<CR>" || key == "\<ESC>"
+    elseif key =~? "[\<CR>\<ESC>]"
+        # echom 'cr esc' key
         return false # Let Vim process these keys further
     else
+        # echom 'else' key
         p.pmenu.Hide()
         # Note: Redrawing after Hide() causes the popup to disappear after
         # <left>/<right> arrow keys are pressed. Arrow key events are not

@@ -6,7 +6,7 @@ vim9script
 import autoload '../cmd.vim'
 import autoload './job.vim'
 
-command! -nargs=+ -complete=customlist,Completor VSug DoAction(<f-args>)
+command! -nargs=+ -complete=customlist,Completor VSCmd DoAction(<f-args>)
 
 def DoAction(action: string, cmdstr: string, arg1: string, arg2: string = null_string,
         arg3: string = null_string, arg4: string = null_string, arg5: string = null_string,

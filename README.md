@@ -1,6 +1,11 @@
 # VimSuggest
 Autocompletion for Vim's command-line.
 <div style="display: none;">
+
+let s=reltime()|call getcompletion('find **', 'cmdline')|echo s->reltime()->reltimestr()
+1sec in vim/*
+
+
 (video=pattern search, alwayson, border, searching defs, multiword search)
 ❯ video=keymaps
 

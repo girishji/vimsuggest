@@ -26,7 +26,7 @@ class Properties
         endif
         if this.async && v:hlsearch
             this.save_searchreg = getreg('/')
-            this.save_esc_keymap = maparg('<esc>', 'c', 0, 1)
+            this.save_esc_keymap = maparg('<esc>', 'c', 0, 1) # In case <esc> is mapped to, say, ':nohls'
         endif
     enddef
 
@@ -484,6 +484,9 @@ enddef
 
 # A worker task for async search.
 def SearchWorker(attr: dict<any>, MatchFn: func(dict<any>): list<any>, timer: number = 0)
+    if !allprops->has_key(win_getid())
+        return # <cr> (CmdlineLeave) can happen in large files before search finishes
+    endif
     var p = allprops[win_getid()]
     var context = Context()
     var timeoutasync = max([10, options.asynctimeout])
