@@ -14,7 +14,6 @@ class Properties
     var abbreviations: list<any>
     var save_wildmenu: bool
     public var items: list<any>
-    var autoexclude = ["'>", '^\a/', '^\A'] # Keywords excluded from completion
     var setup_hook = {}  # 'cmd' -> Callback()
     var setup_hook_done = {}  # 'cmd' -> bool
     var highlight_hook = {}
@@ -103,10 +102,8 @@ def Complete()
     var p = allprops[win_getid()]
     var context = getcmdline()
     if context == '' || context =~ '^\s\+$'
-        if !p.pmenu.Hidden()
-            p.pmenu.Hide()
-            :redraw
-        endif
+        :redraw  # Needed to hide popup after <bs> and cmdline is empty
+                 # popup_hide() already called in FilterFn, redraw to hide the popup
         return
     endif
     timer_start(1, function(DoComplete, [context]))
@@ -126,7 +123,7 @@ def DoComplete(oldcontext: string, timer: number)
         return
     endif
     var p = allprops[win_getid()]
-    for pat in (options.exclude + p.autoexclude)
+    for pat in options.exclude
         if context =~ pat
             return
         endif
@@ -146,7 +143,7 @@ def DoComplete(oldcontext: string, timer: number)
         p.setup_hook_done[cmdname] = true
     endif
     var completions: list<any> = []
-    if options.wildignore && cmdstr =~# '^\(e\%[dit]!\?\|fin\%[d]!\?\)\s'
+    if options.wildignore && cmdstr =~# '\(^\|\s\)\(e\%[dit]!\?\|fin\%[d]!\?\)\s'
         # 'file_in_path' respects wildignore, 'cmdline' does not. However, it is
         # slower than wildmenu <tab> completion.
         completions = cmdstr->matchstr('^\S\+\s\+\zs.*')->getcompletion('file_in_path')
@@ -158,6 +155,7 @@ def DoComplete(oldcontext: string, timer: number)
     endif
     if completions->len() == 1 && context->strridx(completions[0]) != -1
         # This completion is already inserted
+        :redraw  # popup_hide() already called in FilterFn, redraw to hide the popup
         return
     endif
     SetPopupMenu(completions)
@@ -225,6 +223,7 @@ def FilterFn(winid: number, key: string): bool
     elseif key == "\<C-e>"
         p.pmenu.Hide()
         :redraw
+        # XXX make index -1
         EnableCmdline()
     elseif key == "\<CR>" || key == "\<ESC>"
         return false # Let Vim process these keys further
