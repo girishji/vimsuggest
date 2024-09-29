@@ -210,6 +210,7 @@ export class PopupMenu
         if CallbackFn != null_function
             CallbackFn(this._index)
         endif
+        :redraw  # Needed for <tab> selected menu item highlighting to work
     enddef
 
     def Closed(): bool
@@ -242,6 +243,20 @@ export class PopupMenu
 
     def SelectedItem(): string
         return this._index < 0 ? null_string : this._items[0][this._index]
+    enddef
+
+    def PageUp()
+        if this._pum
+            win_execute(this._winid, 'normal! ' .. "\<C-u>")
+            :redraw
+        endif
+    enddef
+
+    def PageDown()
+        if this._pum
+            win_execute(this._winid, 'normal! ' .. "\<C-d>")
+            :redraw
+        endif
     enddef
 endclass
 

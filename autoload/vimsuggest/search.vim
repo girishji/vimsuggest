@@ -154,29 +154,32 @@ def ShowPopupMenu()
     DisableCmdline()
 enddef
 
-def PostSelectItem(index: number)
+def SelectItemPost(index: number)
     var p = allprops[win_getid()]
     setcmdline(p.items[0][index]->escape('~/'))
-    :redraw  # Needed for <tab> selected menu item highlighting to work
 enddef
 
 def FilterFn(winid: number, key: string): bool
     var p = allprops[win_getid()]
     # Note: Do not include arrow keys since they are used for history lookup.
     if key == "\<Tab>" || key == "\<C-n>"
-        p.pmenu.SelectItem('j', PostSelectItem) # Next item
+        p.pmenu.SelectItem('j', SelectItemPost) # Next item
     elseif key == "\<S-Tab>" || key == "\<C-p>"
-        p.pmenu.SelectItem('k', PostSelectItem) # Prev item
+        p.pmenu.SelectItem('k', SelectItemPost) # Prev item
+    elseif key == "\<PageUp>"
+        p.pmenu.PageUp()
+    elseif key == "\<PageDown>"
+        p.pmenu.PageDown()
     elseif key == "\<C-e>"
         IncSearchHighlightClear()
-        p.pmenu.Hide()
         setcmdline('')
         feedkeys(p.context, 'n')
-        :redraw!
         if p.save_searchreg != null_string
             setreg('/', p.save_searchreg) # Needed by <c-e><esc> to restore previous hlsearch
         endif
-        timer_start(0, (_) => EnableCmdline()) # Timer will que this after feedkeys
+        # Remove the popup menu and resign from autocompletion.
+        p.Clear()
+        remove(allprops, win_getid())
     elseif key == "\<CR>"
         IncSearchHighlightClear()
         return false

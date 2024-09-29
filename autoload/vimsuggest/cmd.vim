@@ -14,7 +14,6 @@ class Properties
     var abbreviations: list<any>
     var save_wildmenu: bool
     public var items: list<any>
-    public var disabled = false
     # Following callback hooks are used by 'extras/*'.
     var setup_hook = {}  # 'cmd' -> Callback()
     var setup_hook_done = {}  # 'cmd' -> bool
@@ -96,21 +95,12 @@ def TabComplete()
     var lastcharpos = getcmdpos() - 2
     if getcmdline()[lastcharpos] ==? "\<tab>"
         setcmdline(getcmdline()->slice(0, lastcharpos))
-        allprops[win_getid()].disabled = false
         Complete()
     endif
 enddef
 
 def Complete()
     var p = allprops[win_getid()]
-    # echom 'Complete' getcmdline() 'd' p.disabled
-    # if p.disabled
-    #     if getcmdline()[getcmdpos() - 2] ==? "\<tab>"
-    #         p.disabled = false
-    #     else
-    #         return
-    #     endif
-    # endif
     var context = Context()
     if context == '' || context =~ '^\s\+$'
         :redraw  # Needed to hide popup after <bs> and cmdline is empty
@@ -172,8 +162,8 @@ def CmdStr(): string
     return getcmdline()->substitute('\(^\|\s\)vim9\%[cmd]!\?\s*', '', '')
 enddef
 
-export def SetPopupMenu(completions: list<any>)
-    if completions->empty()
+export def SetPopupMenu(items: list<any>)
+    if items->empty()
         return
     endif
     var p = allprops[win_getid()]
@@ -181,23 +171,21 @@ export def SetPopupMenu(completions: list<any>)
     var cmdname = CmdStr()->matchstr('^\S\+')
     var cmdsuffix = context->matchstr('\S\+$')
     if !options.highlight || context[-1] =~ '\s'
-        p.items = [completions]
+        p.items = [items]
     elseif p.highlight_hook->has_key(cmdname)
-        p.items = p.highlight_hook[cmdname](cmdsuffix, completions)
+        p.items = p.highlight_hook[cmdname](cmdsuffix, items)
     else  # Add properties for syntax highlighting
-        var success = true
         var cols = []
         var mlens = []
-        for text in completions
+        for text in items
             var [_, st, en] = text->matchstrpos(cmdsuffix)
             if st == -1
-                success = false
                 break
             endif
             cols->add([st])
             mlens->add(en - st)
         endfor
-        p.items = success ? [completions, cols, mlens] : [completions]
+        p.items = items->len() == cols->len() ? [items, cols, mlens] : [items]
     endif
     # '&' and '$' completes Vim options and env variables respectively.
     var pos = max([' ', '&', '$']->mapnew((_, v) => context->strridx(v)))
@@ -209,34 +197,34 @@ export def SetPopupMenu(completions: list<any>)
     DisableCmdline()
 enddef
 
-def PostSelectItem(index: number)
+def SelectItemPost(index: number)
     var p = allprops[win_getid()]
     var cmdname = CmdStr()->matchstr('^\S\+')
     if !p.post_select_hook->has_key(cmdname) || !p.post_select_hook[cmdname](p.items[0][index])
         var context = Context()
         setcmdline(context->matchstr('^.*\s\ze') .. p.items[0][index])
     endif
-    :redraw  # Needed for <tab> selected menu item highlighting to work
 enddef
 
 def FilterFn(winid: number, key: string): bool
     var p = allprops[win_getid()]
     # Note: Do not include arrow keys since they are used for history lookup.
     if key == "\<Tab>" || key == "\<C-n>"
-        p.pmenu.SelectItem('j', PostSelectItem) # Next item
+        p.pmenu.SelectItem('j', SelectItemPost) # Next item
+    elseif key == "\<PageUp>"
+        p.pmenu.PageUp()
+    elseif key == "\<PageDown>"
+        p.pmenu.PageDown()
     elseif key == "\<S-Tab>" || key == "\<C-p>"
-        p.pmenu.SelectItem('k', PostSelectItem) # Prev item
+        p.pmenu.SelectItem('k', SelectItemPost) # Prev item
     elseif key == "\<C-e>" || key == "\<End>" # Vim bug: <C-e> sends <End>(<80>@7, :h t_@7)) due to timer_start.
-        # echom 'c-e end' key
         p.pmenu.Hide()
         :redraw
-        p.disabled = true
-        EnableCmdline()
+        p.Clear()
+        remove(allprops, win_getid())
     elseif key =~? "[\<CR>\<ESC>]"
-        # echom 'cr esc' key
         return false # Let Vim process these keys further
     else
-        # echom 'else' key
         p.pmenu.Hide()
         # Note: Redrawing after Hide() causes the popup to disappear after
         # <left>/<right> arrow keys are pressed. Arrow key events are not
