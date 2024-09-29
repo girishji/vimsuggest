@@ -14,6 +14,7 @@ class Properties
     var abbreviations: list<any>
     var save_wildmenu: bool
     public var items: list<any>
+    # Following callback hooks are used by 'extras/*'.
     var setup_hook = {}  # 'cmd' -> Callback()
     var setup_hook_done = {}  # 'cmd' -> bool
     var highlight_hook = {}
@@ -53,7 +54,7 @@ class Properties
     enddef
 endclass
 
-var allprops: dict<Properties> = {}  # one per windid
+var allprops: dict<Properties> = {}  # One per winid
 
 export def Setup()
     if options.enable
@@ -100,7 +101,7 @@ enddef
 
 def Complete()
     var p = allprops[win_getid()]
-    var context = getcmdline()
+    var context = Context()
     if context == '' || context =~ '^\s\+$'
         :redraw  # Needed to hide popup after <bs> and cmdline is empty
                  # popup_hide() already called in FilterFn, redraw to hide the popup
@@ -110,7 +111,7 @@ def Complete()
 enddef
 
 def DoComplete(oldcontext: string, timer: number)
-    var context = getcmdline()
+    var context = Context()
     if context !=# oldcontext
         # Likely pasted text or coming from a keymap (if {rhs} is, say, 'nohls',
         # then this function gets called for every letter).
@@ -151,6 +152,7 @@ def DoComplete(oldcontext: string, timer: number)
         completions = context->getcompletion('cmdline')
     endif
     if completions->len() == 0
+        :redraw
         return
     endif
     if completions->len() == 1 && context->strridx(completions[0]) != -1
@@ -207,7 +209,7 @@ def PostSelectItem(index: number)
     var p = allprops[win_getid()]
     var cmdname = CmdStr()->matchstr('^\S\+')
     if !p.post_select_hook->has_key(cmdname) || !p.post_select_hook[cmdname](p.items[0][index])
-        var context = getcmdline()
+        var context = Context()
         setcmdline(context->matchstr('^.*\s\ze') .. p.items[0][index])
     endif
     :redraw  # Needed for <tab> selected menu item highlighting to work
@@ -246,6 +248,10 @@ def CallbackFn(winid: number, result: any)
     if result == -1 # Popup force closed due to <c-c> or cursor mvmt
         feedkeys("\<c-c>", 'n')
     endif
+enddef
+
+def Context(): string
+    return getcmdline()->strpart(0, getcmdpos() - 1)
 enddef
 
 export def AddSetupHook(cmd: string, Callback: func())

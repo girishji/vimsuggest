@@ -46,7 +46,7 @@ class Properties
     enddef
 endclass
 
-var allprops: dict<Properties> = {}  # one per windid
+var allprops: dict<Properties> = {}  # One per winid
 
 # During async search <esc> after a failed search (where pattern does not exist
 # in buffer) should restore previous hlsearch if any.
@@ -100,7 +100,7 @@ enddef
 
 def Complete()
     var p = allprops[win_getid()]
-    var context = getcmdline()->strpart(0, getcmdpos() - 1)
+    var context = Context()
     if context == '' || context =~ '^\s\+$'
         return
     endif
@@ -485,7 +485,7 @@ enddef
 # A worker task for async search.
 def SearchWorker(attr: dict<any>, MatchFn: func(dict<any>): list<any>, timer: number = 0)
     var p = allprops[win_getid()]
-    var context = getcmdline()->strpart(0, getcmdpos() - 1)
+    var context = Context()
     var timeoutasync = max([10, options.asynctimeout])
     if context !=# attr.context ||
             (attr.starttime->reltime()->reltimefloat() * 1000) > timeoutasync ||
@@ -504,6 +504,10 @@ def SearchWorker(attr: dict<any>, MatchFn: func(dict<any>): list<any>, timer: nu
     endif
     attr.index += 1
     timer_start(0, function(SearchWorker, [attr, MatchFn]))
+enddef
+
+def Context(): string
+    return getcmdline()->strpart(0, getcmdpos() - 1)
 enddef
 
 # vim: tabstop=8 shiftwidth=4 softtabstop=4 expandtab
