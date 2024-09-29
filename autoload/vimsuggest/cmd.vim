@@ -151,12 +151,8 @@ def DoComplete(oldcontext: string, timer: number)
     else
         completions = context->getcompletion('cmdline')
     endif
-    if completions->len() == 0
-        :redraw
-        return
-    endif
-    if completions->len() == 1 && context->strridx(completions[0]) != -1
-        # This completion is already inserted
+    if completions->len() == 0 || (completions->len() == 1 && context->strridx(completions[0]) != -1)
+        # No completions found, or this completion is already inserted.
         :redraw  # popup_hide() already called in FilterFn, redraw to hide the popup
         return
     endif
