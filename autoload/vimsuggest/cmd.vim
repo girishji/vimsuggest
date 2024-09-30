@@ -47,7 +47,7 @@ class Properties
     enddef
 endclass
 
-var allprops: dict<Properties> = {}  # One per winid
+export var allprops: dict<Properties> = {}  # One per winid
 
 export def Setup()
     if options.enable
@@ -197,7 +197,6 @@ def FilterFn(winid: number, key: string): bool
     var p = allprops[win_getid()]
     # Note: <C-n/p> send <up/down> arrow codes (:h :t_ku).
     #   Do not map these since they are used to cycle through history.
-    echom key
     if key ==? "\<Tab>"
         p.pmenu.SelectItem('j', SelectItemPost) # Next item
     elseif key ==? "\<S-Tab>"

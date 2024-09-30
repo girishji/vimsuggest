@@ -2,6 +2,8 @@ vim9script
 
 import autoload '../cmd.vim'
 
+# xxx hop of 1 line when typing cmd
+#
 export class Fuzzy
     var items = []
     var matches = [[], [], []]
@@ -10,7 +12,8 @@ export class Fuzzy
 
     def DoComplete(arg: string, cmdline: string, cursorpos: number,
             GetItems: func(): list<any> = null_function,
-            GetText: func(dict<any>): string = null_function): list<any>
+            GetText: func(dict<any>): string = null_function,
+            FuzzyMatcher: func(list<any>, string): list<any> = null_function): list<any>
         if this.items->empty() || this.cmdline_leave
             this.items = GetItems()
             this.matches = [[], [], []]
@@ -23,7 +26,8 @@ export class Fuzzy
         var items = (this.items[0]->type() == v:t_dict) ?
             this.items->mapnew((_, v) => GetText(v)) : this.items
         if arg != null_string
-            this.matches = items->matchfuzzypos(arg, {matchseq: 1, limit: 100})
+            this.matches = FuzzyMatcher != null_function ? items->FuzzyMatcher(arg) :
+                items->matchfuzzypos(arg, {matchseq: 1, limit: 100})
             this.matches[1]->map((idx, v) => {
                 # Char to byte index (needed by matchaddpos)
                 return v->mapnew((_, c) => this.matches[0][idx]->byteidx(c))
