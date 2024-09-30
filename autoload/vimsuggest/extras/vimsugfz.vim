@@ -13,7 +13,7 @@ def Completor(arg: string, cmdline: string, cursorpos: number): list<any>
         buffers = Buffers()
         cmdline_leave = false
     endif
-    var items = (arg == null_string) ? buffers : buffers->matchfuzzy(arg, {matchseq: 1, limit: 100, key: 'text'})
+    var items = (arg == null_string) ? buffers : buffers->matchfuzzy(arg, {matchseq: 1, key: 'text'})
     return items->mapnew((_, v) => v.text)
 enddef
 

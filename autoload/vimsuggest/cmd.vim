@@ -4,8 +4,8 @@ vim9script
 
 import autoload './options.vim' as opt
 import autoload './popup.vim'
-import autoload './extras/vsbuffer.vim'
-# import autoload './extras/vsfind.vim'
+# import autoload './extras/vsbuffer.vim'
+import autoload './extras/extras.vim'
 
 var options = opt.options.cmd
 
@@ -14,9 +14,7 @@ class Properties
     var abbreviations: list<any>
     var save_wildmenu: bool
     public var items: list<any>
-    # Following callback hooks are used by 'extras/*'.
-    # var setup_hook = []
-    # var setup_hook_done = {}  # 'cmd' -> bool
+    # Following callbacks are for customizing commands.
     var highlight_hook = {}
     var onspace_hook = []
     var cmdline_leave_hook = {}
@@ -26,7 +24,6 @@ class Properties
         this.abbreviations = this.GetAbbrevs()
         this.save_wildmenu = &wildmenu
         :set nowildmenu
-        # foreach(this.setup_hook->keys(), 'this.setup_hook_done[v:val] = false')
         this.pmenu = popup.PopupMenu.new(FilterFn, CallbackFn, options.popupattrs, options.pum)
     enddef
 
@@ -59,7 +56,8 @@ export def Setup()
                 allprops[win_getid()] = Properties.new()
                 EnableCmdline()
                 if options.extras
-                    vsbuffer.Setup()
+                    extras.Setup()
+                    # vsbuffer.Setup()
                     # vsfind.Setup()
                 endif
             }
@@ -139,10 +137,6 @@ def DoComplete(oldcontext: string, timer: number)
         endif
     endif
     var cmdname = cmdstr->matchstr('^\S\+')
-    # if p.setup_hook->has_key(cmdname) && !p.setup_hook_done[cmdname]  # call Callback() only once
-    #     p.setup_hook[cmdname]()
-    #     p.setup_hook_done[cmdname] = true
-    # endif
     var completions: list<any> = []
     if options.wildignore && cmdstr =~# '\(^\|\s\)\(e\%[dit]!\?\|fin\%[d]!\?\)\s'
         # 'file_in_path' respects wildignore, 'cmdline' does not.
@@ -156,10 +150,6 @@ def DoComplete(oldcontext: string, timer: number)
         return
     endif
     SetPopupMenu(completions)
-enddef
-
-def CmdStr(): string
-    return getcmdline()->substitute('\(^\|\s\)vim9\%[cmd]!\?\s*', '', '')
 enddef
 
 export def SetPopupMenu(items: list<any>)
@@ -206,21 +196,24 @@ enddef
 def FilterFn(winid: number, key: string): bool
     var p = allprops[win_getid()]
     # Note: Do not include arrow keys since they are used for history lookup.
-    if key == "\<Tab>" || key == "\<C-n>"
+    if key ==? "\<Tab>" || key ==? "\<C-n>"
         p.pmenu.SelectItem('j', SelectItemPost) # Next item
-    elseif key == "\<PageUp>"
-        p.pmenu.PageUp()
-    elseif key == "\<PageDown>"
-        p.pmenu.PageDown()
-    elseif key == "\<S-Tab>" || key == "\<C-p>"
+    elseif key ==? "\<S-Tab>" || key ==? "\<C-p>"
         p.pmenu.SelectItem('k', SelectItemPost) # Prev item
-    elseif key == "\<C-e>" || key == "\<End>" # Vim bug: <C-e> sends <End>(<80>@7, :h t_@7)) due to timer_start.
+    elseif key ==? "\<PageUp>"
+        p.pmenu.PageUp()
+    elseif key ==? "\<PageDown>"
+        p.pmenu.PageDown()
+    elseif key ==? "\<C-e>" || key ==? "\<End>" # Vim bug: <C-e> sends <End>(<80>@7, :h t_@7)) due to timer_start.
         p.pmenu.Hide()
         :redraw
         p.Clear()
         remove(allprops, win_getid())
-    elseif key =~? "[\<CR>\<ESC>]"
+    elseif key ==? "\<CR>"
         return false # Let Vim process these keys further
+    elseif key ==? "\<ESC>"
+        CmdlineLeaveHook(null_string, null_string)
+        return false
     else
         p.pmenu.Hide()
         # Note: Redrawing after Hide() causes the popup to disappear after
@@ -249,6 +242,10 @@ def Context(): string
     return getcmdline()->strpart(0, getcmdpos() - 1)
 enddef
 
+def CmdStr(): string
+    return getcmdline()->substitute('\(^\|\s\)vim9\%[cmd]!\?\s*', '', '')
+enddef
+
 def CmdlineLeaveHook(selected_item: string, first_item: string)
     var cmdname = CmdStr()->matchstr('^\S\+')
     var p = allprops[win_getid()]
@@ -256,10 +253,6 @@ def CmdlineLeaveHook(selected_item: string, first_item: string)
         p.cmdline_leave_hook[cmdname](selected_item, first_item)
     endif
 enddef
-
-# export def AddSetupHook(cmd: string, Callback: func())
-#     allprops[win_getid()].setup_hook[cmd] = Callback
-# enddef
 
 export def AddCmdlineLeaveHook(cmd: string, Callback: func(string, string))
     allprops[win_getid()].cmdline_leave_hook[cmd] = Callback
