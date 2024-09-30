@@ -2,6 +2,33 @@ vim9script
 
 import autoload '../cmd.vim'
 
+var candidate = null_string
+var buffers = []
+var cmdline_leave = false
+
+command! -nargs=* -complete=customlist,Completor VSBuffer DoCommand(<f-args>)
+
+def Completor(arg: string, cmdline: string, cursorpos: number): list<any>
+    if buffers->empty() || cmdline_leave
+        buffers = Buffers()
+        cmdline_leave = false
+    endif
+    var items = (arg == null_string) ? buffers : buffers->matchfuzzy(arg, {matchseq: 1, key: 'text'})
+    return items->mapnew((_, v) => v.text)
+enddef
+
+def DoCommand(arg: string = null_string)
+    if candidate != null_string
+        var idx = buffers->indexof($'v:val.text == candidate')
+        if idx != -1
+            exe $'b {buffers[idx].bufnr}'
+        endif
+    elseif buffers->indexof($'v:val.text == "{arg}"') != -1 # After <c-e>, wildmenu can select an item
+        exe $'b {arg}'
+    endif
+    buffers = []
+enddef
+
 export def Setup()
     cmd.AddHighlightHook('VSBuffer', (suffix: string, _: list<any>): list<any> => {
         if suffix != null_string
@@ -17,9 +44,14 @@ export def Setup()
         return []
     })
     cmd.AddOnspaceHook('VSBuffer')
+    cmd.AddCmdlineLeaveHook('VSBuffer', (selected_item, first_item) => {
+        candidate = selected_item == null_string ? first_item : selected_item
+        cmdline_leave = true  # This hook is called during <c-c> also
+    })
+    cmd.AddSelectItemHook('VSBuffer', (_) => {
+        return true # Do not update cmdline with selected item
+    })
 enddef
-
-command! -nargs=* -complete=customlist,Completor VSBuffer DoCommand(<f-args>)
 
 def Buffers(list_all_buffers: bool = false): list<any>
     var blist = list_all_buffers ? getbufinfo({buloaded: 1}) : getbufinfo({buflisted: 1})
@@ -33,24 +65,6 @@ def Buffers(list_all_buffers: bool = false): list<any>
         [buffer_list[0], buffer_list[1]] = [buffer_list[1], buffer_list[0]]
     endif
     return buffer_list
-enddef
-
-def Completor(arg: string, cmdline: string, cursorpos: number): list<any>
-    var buffers = Buffers()
-    var items = (arg == null_string) ? buffers : buffers->matchfuzzy(arg, {matchseq: 1, key: 'text'})
-    return items->mapnew((_, v) => v.text)
-enddef
-
-def DoCommand(arg: string = null_string)
-    var buffers = Buffers() # Always get this list fresh, user could have opened another tab/window
-    if buffers->indexof($'v:val.text == "{arg}"') != -1
-        exe $'b {arg}'
-    else  # Select the first item in the menu (no need to press <tab>)
-        var items = (arg == null_string) ? buffers : buffers->matchfuzzy(arg, {matchseq: 1, key: 'text'})
-        if !items->empty()
-            exe $"b {items[0].bufnr}"
-        endif
-    endif
 enddef
 
 # vim: tabstop=8 shiftwidth=4 softtabstop=4 expandtab
