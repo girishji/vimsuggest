@@ -4,21 +4,20 @@ import autoload './fuzzy.vim'
 
 command! -nargs=* -complete=customlist,DoComplete VSBuf DoCommand(<f-args>)
 
+var fz: dict<fuzzy.Fuzzy> = {}
+
 def DoComplete(arg: string, cmdline: string, cursorpos: number): list<any>
-    return fuzzy.DoComplete(arg, cmdline, cursorpos, function(Buffers, [false]), GetText)
+    if !fz->has_key(win_getid())
+        fz[win_getid()] = fuzzy.Fuzzy.new('VSBuf')
+    endif
+    return fz[win_getid()].DoComplete(arg, cmdline, cursorpos, function(Buffers, [false]), GetText)
 enddef
 
 def DoCommand(arg: string = null_string)
-    fuzzy.DoCommand((candidate, buffers) => {
-        if candidate != null_string
-            var idx = buffers->indexof((_, v) => v.text == candidate)
-            if idx != -1
-                exe $'b {buffers[idx].bufnr}'
-            endif
-        elseif buffers->indexof($'v:val.text == "{arg}"') != -1 # After <c-e>, wildmenu can select an item
-            exe $'b {arg}'
-        endif
-    }, arg)
+    fz[win_getid()].DoCommand(arg, (item) => {
+        :exe $'b {item->type() == v:t_dict ? item.bufnr : item}'
+    }, GetText)
+    remove(fz, win_getid())
 enddef
 
 def GetText(item: dict<any>): string
@@ -37,10 +36,6 @@ def Buffers(list_all_buffers: bool = false): list<any>
         [buffer_list[0], buffer_list[1]] = [buffer_list[1], buffer_list[0]]
     endif
     return buffer_list
-enddef
-
-export def Setup()
-    fuzzy.Setup('VSBuf')
 enddef
 
 # vim: tabstop=8 shiftwidth=4 softtabstop=4 expandtab

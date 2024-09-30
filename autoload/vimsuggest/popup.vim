@@ -137,13 +137,18 @@ export class PopupMenu
         const items = this._items
 
         def SelectVert()
-            if this._winid->popup_getoptions().cursorline
+            if !this._winid->popup_getoptions().cursorline
+                this._winid->popup_setoptions({cursorline: true})
+                this._index = 0
+                if direction ==# 'k'
+                    this._winid->popup_filter_menu('k')
+                    this._index -= 1
+                    this._index %= count
+                endif
+            else
                 this._winid->popup_filter_menu(direction)
                 this._index += (direction ==# 'j' ? 1 : -1)
                 this._index %= count
-            else
-                this._winid->popup_setoptions({cursorline: true})
-                this._index = 0
             endif
             if items->len() > 1
                 var mlen = items[2][this._index]

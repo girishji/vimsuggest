@@ -195,10 +195,12 @@ enddef
 
 def FilterFn(winid: number, key: string): bool
     var p = allprops[win_getid()]
-    # Note: Do not include arrow keys since they are used for history lookup.
-    if key ==? "\<Tab>" || key ==? "\<C-n>"
+    # Note: <C-n/p> send <up/down> arrow codes (:h :t_ku).
+    #   Do not map these since they are used to cycle through history.
+    echom key
+    if key ==? "\<Tab>"
         p.pmenu.SelectItem('j', SelectItemPost) # Next item
-    elseif key ==? "\<S-Tab>" || key ==? "\<C-p>"
+    elseif key ==? "\<S-Tab>"
         p.pmenu.SelectItem('k', SelectItemPost) # Prev item
     elseif key ==? "\<PageUp>"
         p.pmenu.PageUp()
