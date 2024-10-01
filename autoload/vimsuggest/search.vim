@@ -5,14 +5,14 @@ import autoload './popup.vim'
 
 var options = opt.options.search
 
-class Properties
+class State
     # Note: Variables are read-only by default, except for 'public', which is read/write.
     #       If a variable starts with an underscore ('_'), it is treated as protected
     #       and cannot not be accessed or modified outside the class.
     public var items: list<any>       # Items displayed in the popup menu
     public var candidates: list<any>  # Completion candidates (saved for async invocation)
     public var context = null_string  # Cached command-line contents
-    public var save_searchreg = null_string
+    public static var save_searchreg = null_string
     public var save_esc_keymap = null_dict
     var pmenu: popup.PopupMenu = null_object
     var async: bool
@@ -25,7 +25,7 @@ class Properties
             this.curpos = getcurpos()
         endif
         if this.async && v:hlsearch
-            this.save_searchreg = getreg('/')
+            State.save_searchreg = getreg('/')
             this.save_esc_keymap = maparg('<esc>', 'c', 0, 1) # In case <esc> is mapped to, say, ':nohls'
         endif
     enddef
@@ -46,14 +46,22 @@ class Properties
     enddef
 endclass
 
-var allprops: dict<Properties> = {}  # One per winid
+# var allprops: dict<Properties> = {}  # One per winid
+var state: State = null_object
 
 # During async search <esc> after a failed search (where pattern does not exist
 # in buffer) should restore previous hlsearch if any.
 def RestoreHLSearch(): string
-    props = allprops[win_getid()]
-    if props.pmenu.Hidden() && props.save_searchreg != null_string
-        setreg('/', props.save_searchreg)
+    # props = allprops[win_getid()]
+    # if props.pmenu.Hidden() && props.save_searchreg != null_string
+    if state != null_object
+        if state.pmenu.Hidden() && State.save_searchreg != null_string
+            setreg('/', State.save_searchreg)
+            State.save_searchreg = null_string
+        endif
+    elseif State.save_searchreg != null_string # After <c-e>, state is null_object
+        setreg('/', State.save_searchreg)
+        State.save_searchreg = null_string
     endif
     return null_string
 enddef
@@ -62,15 +70,16 @@ export def Setup()
     if options.enable
         augroup VimSuggestSearchAutocmds | autocmd!
             autocmd CmdlineEnter    /,\?  {
-                allprops[win_getid()] = Properties.new()
-                allprops[win_getid()].Setup()
+                state = State.new()
+                state.Setup()
                 EnableCmdline()
             }
             autocmd CmdlineChanged  /,\?  options.alwayson ? Complete() : TabComplete()
             autocmd CmdlineLeave    /,\?  {
-                if allprops->has_key(win_getid())
-                    allprops[win_getid()].Clear()
-                    remove(allprops, win_getid())
+                if state != null_object
+                    state.Clear()
+                    state = null_object
+                    # remove(allprops, win_getid())
                 endif
             }
         augroup END
@@ -99,7 +108,6 @@ def TabComplete()
 enddef
 
 def Complete()
-    var p = allprops[win_getid()]
     var context = Context()
     if context == '' || context =~ '^\s\+$'
         return
@@ -109,18 +117,18 @@ def Complete()
     #    only once instead of for every character pasted.
     # 2) When pasting a long line of text, search appears to be slow for the first time
     #    (likely because functions are getting compiled). it will be fast afterwards.
-    p.context = context
-    p.candidates = []
-    p.items = []
-    const withspace = p.context =~ '[^\\]\+\\n\|^\\n' # Pattern contains spaces, resort to searchpos().
+    state.context = context
+    state.candidates = []
+    state.items = []
+    const withspace = state.context =~ '[^\\]\+\\n\|^\\n' # Pattern contains spaces, resort to searchpos().
     const MatchFn = withspace ? BufMatchMultiLine : BufMatchLine
 
-    if p.context =~# '^\\%' # \%V to search visual region only, etc.
-        p.items = BufMatchMultiLine()->MakeUnique()->Itemify()
+    if state.context =~# '^\\%' # \%V to search visual region only, etc.
+        state.items = BufMatchMultiLine()->MakeUnique()->Itemify()
     elseif options.fuzzy
-        p.items = BufFuzzyMatches()
-    elseif !p.async
-        p.items = MatchFn()->MakeUnique()->Itemify()
+        state.items = BufFuzzyMatches()
+    elseif !state.async
+        state.items = MatchFn()->MakeUnique()->Itemify()
     else  # async
         var attr = {
             starttime: reltime(),
@@ -139,15 +147,14 @@ def Complete()
         SearchWorker(attr, MatchFn)
         return
     endif
-    if p.items[0]->len() > 0
+    if state.items[0]->len() > 0
         ShowPopupMenu()
     endif
 enddef
 
 def ShowPopupMenu()
-    var p = allprops[win_getid()]
-    p.pmenu.SetText(p.items)
-    p.pmenu.Show()
+    state.pmenu.SetText(state.items)
+    state.pmenu.Show()
     # Note: If command-line is not disabled here, it will intercept key inputs
     # before the popup does. This prevents the popup from handling certain keys,
     # such as <Tab> properly.
@@ -155,43 +162,42 @@ def ShowPopupMenu()
 enddef
 
 def SelectItemPost(index: number)
-    var p = allprops[win_getid()]
-    setcmdline(p.items[0][index]->escape('~/'))
+    setcmdline(state.items[0][index]->escape('~/'))
 enddef
 
 def FilterFn(winid: number, key: string): bool
-    var p = allprops[win_getid()]
     # Note: Do not include arrow keys since they are used for history lookup.
     if key == "\<Tab>" || key == "\<C-n>"
-        p.pmenu.SelectItem('j', SelectItemPost) # Next item
+        state.pmenu.SelectItem('j', SelectItemPost) # Next item
     elseif key == "\<S-Tab>" || key == "\<C-p>"
-        p.pmenu.SelectItem('k', SelectItemPost) # Prev item
+        state.pmenu.SelectItem('k', SelectItemPost) # Prev item
     elseif key == "\<PageUp>"
-        p.pmenu.PageUp()
+        state.pmenu.PageUp()
     elseif key == "\<PageDown>"
-        p.pmenu.PageDown()
+        state.pmenu.PageDown()
     elseif key == "\<C-e>"
         IncSearchHighlightClear()
         setcmdline('')
-        feedkeys(p.context, 'n')
-        if p.save_searchreg != null_string
-            setreg('/', p.save_searchreg) # Needed by <c-e><esc> to restore previous hlsearch
+        feedkeys(state.context, 'n')
+        if State.save_searchreg != null_string
+            setreg('/', State.save_searchreg) # Needed by <c-e><esc> to restore previous hlsearch
         endif
         # Remove the popup menu and resign from autocompletion.
-        p.Clear()
-        remove(allprops, win_getid())
+        state.Clear()
+        state = null_object
+        # remove(allprops, win_getid())
     elseif key == "\<CR>"
         IncSearchHighlightClear()
         return false
     elseif key == "\<ESC>"
         IncSearchHighlightClear()
-        if p.save_searchreg != null_string
-            setreg('/', p.save_searchreg) # Restore previous hlsearch
+        if State.save_searchreg != null_string
+            setreg('/', State.save_searchreg) # Restore previous hlsearch
         endif
         return false
     else
         IncSearchHighlightClear()
-        p.pmenu.Hide()
+        state.pmenu.Hide()
         # Note: Enable command-line handling to process key inputs first.
         # This approach is safer as it avoids the need to manage various
         # control characters and the up/down arrow keys used for history recall.
@@ -204,10 +210,9 @@ enddef
 def CallbackFn(winid: number, result: any)
     IncSearchHighlightClear()
     if result == -1 # Popup force closed due to <c-c> or cursor mvmt
-        var p = allprops[win_getid()]
         feedkeys("\<c-c>", 'n')
-        if p.save_searchreg != null_string
-            setreg('/', p.save_searchreg) # Restore previous hlsearch
+        if State.save_searchreg != null_string
+            setreg('/', State.save_searchreg) # Restore previous hlsearch
         endif
     endif
 enddef
@@ -245,14 +250,13 @@ def Itemify(matches: list<any>): list<any>
 enddef
 
 def GetFirstMatch(): list<any>
-    var p = allprops[win_getid()]
     var pos = []
     var save_cursor = getcurpos()
-    setpos('.', p.curpos)
+    setpos('.', state.curpos)
     try
-        var [blnum, bcol] = p.context->searchpos(v:searchforward ? 'nw' : 'nwb')
+        var [blnum, bcol] = state.context->searchpos(v:searchforward ? 'nw' : 'nwb')
         if [blnum, bcol] != [0, 0]
-            var [elnum, ecol] = p.context->searchpos(v:searchforward ? 'nwe' : 'nwbe')
+            var [elnum, ecol] = state.context->searchpos(v:searchforward ? 'nwe' : 'nwbe')
             if [elnum, ecol] != [0, 0]
                 if blnum == elnum
                     pos = [[blnum, bcol, ecol - bcol + 1]]
@@ -275,7 +279,6 @@ enddef
 
 # Return a list containing range of lines to search.
 def Batches(): list<any>
-    var p = allprops[win_getid()]
     var range = max([10, options.range])
     var ibelow = []
     var iabove = []
@@ -301,8 +304,7 @@ def Batches(): list<any>
 enddef
 
 def BufMatchLine(batch: dict<any> = null_dict): list<any>
-    var p = allprops[win_getid()]
-    var pat = (p.context =~ '\(\\s\| \)' ? '\(\)' : '\(\w*\)') .. $'\({p.context}\)\(\w*\)' # \k includes 'foo.' and 'foo,'
+    var pat = (state.context =~ '\(\\s\| \)' ? '\(\)' : '\(\w*\)') .. $'\({state.context}\)\(\w*\)' # \k includes 'foo.' and 'foo,'
     var matches = []
     var timeout = max([10, options.timeout])
     var starttime = reltime()
@@ -333,10 +335,9 @@ enddef
 # Warning: Syntax highlighting inside popup is not supported by this function.
 def BufMatchMultiLine(batch: dict<any> = null_dict): list<any>
     var save_cursor = getcurpos()
-    var p = allprops[win_getid()]
     var timeout = max([10, options.timeout])
-    var flags = p.async ? (v:searchforward ? '' : 'b') : (v:searchforward ? 'w' : 'wb')
-    var pattern = p.context =~ '\s' ? $'{p.context}\w*' : $'\w*{p.context}\w*'
+    var flags = state.async ? (v:searchforward ? '' : 'b') : (v:searchforward ? 'w' : 'wb')
+    var pattern = state.context =~ '\s' ? $'{state.context}\w*' : $'\w*{state.context}\w*'
     var [lnum, cnum] = [0, 0]
     var [startl, startc] = [0, 0]
     var dobatch = batch != null_dict
@@ -394,7 +395,6 @@ enddef
 
 # Return a list of strings that fuzzy match the pattern.
 def BufFuzzyMatches(): list<any>
-    var p = allprops[win_getid()]
     var found = {}
     var words = []
     var starttime = reltime()
@@ -430,7 +430,7 @@ def BufFuzzyMatches(): list<any>
             linenr += 1
         endfor
     endfor
-    var matches = words->matchfuzzypos(p.context, { matchseq: 1, limit: 100 }) # Max 100 matches
+    var matches = words->matchfuzzypos(state.context, { matchseq: 1, limit: 100 }) # Max 100 matches
     matches[2]->map((_, _) => 1)
     matches[1]->map((idx, v) => {
         # Char to byte index (needed by matchaddpos)
@@ -472,8 +472,7 @@ def IncSearchHighlight(firstmatch: list<any>, context: string)
 enddef
 
 def IncSearchHighlightClear()
-    var p = allprops[win_getid()]
-    if p.async
+    if state.async
         if matchids.sid > 0
             matchids.sid->matchdelete(matchids.winid)
             matchids.sid = 0
@@ -487,10 +486,9 @@ enddef
 
 # A worker task for async search.
 def SearchWorker(attr: dict<any>, MatchFn: func(dict<any>): list<any>, timer: number = 0)
-    if !allprops->has_key(win_getid())
+    if state == null_object
         return # <cr> (CmdlineLeave) can happen in large files before search finishes
     endif
-    var p = allprops[win_getid()]
     var context = Context()
     var timeoutasync = max([10, options.asynctimeout])
     if context !=# attr.context ||
@@ -504,8 +502,8 @@ def SearchWorker(attr: dict<any>, MatchFn: func(dict<any>): list<any>, timer: nu
     var batch = attr.batches[attr.index]
     var matches = MatchFn(batch)
     if matches->len() > 0
-        p.candidates = MakeUnique(p.candidates + matches)
-        p.items = Itemify(p.candidates)
+        state.candidates = MakeUnique(state.candidates + matches)
+        state.items = Itemify(state.candidates)
         ShowPopupMenu()
     endif
     attr.index += 1

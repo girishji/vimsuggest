@@ -5,26 +5,25 @@ import autoload './fuzzy.vim'
 
 command! -nargs=* -complete=customlist,DoComplete VSbuffer DoCommand(<f-args>)
 
-var fz: dict<fuzzy.Fuzzy> = {}
+# var fz: dict<fuzzy.Fuzzy> = {}
 
 cmd.AddOnspaceHook('VSbuffer')
 
 def DoComplete(arglead: string, cmdline: string, cursorpos: number): list<any>
-    if !fz->has_key(win_getid())
-        fz[win_getid()] = fuzzy.Fuzzy.new('VSbuffer')
-        cmd.AddCmdlineAbortHook('VSbuffer', () => {
-            remove(fz, win_getid())
-        })
-    endif
-    # return ['asdf', 'ew']
-    return fz[win_getid()].DoComplete(arglead, cmdline, cursorpos, function(Buffers, [false]), GetText)
+    # if !fz->has_key(win_getid())
+    #     fz[win_getid()] = fuzzy.Fuzzy.new('VSbuffer')
+    #     cmd.AddCmdlineAbortHook('VSbuffer', () => {
+    #         remove(fz, win_getid())
+    #     })
+    # endif
+    return fuzzy.DoComplete(arglead, cmdline, cursorpos, function(Buffers, [false]), GetText)
 enddef
 
 def DoCommand(arglead: string = null_string)
-    fz[win_getid()].DoCommand(arglead, (item) => {
+    fuzzy.DoCommand(arglead, (item) => {
         :exe $'b {item->type() == v:t_dict ? item.bufnr : item}'
     }, GetText)
-    remove(fz, win_getid())
+    # remove(fz, win_getid())
 enddef
 
 def GetText(item: dict<any>): string

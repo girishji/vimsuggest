@@ -8,7 +8,7 @@ import autoload './plugins/plugins.vim'
 
 var options = opt.options.cmd
 
-class Properties
+class State
     var pmenu: popup.PopupMenu = null_object
     var abbreviations: list<any>
     var save_wildmenu: bool
@@ -16,11 +16,11 @@ class Properties
     public var items: list<any>
     # Callbacks for plugins:
     public static var onspace_hook = []
-    public static var cmdline_enter_hook = []
+    # public static var cmdline_enter_hook = []
+    public static var cmdline_abort_hook = []
     public var highlight_hook = {}
     public var select_item_hook = {}
     public var cmdline_leave_hook = {}
-    public var cmdline_abort_hook = {}
 
     def new()
         this.abbreviations = this._GetAbbrevs()
@@ -49,29 +49,36 @@ class Properties
     enddef
 endclass
 
-export var allprops: dict<Properties> = {}  # One per winid
+var state: State = null_object
+
+# export var allprops: dict<Properties> = {}  # One per winid
 
 export def Setup()
     if options.enable
         augroup VimSuggestCmdAutocmds | autocmd!
             autocmd CmdlineEnter    :  {
-                allprops[win_getid()] = Properties.new()
+                state = State.new()
                 EnableCmdline()
                 if options.plugins
                     plugins.Setup()
                 endif
-                for Hook in Properties.cmdline_enter_hook
-                    Hook()
-                endfor
+                # for Hook in Properties.cmdline_enter_hook
+                #     Hook()
+                # endfor
             }
             autocmd CmdlineChanged  :  options.alwayson ? Complete() : TabComplete()
             autocmd CmdlineLeave    :  {
-                if allprops->has_key(win_getid()) # If <c-e>, props would've been removed
-                    var p = allprops[win_getid()]
-                    CmdlineLeaveHook(p.pmenu.SelectedItem(), p.pmenu.FirstItem())
-                    allprops[win_getid()].Clear()
-                    remove(allprops, win_getid())
+                if state != null_object # <c-e> removes this object
+                    CmdlineLeaveHook(state.pmenu.SelectedItem(), state.pmenu.FirstItem())
+                    state.Clear()
+                    state = null_object
                 endif
+                # if allprops->has_key(win_getid()) # If <c-e>, props would've been removed
+                #     var p = allprops[win_getid()]
+                #     CmdlineLeaveHook(p.pmenu.SelectedItem(), p.pmenu.FirstItem())
+                #     allprops[win_getid()].Clear()
+                #     remove(allprops, win_getid())
+                # endif
             }
         augroup END
     endif
@@ -99,7 +106,6 @@ def TabComplete()
 enddef
 
 def Complete()
-    var p = allprops[win_getid()]
     var context = Context()
     if context == '' || context =~ '^\s\+$'
         :redraw  # Needed to hide popup after <bs> and cmdline is empty
@@ -118,27 +124,29 @@ def DoComplete(oldcontext: string, timer: number)
     endif
     # Note: If <esc> is mapped to Ex cmd (say 'nohls') in normal mode, then Vim
     # calls DoComplete after CmdlineLeave (because of timer), and props will not
-    # be available. Use allprops[win_getid()] only after 'oldcontext' above.
-    if !allprops->has_key(win_getid())  # Additional check
+    # be available. Use 'state' only after 'oldcontext' above.
+
+    # if !allprops->has_key(win_getid())  # Additional check
+    if state == null_object  # Additional check
         return
     endif
-    var p = allprops[win_getid()]
+    # var p = allprops[win_getid()]
     for pat in options.exclude
         if context =~ pat
             :redraw # popup_hide() already called in FilterFn, redraw to hide the popup
             return
         endif
     endfor
-    if p.exclude->index(context[-1]) != -1
+    if state.exclude->index(context[-1]) != -1
         :redraw
         return
     endif
     var cmdstr = CmdStr()
     if cmdstr[-1] =~ '\s'
         var prompt = cmdstr->trim()
-        if p.abbreviations->index(prompt) != -1 ||
+        if state.abbreviations->index(prompt) != -1 ||
                 (options.alwayson && options.onspace->index(prompt) == -1 &&
-                Properties.onspace_hook->index(prompt) == -1)
+                State.onspace_hook->index(prompt) == -1)
             :redraw
             return
         endif
@@ -159,14 +167,14 @@ def DoComplete(oldcontext: string, timer: number)
 enddef
 
 export def SetPopupMenu(items: list<any>)
-    var p = allprops[win_getid()]
+    # var p = allprops[win_getid()]
     var context = getcmdline()
     var cmdname = CmdLead()
     var cmdsuffix = context->matchstr('\S\+$')
     if !options.highlight || context[-1] =~ '\s'
-        p.items = [items]
-    elseif p.highlight_hook->has_key(cmdname)
-        p.items = p.highlight_hook[cmdname](cmdsuffix, items)
+        state.items = [items]
+    elseif state.highlight_hook->has_key(cmdname)
+        state.items = state.highlight_hook[cmdname](cmdsuffix, items)
     else  # Add properties for syntax highlighting
         try
             var cols = []
@@ -179,16 +187,16 @@ export def SetPopupMenu(items: list<any>)
                 cols->add([st])
                 mlens->add(en - st)
             endfor
-            p.items = items->len() == cols->len() ? [items, cols, mlens] : [items]
+            state.items = items->len() == cols->len() ? [items, cols, mlens] : [items]
         catch  # '~' in cmdsuffix causes E33 in matchstrpos
-            p.items = [items]
+            state.items = [items]
         endtry
     endif
     # '&' and '$' completes Vim options and env variables respectively.
     var pos = max([' ', '&', '$']->mapnew((_, v) => context->strridx(v)))
-    p.pmenu.SetText(p.items, options.pum ? pos + 2 : 1)
-    if p.items[0]->len() > 0
-        p.pmenu.Show()
+    state.pmenu.SetText(state.items, options.pum ? pos + 2 : 1)
+    if state.items[0]->len() > 0
+        state.pmenu.Show()
     endif
     # Note: If command-line is not disabled here, it will intercept key inputs
     # before the popup does. This prevents the popup from handling certain keys,
@@ -197,39 +205,38 @@ export def SetPopupMenu(items: list<any>)
 enddef
 
 def SelectItemPost(index: number)
-    var p = allprops[win_getid()]
     var cmdname = CmdLead()
-    if !p.select_item_hook->has_key(cmdname) || !p.select_item_hook[cmdname](p.items[0][index])
+    if !state.select_item_hook->has_key(cmdname) || !state.select_item_hook[cmdname](state.items[0][index])
         var context = Context()
-        setcmdline(context->matchstr('^.*\s\ze') .. p.items[0][index])
+        setcmdline(context->matchstr('^.*\s\ze') .. state.items[0][index])
     endif
 enddef
 
 def FilterFn(winid: number, key: string): bool
-    var p = allprops[win_getid()]
     # Note: <C-n/p> send <up/down> arrow codes (:h :t_ku).
     #   Do not map these since they are used to cycle through history.
     if key ==? "\<Tab>"
-        p.pmenu.SelectItem('j', SelectItemPost) # Next item
+        state.pmenu.SelectItem('j', SelectItemPost) # Next item
     elseif key ==? "\<S-Tab>"
-        p.pmenu.SelectItem('k', SelectItemPost) # Prev item
+        state.pmenu.SelectItem('k', SelectItemPost) # Prev item
     elseif key ==? "\<PageUp>"
-        p.pmenu.PageUp()
+        state.pmenu.PageUp()
     elseif key ==? "\<PageDown>"
-        p.pmenu.PageDown()
+        state.pmenu.PageDown()
     elseif key ==? "\<C-e>" || key ==? "\<End>" # Vim bug: <C-e> sends <End>(<80>@7, :h t_@7)) due to timer_start.
-        p.pmenu.Hide()
+        state.pmenu.Hide()
         :redraw
-        p.Clear()
+        state.Clear()
         CmdlineAbortHook()
-        remove(allprops, win_getid())
+        state = null_object
+        # remove(allprops, win_getid())
     elseif key ==? "\<CR>"
         return false # Let Vim process these keys further
     elseif key ==? "\<ESC>"
         CmdlineAbortHook()
         return false
     else
-        p.pmenu.Hide()
+        state.pmenu.Hide()
         # Note: Redrawing after Hide() causes the popup to disappear after
         # <left>/<right> arrow keys are pressed. Arrow key events are not
         # captured by this function. Calling Hide() without triggering a redraw
@@ -246,8 +253,9 @@ enddef
 def CallbackFn(winid: number, result: any)
     if result == -1 # Popup force closed due to <c-c> or cursor mvmt
         CmdlineAbortHook()
-        allprops[win_getid()].Clear()
-        remove(allprops, win_getid())
+        state.Clear()
+        state = null_object
+        # remove(allprops, win_getid())
         feedkeys("\<c-c>", 'n')
     endif
 enddef
@@ -260,57 +268,65 @@ def CmdStr(): string
     return getcmdline()->substitute('\(^\|\s\)vim9\%[cmd]!\?\s*', '', '')
 enddef
 
-def CmdLead(): string
+export def CmdLead(): string
     return CmdStr()->matchstr('^\S\+')
 enddef
 
 def CmdlineLeaveHook(selected_item: string, first_item: string)
     var cmdname = CmdLead()
-    var p = allprops[win_getid()]
-    if p.cmdline_leave_hook->has_key(cmdname)
-        p.cmdline_leave_hook[cmdname](selected_item, first_item)
+    if state.cmdline_leave_hook->has_key(cmdname)
+        state.cmdline_leave_hook[cmdname](selected_item, first_item)
     endif
 enddef
 
 def CmdlineAbortHook()
-    var cmdname = CmdLead()
-    var p = allprops[win_getid()]
-    if p.cmdline_abort_hook->has_key(cmdname)
-        p.cmdline_abort_hook[cmdname]()
-    endif
+    for Hook in State.cmdline_abort_hook
+        Hook()
+    endfor
+    # var cmdname = CmdLead()
+    # var p = allprops[win_getid()]
+    # if p.cmdline_abort_hook->has_key(cmdname)
+    #     p.cmdline_abort_hook[cmdname]()
+    # endif
 enddef
 
-export def AddCmdlineEnterHook(Callback: func())
-    Properties.cmdline_enter_hook->add(Callback)
-enddef
+# export def AddCmdlineEnterHook(Callback: func())
+#     Properties.cmdline_enter_hook->add(Callback)
+# enddef
 
 export def AddOnspaceHook(cmd: string)
-    Properties.onspace_hook->add(cmd)
+    State.onspace_hook->add(cmd)
 enddef
 
 export def AddCmdlineLeaveHook(cmd: string, Callback: func(string, string))
-    allprops[win_getid()].cmdline_leave_hook[cmd] = Callback
+    state.cmdline_leave_hook[cmd] = Callback
 enddef
 
-export def AddCmdlineAbortHook(cmd: string, Callback: func())
-    allprops[win_getid()].cmdline_abort_hook[cmd] = Callback
+# export def AddCmdlineAbortHook(cmd: string, Callback: func())
+export def AddCmdlineAbortHook(Callback: func())
+    # allprops[win_getid()].cmdline_abort_hook[cmd] = Callback
+    State.cmdline_abort_hook->add(Callback)
 enddef
 
 export def AddSelectItemHook(cmd: string, Callback: func(string): bool)
-    allprops[win_getid()].select_item_hook[cmd] = Callback
+    state.select_item_hook[cmd] = Callback
 enddef
 
 export def AddHighlightHook(cmd: string, Callback: func(string, list<any>): list<any>)
-    allprops[win_getid()].highlight_hook[cmd] = Callback
+    state.highlight_hook[cmd] = Callback
+enddef
+
+export def ValidState(): bool
+    return state != null_object
 enddef
 
 export def PrintHooks()
-    echom Properties.cmdline_enter_hook
-    echom Properties.onspace_hook
-    echom allprops[win_getid()].cmdline_leave_hook
-    echom allprops[win_getid()].cmdline_abort_hook
-    echom allprops[win_getid()].select_item_hook
-    echom allprops[win_getid()].highlight_hook
+    # echom State.cmdline_enter_hook
+    echom State.onspace_hook
+    echom State.cmdline_abort_hook
+    echom state.cmdline_leave_hook
+    echom state.select_item_hook
+    echom state.highlight_hook
 enddef
 
 # vim: tabstop=8 shiftwidth=4 softtabstop=4 expandtab

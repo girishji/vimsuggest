@@ -2,91 +2,109 @@ vim9script
 
 import autoload '../cmd.vim'
 
-export class Fuzzy
-    var items = []
-    var matches = [[], [], []]
-    var candidate = null_string
-    var cmdname = null_string
+var items = []
+var matches = [[], [], []]
+var candidate = null_string
+var cmdname = null_string
 
-    def DoComplete(arg: string, cmdline: string, cursorpos: number,
-            GetItems: func(): list<any> = null_function,
-            GetText: func(dict<any>): string = null_function,
-            FuzzyMatcher: func(list<any>, string): list<any> = null_function): list<any>
-        if this.cmdname == null_string || this._CmdLead() !=# this.cmdname  # When command is rewritten after <bs>
+def Clear()
+    items = []
+    matches = [[], [], []]
+    candidate = null_string
+    cmdname = null_string
+enddef
+
+cmd.AddCmdlineAbortHook(() => {
+    Clear()
+})
+
+export def DoComplete(_: string, cmdline: string, cursorpos: number,
+        GetItems: func(): list<any> = null_function,
+        GetText: func(dict<any>): string = null_function,
+        FuzzyMatcher: func(list<any>, string): list<any> = null_function): list<any>
+    if cmdname == null_string
+        cmdname = cmd.CmdLead()
+        items = GetItems()
+        if items->empty()
+            Clear()
             return []
         endif
-        if this.items->empty()
-            this._Clear()
-            this.items = GetItems()
-        endif
-        if this.items->empty()
+        SetupHooks(cmdname)
+    else
+        if cmd.CmdLead() !=# cmdname  # When command is rewritten after <bs>
             return []
         endif
-        var items = (this.items[0]->type() == v:t_dict) ?
-            this.items->mapnew((_, v) => GetText(v)) : this.items
-        if arg != null_string
-            this.matches = FuzzyMatcher != null_function ? items->FuzzyMatcher(arg) :
-                items->matchfuzzypos(arg, {matchseq: 1, limit: 100})
-            this.matches[1]->map((idx, v) => {
-                # Char to byte index (needed by matchaddpos)
-                return v->mapnew((_, c) => this.matches[0][idx]->byteidx(c))
-            })
-            this.matches[2]->map((_, _) => 1)
-            return this.matches[0]
-        endif
-        return items
-    enddef
+    endif
+    # if items->empty()
+    #     Clear()
+    #     items = GetItems()
+    #     if items->empty()
+    #         return []
+    #     endif
+    # endif
+    var text_items = (items[0]->type() == v:t_dict) ?
+        items->mapnew((_, v) => GetText(v)) : items
+    var lastword = getcmdline()->matchstr('\S\+$')
+    if lastword != null_string
+        matches = FuzzyMatcher != null_function ? items->FuzzyMatcher(lastword) :
+            text_items->matchfuzzypos(lastword, {matchseq: 1, limit: 100})
+        matches[1]->map((idx, v) => {
+            # Char to byte index (needed by matchaddpos)
+            return v->mapnew((_, c) => matches[0][idx]->byteidx(c))
+        })
+        matches[2]->map((_, _) => 1)
+        return matches[0]
+    endif
+    return text_items
+enddef
 
-    def DoCommand(arglead: string = null_string, DoAction: func(any) = null_function,
-            GetText: func(dict<any>): string = null_function)
-        if this.candidate == null_string && arglead == null_string && this.items->empty()
-            return
-        endif
-        var isdict = this.items[0]->type() == v:t_dict
-        if isdict && GetText == null_function
-            echoerr "DoCommand: GetText function not specified"
-        endif
-        for str in [this.candidate, arglead] # After <c-e>, wildmenu can select an item in 'arglead'
-            if str != null_string
-                var idx = isdict ? this.items->indexof((_, v) => GetText(v) == str) :
-                    this.items->index(str)
-                if idx != -1
-                    DoAction(this.items[idx])
-                    break
-                endif
+export def DoCommand(arglead: string = null_string, DoAction: func(any) = null_function,
+        GetText: func(dict<any>): string = null_function)
+    # if candidate == null_string && arglead == null_string && items->empty()
+    #     return
+    # endif
+    # if candidate != null_string  # items list cannot be empty
+    #     var isdict = items[0]->type() == v:t_dict
+    #     # if isdict && GetText == null_function
+    #     #     echoerr "DoCommand: GetText function not specified"
+    #     # endif
+    # endif
+
+    for str in [candidate, arglead] # After <c-e>, wildmenu can select an item in 'arglead'
+        if str != null_string
+            var isdict = (!items->empty() && items[0]->type() == v:t_dict)
+            var idx = isdict ? items->indexof((_, v) => GetText(v) == str) : items->index(str)
+            if idx != -1
+                DoAction(items[idx])
+                break
             endif
-        endfor
-    enddef
+        endif
+    endfor
+    Clear()
+enddef
 
-    def new(cmdname: string)
-        this.cmdname = cmdname  # XXX Vim bug: cmdline-height goes +1 after the
-                                # <space> when a command is typed (not keymapped).
-                                # Maybe someone left a 'echo ""' in Vim code.
-        cmd.AddHighlightHook(cmdname, (suffix: string, _: list<any>): list<any> => {
-            return suffix != null_string && !this.matches[0]->empty() ?
-                this.matches : this.items
-        })
-        cmd.AddCmdlineLeaveHook(cmdname, (selected_item, first_item) => {
-            this.candidate = selected_item == null_string ? first_item : selected_item
-        })
-        cmd.AddCmdlineAbortHook(cmdname, () => {
-            this._Clear()
-        })
-        cmd.AddSelectItemHook(cmdname, (_) => {
-            return true # Do not update cmdline with selected item
-        })
-    enddef
+def SetupHooks(name: string)
+    if !cmd.ValidState()
+        return  # After <c-e>, cmd 'state' object has been removed
+    endif
+    # name = name  # XXX Vim bug: cmdline-height goes +1 after the
+    # # <space> when a command is typed (not keymapped).
+    # # Maybe someone left a 'echo ""' in Vim code.
+    cmd.AddHighlightHook(name, (suffix: string, _: list<any>): list<any> => {
+        return suffix != null_string && !matches[0]->empty() ?
+            matches : items
+    })
+    cmd.AddCmdlineLeaveHook(name, (selected_item, first_item) => {
+        candidate = selected_item == null_string ? first_item : selected_item
+    })
+    # cmd.AddCmdlineAbortHook(() => {
+    #     Clear()
+    # })
+    cmd.AddSelectItemHook(name, (_) => {
+        return true # Do not update cmdline with selected item
+    })
+enddef
 
-    def _Clear()
-        var items = []
-        var matches = [[], [], []]
-        var candidate = null_string
-    enddef
 
-    def _CmdLead(): string
-        return getcmdline()->substitute('\(^\|\s\)vim9\%[cmd]!\?\s*', '', '')->matchstr('^\S\+')
-    enddef
-
-endclass
 
 # vim: tabstop=8 shiftwidth=4 softtabstop=4 expandtab
