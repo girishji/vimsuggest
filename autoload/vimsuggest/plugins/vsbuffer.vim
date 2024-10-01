@@ -12,6 +12,9 @@ cmd.AddOnspaceHook('VSbuffer')
 def DoComplete(arglead: string, cmdline: string, cursorpos: number): list<any>
     if !fz->has_key(win_getid())
         fz[win_getid()] = fuzzy.Fuzzy.new('VSbuffer')
+        cmd.AddCmdlineAbortHook('VSbuffer', () => {
+            remove(fz, win_getid())
+        })
     endif
     # return ['asdf', 'ew']
     return fz[win_getid()].DoComplete(arglead, cmdline, cursorpos, function(Buffers, [false]), GetText)

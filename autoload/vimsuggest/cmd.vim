@@ -66,13 +66,11 @@ export def Setup()
             }
             autocmd CmdlineChanged  :  options.alwayson ? Complete() : TabComplete()
             autocmd CmdlineLeave    :  {
-                if allprops->has_key(win_getid())
+                if allprops->has_key(win_getid()) # If <c-e>, props would've been removed
                     var p = allprops[win_getid()]
                     CmdlineLeaveHook(p.pmenu.SelectedItem(), p.pmenu.FirstItem())
                     allprops[win_getid()].Clear()
                     remove(allprops, win_getid())
-                else # During <c-e>
-                    CmdlineAbortHook()
                 endif
             }
         augroup END
@@ -223,6 +221,7 @@ def FilterFn(winid: number, key: string): bool
         p.pmenu.Hide()
         :redraw
         p.Clear()
+        CmdlineAbortHook()
         remove(allprops, win_getid())
     elseif key ==? "\<CR>"
         return false # Let Vim process these keys further
@@ -303,6 +302,15 @@ enddef
 
 export def AddHighlightHook(cmd: string, Callback: func(string, list<any>): list<any>)
     allprops[win_getid()].highlight_hook[cmd] = Callback
+enddef
+
+export def PrintHooks()
+    echom Properties.cmdline_enter_hook
+    echom Properties.onspace_hook
+    echom allprops[win_getid()].cmdline_leave_hook
+    echom allprops[win_getid()].cmdline_abort_hook
+    echom allprops[win_getid()].select_item_hook
+    echom allprops[win_getid()].highlight_hook
 enddef
 
 # vim: tabstop=8 shiftwidth=4 softtabstop=4 expandtab
