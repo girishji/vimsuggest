@@ -13,7 +13,6 @@ export def DoComplete(context: string, line: string, cursorpos: number,
         cmdstr: string = null_string, shellprefix: string = null_string,
         async: bool = true, timeout: number = 2000,
         max_items: number = 1000): list<any>
-    echom cmd.CmdStr()
     Clear()
     # Note: 'line' arg contains text up to cursorpos only. Use the whole cmdline.
     var space_escaped = cmd.CmdStr()->substitute('\\ ', '', 'g') # Compress escaped spaces
@@ -53,43 +52,63 @@ export def DoCompleteSh(context: string, line: string, cursorpos: number,
     return DoComplete(context, line, cursorpos, '', 'sh -c', async, timeout, max_items)
 enddef
 
-export def DoCommand(action: string, arg1: string, arg2: string = '',
-        arg3: string = '', arg4: string = '', arg5: string = '',
-        arg6: string = '', arg7: string = '', arg8: string = '',
-        arg9: string = '', arg10: string = '', arg11: string = '',
-        arg12: string = '', arg13: string = '', arg14: string = '',
-        arg15: string = '', arg16: string = '', arg17: string = '',
-        arg18: string = '', arg19: string = '', arg20: string = '')
+export def DoCommand(ActionFn: func(string), action: string, arg1: string = '',
+        arg2: string = '', arg3: string = '', arg4: string = '',
+        arg5: string = '', arg6: string = '', arg7: string = '',
+        arg8: string = '', arg9: string = '', arg10: string = '',
+        arg11: string = '', arg12: string = '', arg13: string = '',
+        arg14: string = '', arg15: string = '', arg16: string = '',
+        arg17: string = '', arg18: string = '', arg19: string = '',
+        arg20: string = '')
     if candidate != null_string
-        DefaultAction(candidate, action->substitute('\\ ', ' ', 'g'))
+        if ActionFn != null_function
+            ActionFn(candidate)
+        else
+            DoAction(candidate, action->substitute('\\ ', ' ', 'g'))
+        endif
     endif
 enddef
 
-export def DoAction(arg: string = null_string, ActionFn: func(string) = null_function)
-    if candidate != null_string
-        var A = (ActionFn != null_function) ? ActionFn : DefaultAction
-        A(candidate)
-    endif
-    Clear()
+# export def DoCommand(action: string, arg1: string, arg2: string = '',
+#         arg3: string = '', arg4: string = '', arg5: string = '',
+#         arg6: string = '', arg7: string = '', arg8: string = '',
+#         arg9: string = '', arg10: string = '', arg11: string = '',
+#         arg12: string = '', arg13: string = '', arg14: string = '',
+#         arg15: string = '', arg16: string = '', arg17: string = '',
+#         arg18: string = '', arg19: string = '', arg20: string = '')
+#     if candidate != null_string
+#         DefaultAction(candidate, action->substitute('\\ ', ' ', 'g'))
+#     endif
+# enddef
+
+# export def DoCmdAction(arg: string = null_string, ActionFn: func(string) = null_function)
+#     if candidate != null_string
+#         var A = (ActionFn != null_function) ? ActionFn : DefaultAction
+#         A(candidate)
+#     endif
+#     Clear()
+# enddef
+
+export def DefaultAction(tgt: string)
+    DoAction(null_string, tgt)
 enddef
 
-def DefaultAction(tgt: string, act: string = null_string)
+export def DoAction(excmd: string, tgt: string)
     if tgt->filereadable()
-        :exe $'{act == null_string ? "e" : act} {tgt}'
-    else  # Assume this is a 'grep' line
-        GrepVisitFile(tgt, act == null_string ? "b" : act)
+        :exe $'{excmd ?? "e"} {tgt}'
+    else  # Assume 'tgt' is a 'grep' output line
+        GrepVisitFile(excmd ?? "b", tgt)
     endif
 enddef
 
 # Extract file from grep output and edit it.
 # Let quicfix parse output of 'grep' for filename, line, column.
 # It deals with ':' in filename and other corner cases.
-export def GrepVisitFile(line: string, excmd: string = 'b')
+export def GrepVisitFile(excmd: string, line: string)
     var qfitem = getqflist({lines: [line]}).items[0]
     if qfitem->has_key('bufnr')
-        VisitBuffer(excmd, qfitem.bufnr, qfitem.lnum, qfitem.col, qfitem.vcol > 0)
-        if !qfitem.bufnr->getbufvar('&buflisted')
-            # getqflist keeps buffer unlisted
+        VisitBuffer(excmd ?? 'b', qfitem.bufnr, qfitem.lnum, qfitem.col, qfitem.vcol > 0)
+        if !qfitem.bufnr->getbufvar('&buflisted') # getqflist keeps buffer unlisted
             setbufvar(qfitem.bufnr, '&buflisted', 1)
         endif
     endif
@@ -118,6 +137,17 @@ def SetupHooks(name: string)
     cmd.AddSelectItemHook(name, (_) => {
         return true # Do not update cmdline with selected item
     })
+    def MatchGrepLine(line: string, pat: string): list<any> # Match grep output
+        return line->matchstrpos($'.*:.\{{-}}\zs{pat}')
+    enddef
+    cmd.AddHighlightHook(name, (suffix: string, itms: list<any>): list<any> => {
+        if suffix != null_string && !itms->empty()
+            return cmd.Highlight(suffix, itms,
+                itms[0]->filereadable() ? null_function : MatchGrepLine)
+        endif
+        return [itms]
+    })
+    cmd.AddNoExcludeHook(name)
 enddef
 
 def Clear()

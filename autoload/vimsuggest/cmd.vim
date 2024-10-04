@@ -12,15 +12,17 @@ class State
     var pmenu: popup.PopupMenu = null_object
     var abbreviations: list<any>
     var save_wildmenu: bool
-    # var exclude = ['~', '!', '%', '(', ')', '+', '-', '=', '<', '>', '?', ','] # VSGrep will not grep on '(', for ex.
-    var exclude = []
+    # Do not complete after the following characters. No worthwhile completions
+    # are shown by getcompletion()
+    var exclude = ['~', '!', '%', '(', ')', '+', '-', '=', '<', '>', '?', ',']
     public var items: list<any>
-    # Callbacks used by './extensions/*':
+    # Following are the callbacks used by addons.
     public static var onspace_hook = {}
     public static var cmdline_abort_hook = []
     public var highlight_hook = {}
     public var select_item_hook = {}
     public var cmdline_leave_hook = {}
+    public var noexclude_hook = {}
 
     def new()
         this.abbreviations = this._GetAbbrevs()
@@ -126,31 +128,26 @@ def DoComplete(oldcontext: string, timer: number)
     if state == null_object  # Additional check
         return
     endif
-    # var p = allprops[win_getid()]
     for pat in options.exclude
         if context =~ pat
             :redraw # popup_hide() already called in FilterFn, redraw to hide the popup
             return
         endif
     endfor
-    if state.exclude->index(context[-1]) != -1
+    var cmdstr = CmdStr()
+    var cmdlead = CmdLead()
+    if (!state.noexclude_hook->has_key(cmdlead) && state.exclude->index(context[-1]) != -1) ||
+            state.abbreviations->index(cmdlead) != -1 ||
+            (cmdstr =~ '^\s*\S\+\s\+$' && options.alwayson &&
+            options.onspace->index(cmdlead) == -1 &&
+            !State.onspace_hook->has_key(cmdlead))
         :redraw
         return
-    endif
-    var cmdstr = CmdStr()
-    if cmdstr[-1] =~ '\s'
-        var prompt = cmdstr->trim()
-        if state.abbreviations->index(prompt) != -1 ||
-                (options.alwayson && options.onspace->index(prompt) == -1 &&
-                !State.onspace_hook->has_key(prompt))
-            :redraw
-            return
-        endif
     endif
     var completions: list<any> = []
     if options.wildignore && cmdstr =~# '^\s*\(e\%[dit]!\?\|fin\%[d]!\?\)\s'
         # 'file_in_path' respects wildignore, 'cmdline' does not.
-        # :VSCmd edit ... -> should not be here.
+        # :VSCmd edit ... should not be here.
         completions = cmdstr->matchstr('^\S\+\s\+\zs.*')->getcompletion('file_in_path')
     else
         completions = context->getcompletion('cmdline')
@@ -163,8 +160,28 @@ def DoComplete(oldcontext: string, timer: number)
     SetPopupMenu(completions)
 enddef
 
+export def Highlight(suffix: string, itms: list<any>,
+        MatchFn: func(string, string): list<any> = null_function): list<any>
+    var res = [itms]
+    try
+        var cols = []
+        var mlens = []
+        for text in itms
+            var [_, st, en] = MatchFn != null_function ?
+                text->MatchFn(suffix) : text->matchstrpos(suffix)
+            if st == -1
+                break
+            endif
+            cols->add([st])
+            mlens->add(en - st)
+        endfor
+        res = itms->len() == cols->len() ? [itms, cols, mlens] : [itms]
+    catch  # '~' in cmdsuffix causes E33 in matchstrpos
+    endtry
+    return res
+enddef
+
 export def SetPopupMenu(items: list<any>)
-    # var p = allprops[win_getid()]
     var context = getcmdline()
     var cmdname = CmdLead()
     var cmdsuffix = context->matchstr('\S\+$')
@@ -173,21 +190,7 @@ export def SetPopupMenu(items: list<any>)
     elseif state.highlight_hook->has_key(cmdname)
         state.items = state.highlight_hook[cmdname](cmdsuffix, items)
     else  # Add properties for syntax highlighting
-        try
-            var cols = []
-            var mlens = []
-            for text in items
-                var [_, st, en] = text->matchstrpos(cmdsuffix)
-                if st == -1
-                    break
-                endif
-                cols->add([st])
-                mlens->add(en - st)
-            endfor
-            state.items = items->len() == cols->len() ? [items, cols, mlens] : [items]
-        catch  # '~' in cmdsuffix causes E33 in matchstrpos
-            state.items = [items]
-        endtry
+        state.items = Highlight(cmdsuffix, items)
     endif
     # '&' and '$' completes Vim options and env variables respectively.
     var pos = max([' ', '&', '$']->mapnew((_, v) => context->strridx(v)))
@@ -286,13 +289,15 @@ export def AddOnSpaceHook(cmd: string)
     State.onspace_hook[cmd] = 1
 enddef
 
+export def AddNoExcludeHook(cmd: string)
+    state.noexclude_hook[cmd] = 1
+enddef
+
 export def AddCmdlineLeaveHook(cmd: string, Callback: func(string, string))
     state.cmdline_leave_hook[cmd] = Callback
 enddef
 
-# export def AddCmdlineAbortHook(cmd: string, Callback: func())
 export def AddCmdlineAbortHook(Callback: func())
-    # allprops[win_getid()].cmdline_abort_hook[cmd] = Callback
     State.cmdline_abort_hook->add(Callback)
 enddef
 

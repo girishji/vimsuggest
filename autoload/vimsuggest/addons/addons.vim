@@ -7,10 +7,10 @@ import autoload './live.vim'
 
 export def Enable()
     command! -nargs=* -complete=customlist,DoFindComplete VSFind find.DoCommand(<f-args>, 'edit')
-    command! -nargs=+ -complete=customlist,DoLiveFindComplete VSLiveFind live.DoAction(<f-args>)
-    command! -nargs=+ -complete=customlist,DoLiveGrepComplete VSLiveGrep live.DoAction(<f-args>)
-    command! -nargs=* -complete=customlist,live.DoComplete VSLive live.DoCommand(<f-args>)
-    command! -nargs=* -complete=customlist,live.DoCompleteSh VSLiveSh live.DoCommand(<f-args>)
+    command! -nargs=+ -complete=customlist,DoLiveFindComplete VSLiveFind live.DoCommand(live.DefaultAction, <f-args>)
+    command! -nargs=+ -complete=customlist,DoLiveGrepComplete VSLiveGrep live.DoCommand(live.DefaultAction, <f-args>)
+    command! -nargs=* -complete=customlist,live.DoComplete VSLive live.DoCommand(live.DefaultAction, <f-args>)
+    command! -nargs=* -complete=customlist,live.DoCompleteSh VSLiveSh live.DoCommand(live.DefaultAction, <f-args>)
     command! -nargs=* -complete=customlist,DoBufferComplete VSBuffer DoBufferCommand(<f-args>)
     command! -nargs=* -complete=customlist,DoMRUComplete VSMru DoMRUCommand(<f-args>)
 enddef

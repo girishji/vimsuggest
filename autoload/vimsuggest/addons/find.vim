@@ -100,6 +100,7 @@ def SetupHooks(name: string)
     cmd.AddSelectItemHook(name, (_) => {
         return true # Do not update cmdline with selected item
     })
+    cmd.AddNoExcludeHook(name)
 enddef
 
 def Clear()
