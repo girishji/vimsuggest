@@ -3,13 +3,14 @@ vim9script
 import autoload '../cmd.vim'
 import autoload './fuzzy.vim'
 import autoload './find.vim'
-import autoload './active.vim'
+import autoload './live.vim'
 
 export def Enable()
     command! -nargs=* -complete=customlist,DoFindComplete VSFind find.DoCommand(<f-args>, 'edit')
-    command! -nargs=+ -complete=customlist,DoActiveFindComplete VSActiveFind active.DoAction(<f-args>)
-    command! -nargs=+ -complete=customlist,DoActiveGrepComplete VSActiveGrep active.DoAction(<f-args>, active.GrepVisitFile)
-    command! -nargs=* -complete=customlist,active.DoComplete VSCmd active.DoCommand(<q-args>)
+    command! -nargs=+ -complete=customlist,DoLiveFindComplete VSLiveFind live.DoAction(<f-args>)
+    command! -nargs=+ -complete=customlist,DoLiveGrepComplete VSLiveGrep live.DoAction(<f-args>)
+    command! -nargs=* -complete=customlist,live.DoComplete VSLive live.DoCommand(<f-args>)
+    command! -nargs=* -complete=customlist,live.DoCompleteSh VSLiveSh live.DoCommand(<f-args>)
     command! -nargs=* -complete=customlist,DoBufferComplete VSBuffer DoBufferCommand(<f-args>)
     command! -nargs=* -complete=customlist,DoMRUComplete VSMru DoMRUCommand(<f-args>)
 enddef
@@ -23,18 +24,18 @@ enddef
 
 ## (Live) Find Files
 
-def DoActiveFindComplete(A: string, L: string, C: number): list<any>
-    return active.DoComplete(A, L, C, 'find . \! \( -path "*/.*" -prune \) -type f -follow -name')
+def DoLiveFindComplete(A: string, L: string, C: number): list<any>
+    return live.DoComplete(A, L, C, 'find . \! \( -path "*/.*" -prune \) -type f -follow -name')
 enddef
 
 ## (Live) Grep
 
-def DoActiveGrepComplete(A: string, L: string, C: number): list<any>
+def DoLiveGrepComplete(A: string, L: string, C: number): list<any>
     var macos = has('macunix')
     var flags = macos ? '-REIHSins' : '-REIHins'
     var cmdstr = $'grep --color=never {flags}'
     # 'sh -c' is needed for {} shell substitution.
-    return active.DoComplete(A, L, C, cmdstr .. ' --exclude="{.gitignore,.swp,.zwc,tags,./.git/*}"', 'sh -c')
+    return live.DoComplete(A, L, C, cmdstr .. ' --exclude="{.gitignore,.swp,.zwc,tags,./.git/*}"', 'sh -c')
 enddef
 
 ## Buffers

@@ -22,13 +22,11 @@ export def DoComplete(context: string, line: string, cursorpos: number,
     if cmdstr != null_string
         var suffix = cmd.CmdStr()->matchstr('\S\+\s*\zs.*$')
         if suffix != null_string
-            # cstr = $'{cmdstr} "{Escape(suffix)}"'
             cstr = $'{cmdstr} "{suffix}"'
         endif
     elseif parts->len() > 3  # Ex cmd and Sh cmd entered through cmdline
         # 'expandcmd' expands '~/path', but also causes '\' to be removed, causing '\' hell.
         cstr = parts[2 : ]->mapnew((_, v) => v =~ '[~$]' ? expandcmd(v) : v)->join(' ')
-        # echom 'cstr:' cstr
     endif
     if cstr != null_string
         if async
@@ -49,6 +47,12 @@ export def DoComplete(context: string, line: string, cursorpos: number,
     return items
 enddef
 
+export def DoCompleteSh(context: string, line: string, cursorpos: number,
+        async: bool = true, timeout: number = 2000,
+        max_items: number = 1000): list<any>
+    return DoComplete(context, line, cursorpos, '', 'sh -c', async, timeout, max_items)
+enddef
+
 export def DoCommand(action: string, arg1: string, arg2: string = '',
         arg3: string = '', arg4: string = '', arg5: string = '',
         arg6: string = '', arg7: string = '', arg8: string = '',
@@ -57,27 +61,33 @@ export def DoCommand(action: string, arg1: string, arg2: string = '',
         arg15: string = '', arg16: string = '', arg17: string = '',
         arg18: string = '', arg19: string = '', arg20: string = '')
     if candidate != null_string
-        :exe $'{action->substitute('\\ ', ' ', 'g')} {candidate}'
+        DefaultAction(candidate, action->substitute('\\ ', ' ', 'g'))
     endif
 enddef
 
 export def DoAction(arg: string = null_string, ActionFn: func(string) = null_function)
     if candidate != null_string
-        var A = (ActionFn != null_function) ? ActionFn : (s) => {
-            :exe $'edit {s}'
-        }
+        var A = (ActionFn != null_function) ? ActionFn : DefaultAction
         A(candidate)
     endif
     Clear()
 enddef
 
+def DefaultAction(tgt: string, act: string = null_string)
+    if tgt->filereadable()
+        :exe $'{act == null_string ? "e" : act} {tgt}'
+    else  # Assume this is a 'grep' line
+        GrepVisitFile(tgt, act == null_string ? "b" : act)
+    endif
+enddef
+
 # Extract file from grep output and edit it.
 # Let quicfix parse output of 'grep' for filename, line, column.
 # It deals with ':' in filename and other corner cases.
-export def GrepVisitFile(line: string)
+export def GrepVisitFile(line: string, excmd: string = 'b')
     var qfitem = getqflist({lines: [line]}).items[0]
     if qfitem->has_key('bufnr')
-        VisitBuffer(qfitem.bufnr, qfitem.lnum, qfitem.col, qfitem.vcol > 0)
+        VisitBuffer(excmd, qfitem.bufnr, qfitem.lnum, qfitem.col, qfitem.vcol > 0)
         if !qfitem.bufnr->getbufvar('&buflisted')
             # getqflist keeps buffer unlisted
             setbufvar(qfitem.bufnr, '&buflisted', 1)
@@ -85,8 +95,8 @@ export def GrepVisitFile(line: string)
     endif
 enddef
 
-def VisitBuffer(bufnr: number, lnum: number = -1, col: number = -1, visualcol: bool = false)
-    var cmdstr = 'b'
+def VisitBuffer(excmd: string, bufnr: number, lnum: number = -1, col: number = -1, visualcol: bool = false)
+    var cmdstr = excmd
     if lnum > 0
         if col > 0
             var pos = visualcol ? 'setcharpos' : 'setpos'
@@ -96,18 +106,6 @@ def VisitBuffer(bufnr: number, lnum: number = -1, col: number = -1, visualcol: b
         endif
     endif
     :exe $":{cmdstr} {bufnr}"
-enddef
-
-export def Escape(s: string): string
-    if &shellxquote == '('  # for windows, see ':h sxq'
-        return s->substitute('\([' .. &shellxescape .. ']\)', '^\1', 'g')
-    else
-        var escaped = s->substitute('\\', '\\\\\\\', 'g')
-        escaped = escaped->substitute('\[', '\\\\\\[', 'g')
-        escaped = escaped->substitute('\([ "]\)', '\\\1', 'g')
-        escaped = escaped->substitute('\([?()*$^.+|-]\)', '\\\\\1', 'g')
-        return escaped
-    endif
 enddef
 
 def SetupHooks(name: string)
