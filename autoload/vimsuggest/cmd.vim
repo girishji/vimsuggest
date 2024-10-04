@@ -4,7 +4,7 @@ vim9script
 
 import autoload './options.vim' as opt
 import autoload './popup.vim'
-import autoload './plugins/plugins.vim'
+import autoload './addons/addons.vim'
 
 var options = opt.options.cmd
 
@@ -12,11 +12,11 @@ class State
     var pmenu: popup.PopupMenu = null_object
     var abbreviations: list<any>
     var save_wildmenu: bool
-    var exclude = ['~', '!', '%', '(', ')', '+', '-', '=', '<', '>', '?', ',']
+    # var exclude = ['~', '!', '%', '(', ')', '+', '-', '=', '<', '>', '?', ','] # VSGrep will not grep on '(', for ex.
+    var exclude = []
     public var items: list<any>
-    # Callbacks for plugins:
-    public static var onspace_hook = []
-    # public static var cmdline_enter_hook = []
+    # Callbacks used by './extensions/*':
+    public static var onspace_hook = {}
     public static var cmdline_abort_hook = []
     public var highlight_hook = {}
     public var select_item_hook = {}
@@ -49,9 +49,7 @@ class State
     enddef
 endclass
 
-var state: State = null_object
-
-# export var allprops: dict<Properties> = {}  # One per winid
+export var state: State = null_object
 
 export def Setup()
     if options.enable
@@ -59,12 +57,6 @@ export def Setup()
             autocmd CmdlineEnter    :  {
                 state = State.new()
                 EnableCmdline()
-                if options.plugins
-                    plugins.Setup()
-                endif
-                # for Hook in Properties.cmdline_enter_hook
-                #     Hook()
-                # endfor
             }
             autocmd CmdlineChanged  :  options.alwayson ? Complete() : TabComplete()
             autocmd CmdlineLeave    :  {
@@ -81,12 +73,18 @@ export def Setup()
                 # endif
             }
         augroup END
+        if options.addons
+            addons.Enable()
+        endif
     endif
 enddef
 
 export def Teardown()
     augroup VimSuggestCmdAutocmds | autocmd!
     augroup END
+    if options.addons
+        addons.Disable()
+    endif
 enddef
 
 def EnableCmdline()
@@ -125,8 +123,6 @@ def DoComplete(oldcontext: string, timer: number)
     # Note: If <esc> is mapped to Ex cmd (say 'nohls') in normal mode, then Vim
     # calls DoComplete after CmdlineLeave (because of timer), and props will not
     # be available. Use 'state' only after 'oldcontext' above.
-
-    # if !allprops->has_key(win_getid())  # Additional check
     if state == null_object  # Additional check
         return
     endif
@@ -146,14 +142,15 @@ def DoComplete(oldcontext: string, timer: number)
         var prompt = cmdstr->trim()
         if state.abbreviations->index(prompt) != -1 ||
                 (options.alwayson && options.onspace->index(prompt) == -1 &&
-                State.onspace_hook->index(prompt) == -1)
+                !State.onspace_hook->has_key(prompt))
             :redraw
             return
         endif
     endif
     var completions: list<any> = []
-    if options.wildignore && cmdstr =~# '\(^\|\s\)\(e\%[dit]!\?\|fin\%[d]!\?\)\s'
+    if options.wildignore && cmdstr =~# '^\s*\(e\%[dit]!\?\|fin\%[d]!\?\)\s'
         # 'file_in_path' respects wildignore, 'cmdline' does not.
+        # :VSCmd edit ... -> should not be here.
         completions = cmdstr->matchstr('^\S\+\s\+\zs.*')->getcompletion('file_in_path')
     else
         completions = context->getcompletion('cmdline')
@@ -197,11 +194,11 @@ export def SetPopupMenu(items: list<any>)
     state.pmenu.SetText(state.items, options.pum ? pos + 2 : 1)
     if state.items[0]->len() > 0
         state.pmenu.Show()
+        # Note: If command-line is not disabled here, it will intercept key inputs
+        # before the popup does. This prevents the popup from handling certain keys,
+        # such as <Tab> properly.
+        DisableCmdline()
     endif
-    # Note: If command-line is not disabled here, it will intercept key inputs
-    # before the popup does. This prevents the popup from handling certain keys,
-    # such as <Tab> properly.
-    DisableCmdline()
 enddef
 
 def SelectItemPost(index: number)
@@ -264,7 +261,7 @@ def Context(): string
     return getcmdline()->strpart(0, getcmdpos() - 1)
 enddef
 
-def CmdStr(): string
+export def CmdStr(): string
     return getcmdline()->substitute('\(^\|\s\)vim9\%[cmd]!\?\s*', '', '')
 enddef
 
@@ -283,19 +280,10 @@ def CmdlineAbortHook()
     for Hook in State.cmdline_abort_hook
         Hook()
     endfor
-    # var cmdname = CmdLead()
-    # var p = allprops[win_getid()]
-    # if p.cmdline_abort_hook->has_key(cmdname)
-    #     p.cmdline_abort_hook[cmdname]()
-    # endif
 enddef
 
-# export def AddCmdlineEnterHook(Callback: func())
-#     Properties.cmdline_enter_hook->add(Callback)
-# enddef
-
-export def AddOnspaceHook(cmd: string)
-    State.onspace_hook->add(cmd)
+export def AddOnSpaceHook(cmd: string)
+    State.onspace_hook[cmd] = 1
 enddef
 
 export def AddCmdlineLeaveHook(cmd: string, Callback: func(string, string))
@@ -321,7 +309,6 @@ export def ValidState(): bool
 enddef
 
 export def PrintHooks()
-    # echom State.cmdline_enter_hook
     echom State.onspace_hook
     echom State.cmdline_abort_hook
     echom state.cmdline_leave_hook

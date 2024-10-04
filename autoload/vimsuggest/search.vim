@@ -46,14 +46,11 @@ class State
     enddef
 endclass
 
-# var allprops: dict<Properties> = {}  # One per winid
 var state: State = null_object
 
 # During async search <esc> after a failed search (where pattern does not exist
 # in buffer) should restore previous hlsearch if any.
 def RestoreHLSearch(): string
-    # props = allprops[win_getid()]
-    # if props.pmenu.Hidden() && props.save_searchreg != null_string
     if state != null_object
         if state.pmenu.Hidden() && State.save_searchreg != null_string
             setreg('/', State.save_searchreg)
@@ -79,7 +76,6 @@ export def Setup()
                 if state != null_object
                     state.Clear()
                     state = null_object
-                    # remove(allprops, win_getid())
                 endif
             }
         augroup END
@@ -185,7 +181,6 @@ def FilterFn(winid: number, key: string): bool
         # Remove the popup menu and resign from autocompletion.
         state.Clear()
         state = null_object
-        # remove(allprops, win_getid())
     elseif key == "\<CR>"
         IncSearchHighlightClear()
         return false

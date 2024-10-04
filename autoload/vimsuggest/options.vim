@@ -3,7 +3,7 @@ vim9script
 export var options: dict<any> = {
     search: {
         enable: true,
-        pum: true,         #   'false' for flat and 'true' for stacked popup menu
+        pum: true,         #   'false' for flat and 'true' for vertically stacked popup menu
         fuzzy: false,      #   fuzzy completion
         alwayson: true,    #   when 'false' press <tab> to open popup menu
         popupattrs: {      #   dictionary of attributes passed to popup window
@@ -29,7 +29,7 @@ export var options: dict<any> = {
         },
         wildignore: true,
         highlight: true,
-        plugins: true,
+        addons: true,
     }
 }
 

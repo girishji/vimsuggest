@@ -2,6 +2,29 @@
 Autocompletion for Vim's command-line.
 <div style="display: none;">
 
+					*backtick-expansion* *`-expansion*
+On Unix and a few other systems you can also use backticks for the file name
+argument, for example: >
+	:next `find . -name ver\\*.c -print`
+	:view `ls -t *.patch  \| head -n1`
+Vim will run the command in backticks using the 'shell' and use the standard
+output as argument for the given Vim command (error messages from the shell
+command will be discarded).
+
+
+					*starstar-wildcard*
+Expanding "**" is possible on Unix, Win32, macOS and a few other systems (but
+it may depend on your 'shell' setting on Unix and macOS. It's known to work
+correctly for zsh; for bash this requires at least bash version >= 4.X).
+This allows searching a directory tree.  This goes up to 100 directories deep.
+Note there are some commands where this works slightly differently, see
+|file-searching|.
+Example: >
+	:n **/*.txt
+
+
+
+
 let s=reltime()|call getcompletion('find **', 'cmdline')|echo s->reltime()->reltimestr()
 1sec in vim/*
 
