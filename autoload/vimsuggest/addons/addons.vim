@@ -2,24 +2,23 @@ vim9script
 
 import autoload '../cmd.vim'
 import autoload './fuzzy.vim'
-import autoload './find.vim'
 import autoload './live.vim'
 
 export def Enable()
-    command! -nargs=* -complete=customlist,DoFindComplete VSFind find.DoCommand(<f-args>, 'edit')
+    command! -nargs=* -complete=customlist,DoFindFiles VSFind fuzzy.DoFileAction('edit', <f-args>)
     command! -nargs=+ -complete=customlist,DoLiveFindComplete VSLiveFind live.DoCommand(live.DefaultAction, <f-args>)
     command! -nargs=+ -complete=customlist,DoLiveGrepComplete VSLiveGrep live.DoCommand(live.DefaultAction, <f-args>)
     command! -nargs=* -complete=customlist,live.DoComplete VSLive live.DoCommand(live.DefaultAction, <f-args>)
     command! -nargs=* -complete=customlist,live.DoCompleteSh VSLiveSh live.DoCommand(live.DefaultAction, <f-args>)
-    command! -nargs=* -complete=customlist,DoBufferComplete VSBuffer DoBufferCommand(<f-args>)
-    command! -nargs=* -complete=customlist,DoMRUComplete VSMru DoMRUCommand(<f-args>)
+    command! -nargs=* -complete=customlist,FindBuffer VSBuffer DoBufferAction(<f-args>)
+    command! -nargs=* -complete=customlist,FindMRU VSMru DoMRUAction(<f-args>)
 enddef
 
 ## (Fuzzy) Find Files
 
 cmd.AddOnSpaceHook('VSFind')
-def DoFindComplete(A: string, L: string, C: number): list<any>
-    return find.DoComplete(A, L, C, 'find . \! \( -path "*/.*" -prune \) -type f -follow')
+def DoFindFiles(A: string, L: string, C: number): list<any>
+    return fuzzy.FindFiles(A, L, C, 'find . \! \( -path "*/.*" -prune \) -type f -follow')
 enddef
 
 ## (Live) Find Files
@@ -41,11 +40,11 @@ enddef
 ## Buffers
 
 cmd.AddOnSpaceHook('VSBuffer')
-def DoBufferComplete(arglead: string, cmdline: string, cursorpos: number): list<any>
-    return fuzzy.DoComplete(arglead, cmdline, cursorpos, function(Buffers, [false]), GetBufferName)
+def FindBuffer(arglead: string, cmdline: string, cursorpos: number): list<any>
+    return fuzzy.Find(arglead, cmdline, cursorpos, function(Buffers, [false]), GetBufferName)
 enddef
-def DoBufferCommand(arglead: string = null_string)
-    fuzzy.DoCommand(arglead, (item) => {
+def DoBufferAction(arglead: string = null_string)
+    fuzzy.DoAction(arglead, (item) => {
         :exe $'b {item->type() == v:t_dict ? item.bufnr : item}'
     }, GetBufferName)
 enddef
@@ -69,11 +68,11 @@ enddef
 ## MRU - Most Recently Used Files
 
 cmd.AddOnSpaceHook('VSMru')
-def DoMRUComplete(arglead: string, cmdline: string, cursorpos: number): list<any>
-    return fuzzy.DoComplete(arglead, cmdline, cursorpos, MRU)
+def FindMRU(arglead: string, cmdline: string, cursorpos: number): list<any>
+    return fuzzy.Find(arglead, cmdline, cursorpos, MRU)
 enddef
-def DoMRUCommand(arglead: string = null_string)
-    fuzzy.DoCommand(arglead, (item) => {
+def DoMRUAction(arglead: string = null_string)
+    fuzzy.DoAction(arglead, (item) => {
         :exe $'e {item}'
     })
 enddef

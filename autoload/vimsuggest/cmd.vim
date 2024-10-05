@@ -62,7 +62,7 @@ export def Setup()
             }
             autocmd CmdlineChanged  :  options.alwayson ? Complete() : TabComplete()
             autocmd CmdlineLeave    :  {
-                if state != null_object # <c-e> removes this object
+                if state != null_object # <c-s> removes this object
                     CmdlineLeaveHook(state.pmenu.SelectedItem(), state.pmenu.FirstItem())
                     state.Clear()
                     state = null_object
@@ -217,6 +217,7 @@ enddef
 def FilterFn(winid: number, key: string): bool
     # Note: <C-n/p> send <up/down> arrow codes (:h :t_ku).
     #   Do not map these since they are used to cycle through history.
+    echom key
     if key ==? "\<Tab>"
         state.pmenu.SelectItem('j', SelectItemPost) # Next item
     elseif key ==? "\<S-Tab>"
@@ -225,7 +226,7 @@ def FilterFn(winid: number, key: string): bool
         state.pmenu.PageUp()
     elseif key ==? "\<PageDown>"
         state.pmenu.PageDown()
-    elseif key ==? "\<C-e>" || key ==? "\<End>" # Vim bug: <C-e> sends <End>(<80>@7, :h t_@7)) due to timer_start.
+    elseif key ==? "\<C-s>"
         state.pmenu.Hide()
         :redraw
         state.Clear()

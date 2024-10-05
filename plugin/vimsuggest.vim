@@ -10,7 +10,6 @@ g:loaded_vimsuggest = true
 import autoload '../autoload/vimsuggest/options.vim' as opt
 import autoload '../autoload/vimsuggest/search.vim'
 import autoload '../autoload/vimsuggest/cmd.vim'
-import autoload '../autoload/vimsuggest/addons/find.vim'
 
 def! g:VimSuggestSetOptions(opts: dict<any>)
     var Update = (key) => {
