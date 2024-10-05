@@ -21,7 +21,15 @@ export def DoComplete(context: string, line: string, cursorpos: number,
     if cmdstr != null_string
         var suffix = cmd.CmdStr()->matchstr('\S\+\s*\zs.*$')
         if suffix != null_string
-            cstr = $'{cmdstr} "{suffix}"'
+            # Note: Double quoting suffix seems like a good idea but it
+            # introduces side effects. 1) User will have to escape a double
+            # quote within a pattern, 2) ':VSLiveFind |*' will not complete
+            # through a keymap, since cursor is before a <space>. It can to be
+            # solved using timer_start to send <left> through feedkeys(), so
+            # that completion mechanism sees 'VSLiveFind *' before cursor is
+            # moved to the left. 3) You cannot specify a directory after pattern.
+            # cstr = $'{cmdstr} "{suffix}"'
+            cstr = $'{cmdstr} {suffix}'
         endif
     elseif parts->len() > 3  # Ex cmd and Sh cmd entered through cmdline
         # 'expandcmd' expands '~/path', but also causes '\' to be removed, causing '\' hell.
@@ -46,6 +54,7 @@ export def DoComplete(context: string, line: string, cursorpos: number,
     return items
 enddef
 
+# XXX
 export def DoCompleteSh(context: string, line: string, cursorpos: number,
         async: bool = true, timeout: number = 2000,
         max_items: number = 1000): list<any>
@@ -60,6 +69,28 @@ export def DoCommand(ActionFn: func(string), action: string, arg1: string = '',
         arg14: string = '', arg15: string = '', arg16: string = '',
         arg17: string = '', arg18: string = '', arg19: string = '',
         arg20: string = '')
+    for a in [
+            art1,
+            arg2,
+            arg3,
+            arg4,
+            arg5,
+            arg6,
+            arg7,
+            arg8,
+            arg9,
+            arg10,
+            arg11,
+            arg12,
+            arg13,
+            arg14,
+            arg15,
+            arg16,
+            arg17,
+            arg18,
+            arg19,
+            arg20,
+    endfor
     if candidate != null_string
         if ActionFn != null_function
             ActionFn(candidate)
@@ -138,7 +169,12 @@ def SetupHooks(name: string)
         return true # Do not update cmdline with selected item
     })
     def MatchGrepLine(line: string, pat: string): list<any> # Match grep output
-        return line->matchstrpos($'.*:.\{{-}}\zs{pat}')
+        # Remove " and ' around pattern, if any.
+        var p = pat->substitute('^"', '', '')->substitute('"$', '', '')
+        if p ==# pat
+            p = p->substitute("^'", '', '')->substitute("'$", '', '')
+        endif
+        return line->matchstrpos($'.*:.\{{-}}\zs{p}')
     enddef
     cmd.AddHighlightHook(name, (suffix: string, itms: list<any>): list<any> => {
         if suffix != null_string && !itms->empty()

@@ -40,7 +40,6 @@ enddef
 
 ## Buffers
 
-# command! -nargs=* -complete=customlist,DoBufferComplete VSBuffer DoBufferCommand(<f-args>)
 cmd.AddOnSpaceHook('VSBuffer')
 def DoBufferComplete(arglead: string, cmdline: string, cursorpos: number): list<any>
     return fuzzy.DoComplete(arglead, cmdline, cursorpos, function(Buffers, [false]), GetBufferName)
@@ -87,6 +86,7 @@ enddef
 ##
 
 export def Disable()
+    # XXX
     for c in ['VSFind', 'VSLiveFind', 'VSBuffer', 'VSMru']
         if exists($":{c}") == 2
             :exec $'delcommand {c}'

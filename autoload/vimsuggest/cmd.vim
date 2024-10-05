@@ -67,12 +67,6 @@ export def Setup()
                     state.Clear()
                     state = null_object
                 endif
-                # if allprops->has_key(win_getid()) # If <c-e>, props would've been removed
-                #     var p = allprops[win_getid()]
-                #     CmdlineLeaveHook(p.pmenu.SelectedItem(), p.pmenu.FirstItem())
-                #     allprops[win_getid()].Clear()
-                #     remove(allprops, win_getid())
-                # endif
             }
         augroup END
         if options.addons
@@ -138,20 +132,28 @@ def DoComplete(oldcontext: string, timer: number)
     var cmdlead = CmdLead()
     if (!state.noexclude_hook->has_key(cmdlead) && state.exclude->index(context[-1]) != -1) ||
             state.abbreviations->index(cmdlead) != -1 ||
-            (cmdstr =~ '^\s*\S\+\s\+$' && options.alwayson &&
-            options.onspace->index(cmdlead) == -1 &&
-            !State.onspace_hook->has_key(cmdlead))
+            (options.alwayson && context =~ '\s$' &&
+            !(context->CmdStr() =~ '^\s*\S\+\s\+$' &&
+            (options.onspace->index(cmdlead) != -1 || State.onspace_hook->has_key(cmdlead))))
+        # Note: Use 'context' (line until cursor) instead of getcmdline() to
+        # check ending space. The side effect is that ':Command |*' (where '|'
+        # is the cursor) will not get completed (using '*'). In keymaps, use
+        # timer_start() and send <left> through feedkeys() to get completion.
         :redraw
         return
     endif
     var completions: list<any> = []
-    if options.wildignore && cmdstr =~# '^\s*\(e\%[dit]!\?\|fin\%[d]!\?\)\s'
-        # 'file_in_path' respects wildignore, 'cmdline' does not.
-        # :VSCmd edit ... should not be here.
-        completions = cmdstr->matchstr('^\S\+\s\+\zs.*')->getcompletion('file_in_path')
-    else
-        completions = context->getcompletion('cmdline')
-    endif
+    try
+        if options.wildignore && cmdstr =~# '^\s*\(e\%[dit]!\?\|fin\%[d]!\?\)\s'
+            # 'file_in_path' respects wildignore, 'cmdline' does not.
+            # :VSCmd edit ... should not be here.
+            completions = cmdstr->matchstr('^\S\+\s\+\zs.*')->getcompletion('file_in_path')
+        else
+            completions = context->getcompletion('cmdline')
+        endif
+    catch # Catch (for ex.) -> E1245: Cannot expand <sfile> in a Vim9 function
+    endtry
+
     if completions->len() == 0 || (completions->len() == 1 && context->strridx(completions[0]) != -1)
         # No completions found, or this completion is already inserted.
         :redraw
@@ -231,6 +233,10 @@ def FilterFn(winid: number, key: string): bool
         state = null_object
         # remove(allprops, win_getid())
     elseif key ==? "\<CR>"
+        # When <cr> simply opens the message window (ex :filt Menu hi), popup
+        # lingers unless it is explicitly hidden. Focus stays in command-line.
+        state.pmenu.Hide()
+        :redraw
         return false # Let Vim process these keys further
     elseif key ==? "\<ESC>"
         CmdlineAbortHook()
@@ -264,8 +270,8 @@ def Context(): string
     return getcmdline()->strpart(0, getcmdpos() - 1)
 enddef
 
-export def CmdStr(): string
-    return getcmdline()->substitute('\(^\|\s\)vim9\%[cmd]!\?\s*', '', '')
+export def CmdStr(s: string = null_string): string
+    return (s ?? getcmdline())->substitute('\(^\|\s\)vim9\%[cmd]!\?\s*', '', '')
 enddef
 
 export def CmdLead(): string

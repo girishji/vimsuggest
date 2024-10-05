@@ -247,11 +247,11 @@ export class PopupMenu
     enddef
 
     def SelectedItem(): string
-        return (!this.Hidden() && this._index != -1) ? this._items[0][this._index] : null_string
+        return (this._index != -1) ? this._items[0][this._index] : null_string
     enddef
 
     def FirstItem(): string
-        return (!this.Hidden() && this._items->len() > 0) ? this._items[0][0] : null_string
+        return (this._items->len() > 0) ? this._items[0][0] : null_string
     enddef
 
     def PageUp()
