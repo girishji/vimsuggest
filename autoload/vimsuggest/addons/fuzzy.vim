@@ -47,24 +47,24 @@ export def FindFiles(arglead: string, cmdline: string, cursorpos: number,
         FindFn: func(string): string = null_function, shellprefix = null_string,
         async = true, timeout = 2000, max_items = 1000): list<any>
     var regenerate_items = false
-    var FindCmd = FindFn ?? (dir) => {
-        var dpath = dir->expandcmd()
-        return $'find {dpath} \! \( -path "{dpath}/.*" -prune \) -type f -follow'
-    }
     var findcmd = null_string
+    var FindCmdFn = FindFn ?? FindCmd
     var dirpath = getcmdline()->matchstr('\s\zs\S\+\ze/\.\.\./')  # In ' dir/.../pat', extract dir
-    if dirpath != prevdir
-        prevdir = dirpath
-        findcmd = FindCmd(dirpath ?? '.')
-        regenerate_items = true
-    endif
     if cmdname == null_string
         cmdname = cmd.CmdLead()
         SetupHooksFindFiles(cmdname)
+        prevdir = dirpath ?? '.'
+        findcmd = FindCmdFn(prevdir)
         regenerate_items = true
-        findcmd = FindCmd('.')
-    elseif cmd.CmdLead() !=# cmdname  # When command is rewritten after <bs>
-        return []
+    else
+        if cmd.CmdLead() !=# cmdname  # When command is rewritten after <bs>
+            return []
+        endif
+        if dirpath != prevdir
+            prevdir = dirpath
+            findcmd = FindCmdFn(dirpath ?? '.')
+            regenerate_items = true
+        endif
     endif
     if regenerate_items
         if async
@@ -85,12 +85,26 @@ export def FindFiles(arglead: string, cmdline: string, cursorpos: number,
             endif
         endif
     endif
-    var pat = getcmdline()->matchstr('\S\+$')->substitute('.*/\.\.\./', '', '') # In 'dir/.../pat1 pat2', extract pat2
+    var pat = ExtractPattern()
     if pat != null_string
         matches = pat->FuzzyMatchFiles()
         return matches[0]
     endif
     return items
+enddef
+
+def FindCmd(dir: string): string
+    if dir == '.'
+        return 'find . \! \( -path "*/.*" -prune \) -type f -follow'
+    else
+        var dpath = dir->expandcmd()
+        return $'find {dpath} \! \( -path "{dpath}/.*" -prune \) -type f -follow'
+    endif
+enddef
+
+def ExtractPattern(): string
+    return getcmdline()->matchstr('\S\+$')
+        ->substitute('.*/\.\.\./', '', '') # In 'dir/.../pat1 pat2', extract pat2
 enddef
 
 export def DoAction(arglead: string = null_string, DoAction: func(any) = null_function,
@@ -146,8 +160,9 @@ def SetupHooksFindFiles(name: string)
     if !cmd.ValidState()
         return  # After <c-s>, cmd 'state' object has been removed
     endif
-    cmd.AddHighlightHook(name, (suffix: string, _: list<any>): list<any> => {
-        return suffix != null_string && !matches[0]->empty() ?
+    cmd.AddHighlightHook(name, (_: string, _: list<any>): list<any> => {
+        var pat = ExtractPattern()
+        return pat != null_string && !matches[0]->empty() ?
             matches : [items]
     })
     cmd.AddCmdlineLeaveHook(name, (selected_item, first_item) => {
