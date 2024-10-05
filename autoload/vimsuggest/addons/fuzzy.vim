@@ -43,8 +43,8 @@ export def Find(_: string, cmdline: string, cursorpos: number,
 enddef
 
 export def FindFiles(arglead: string, cmdline: string, cursorpos: number,
-        cmdstr: string, shellprefix: string = null_string,
-        async: bool = true, timeout: number = 2000, max_items: number = 1000): list<any>
+        cmdstr: string, shellprefix = null_string,
+        async = true, timeout = 2000, max_items = 1000): list<any>
     if cmdname == null_string
          cmdname = cmd.CmdLead()
         if async
@@ -93,8 +93,8 @@ export def DoAction(arglead: string = null_string, DoAction: func(any) = null_fu
     Clear()
 enddef
 
-export def DoFileAction(action: string, arg1: string = null_string, arg2: string = null_string,
-        arg3: string = null_string)
+export def DoFileAction(action: string, arg1 = null_string, arg2 = null_string,
+        arg3 = null_string)
     if candidate != null_string
         :exe $'{action} {candidate}'
     else

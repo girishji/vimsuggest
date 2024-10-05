@@ -7,7 +7,7 @@ export class PopupMenu
     var _bgWinId: number
     var _pum: bool
     var _selMatchId: number = 0
-    var _items: list<any>
+    var _items: list<list<any>> = [[]]
     var _index: number = -1 # index to items array
     var _hmenu = {text: '', ibegin: 0, iend: 0, selHiId: 0}
 
@@ -76,7 +76,7 @@ export class PopupMenu
         this._selMatchId = 0
     enddef
 
-    def SetText(items: list<any>, moveto: number = 0)
+    def SetText(items: list<any>, moveto = 0)
         this._items = items
         this._ClearMatches()
         if this._pum
@@ -251,7 +251,7 @@ export class PopupMenu
     enddef
 
     def FirstItem(): string
-        return (this._items->len() > 0) ? this._items[0][0] : null_string
+        return (this._items[0]->len() > 0) ? this._items[0][0] : null_string
     enddef
 
     def PageUp()

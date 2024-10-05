@@ -10,9 +10,8 @@ var items = []
 var candidate: string
 
 export def DoComplete(context: string, line: string, cursorpos: number,
-        cmdstr: string = null_string, shellprefix: string = null_string,
-        async: bool = true, timeout: number = 2000,
-        max_items: number = 1000): list<any>
+        cmdstr = null_string, shellprefix = null_string,
+        async = true, timeout = 2000, max_items = 1000): list<any>
     Clear()
     # Note: 'line' arg contains text up to cursorpos only. Use the whole cmdline.
     var space_escaped = cmd.CmdStr()->substitute('\\ ', '', 'g') # Compress escaped spaces
@@ -56,8 +55,7 @@ enddef
 
 # XXX
 export def DoCompleteSh(context: string, line: string, cursorpos: number,
-        async: bool = true, timeout: number = 2000,
-        max_items: number = 1000): list<any>
+        async = true, timeout = 2000, max_items = 1000): list<any>
     return DoComplete(context, line, cursorpos, '', 'sh -c', async, timeout, max_items)
 enddef
 
@@ -69,28 +67,6 @@ export def DoCommand(ActionFn: func(string), action: string, arg1: string = '',
         arg14: string = '', arg15: string = '', arg16: string = '',
         arg17: string = '', arg18: string = '', arg19: string = '',
         arg20: string = '')
-    for a in [
-            art1,
-            arg2,
-            arg3,
-            arg4,
-            arg5,
-            arg6,
-            arg7,
-            arg8,
-            arg9,
-            arg10,
-            arg11,
-            arg12,
-            arg13,
-            arg14,
-            arg15,
-            arg16,
-            arg17,
-            arg18,
-            arg19,
-            arg20,
-    endfor
     if candidate != null_string
         if ActionFn != null_function
             ActionFn(candidate)
@@ -145,7 +121,7 @@ export def GrepVisitFile(excmd: string, line: string)
     endif
 enddef
 
-def VisitBuffer(excmd: string, bufnr: number, lnum: number = -1, col: number = -1, visualcol: bool = false)
+def VisitBuffer(excmd: string, bufnr: number, lnum = -1, col = -1, visualcol = false)
     var cmdstr = excmd
     if lnum > 0
         if col > 0

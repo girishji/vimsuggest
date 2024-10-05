@@ -39,7 +39,7 @@ export def Start(cmdany: any, CallbackFn: func(list<any>),
     })
 enddef
 
-export def Stop(how: string = null_string)
+export def Stop(how = null_string)
     if jobid->job_status() ==# 'run'
         if how == null_string
             jobid->job_stop()
