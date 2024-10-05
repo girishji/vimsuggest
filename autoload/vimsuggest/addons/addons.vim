@@ -16,9 +16,22 @@ enddef
 
 ## (Fuzzy) Find Files
 
+var prevdir = null_string
 cmd.AddOnSpaceHook('VSFind')
+cmd.AddCmdlineAbortHook(() => {
+    prevdir = null_string
+})
 def DoFindFiles(A: string, L: string, C: number): list<any>
-    return fuzzy.FindFiles(A, L, C, 'find . \! \( -path "*/.*" -prune \) -type f -follow')
+    def Cmdstr(dir: string): string
+        return $'find {dir} \! \( -path "*/.*" -prune \) -type f -follow'
+    enddef
+    var dirpath = getcmdline()->matchstr('\s\zs\S\+\ze/\.\.\./')  # In ' dir/.../pat', extract dir
+    if dirpath != prevdir
+        prevdir = dirpath
+        return fuzzy.FindFiles(A, L, C, Cmdstr(dirpath ?? '.'), null_string, true)
+    else
+        return fuzzy.FindFiles(A, L, C, Cmdstr('.'))
+    endif
 enddef
 
 ## (Live) Find Files
@@ -92,5 +105,8 @@ export def Disable()
         endif
     endfor
 enddef
+
+# If not compiled here, commands silently fail when syntax errors are present.
+:defcompile
 
 # vim: tabstop=8 shiftwidth=4 softtabstop=4 expandtab

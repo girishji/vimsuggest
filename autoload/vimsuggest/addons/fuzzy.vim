@@ -7,6 +7,7 @@ var items = []
 var matches = [[], [], []]
 var candidate = null_string
 var cmdname = null_string
+# export var user_data = null_string
 
 export def Find(_: string, cmdline: string, cursorpos: number,
         GetItems: func(): list<any> = null_function,
@@ -43,10 +44,17 @@ export def Find(_: string, cmdline: string, cursorpos: number,
 enddef
 
 export def FindFiles(arglead: string, cmdline: string, cursorpos: number,
-        cmdstr: string, shellprefix = null_string,
+        cmdstr: string, shellprefix = null_string, regenerate_items = false,
         async = true, timeout = 2000, max_items = 1000): list<any>
+    var items_exist = !regenerate_items
     if cmdname == null_string
-         cmdname = cmd.CmdLead()
+        cmdname = cmd.CmdLead()
+        SetupHooksFindFiles(cmdname)
+        items_exist = false
+    elseif cmd.CmdLead() !=# cmdname  # When command is rewritten after <bs>
+        return []
+    endif
+    if !items_exist
         if async
             def ProcessItems(fpaths: list<any>)
                 items = fpaths
@@ -64,15 +72,10 @@ export def FindFiles(arglead: string, cmdline: string, cursorpos: number,
                 return []
             endif
         endif
-        SetupHooksFindFiles(cmdname)
-    else
-        if cmd.CmdLead() !=# cmdname  # When command is rewritten after <bs>
-            return []
-        endif
     endif
-    var lastword = getcmdline()->matchstr('\S\+$')
-    if lastword != null_string
-        matches = lastword->FuzzyMatchFiles()
+    var pat = getcmdline()->matchstr('.*\(/\.\.\./\|\s\).\{-}\zs\S\+$') # In 'dir/.../pat1 pat2', extract pat2
+    if pat != null_string
+        matches = pat->FuzzyMatchFiles()
         return matches[0]
     endif
     return items
@@ -93,6 +96,10 @@ export def DoAction(arglead: string = null_string, DoAction: func(any) = null_fu
     Clear()
 enddef
 
+# Usage:
+#   <Command> <pattern1> <pattern2> <pattern3>
+#   When <pattern1> does not show expected result, start typing <pattern2> with
+#   better heuristics. No need to erase <pattern1>. Same applies to <pattern3>.
 export def DoFileAction(action: string, arg1 = null_string, arg2 = null_string,
         arg3 = null_string)
     if candidate != null_string
@@ -168,6 +175,7 @@ def Clear()
     matches = [[], [], []]
     candidate = null_string
     cmdname = null_string
+    # user_data = null_string
 enddef
 
 cmd.AddCmdlineAbortHook(() => {
