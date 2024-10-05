@@ -5,9 +5,11 @@ import autoload './fuzzy.vim'
 import autoload './live.vim'
 
 export def Enable()
-    command! -nargs=* -complete=customlist,DoFindFiles VSFind fuzzy.DoFileAction('edit', <f-args>)
-    command! -nargs=+ -complete=customlist,DoLiveFindComplete VSLiveFind live.DoCommand(live.DefaultAction, <f-args>)
+    ## (Fuzzy) Find Files
+    command! -nargs=* -complete=customlist,fuzzy.FindFiles VSFind fuzzy.DoFileAction('edit', <f-args>)
+    ## (Live) Grep
     command! -nargs=+ -complete=customlist,DoLiveGrepComplete VSLiveGrep live.DoCommand(live.DefaultAction, <f-args>)
+    command! -nargs=+ -complete=customlist,DoLiveFindComplete VSLiveFind live.DoCommand(live.DefaultAction, <f-args>)
     command! -nargs=* -complete=customlist,live.DoComplete VSLive live.DoCommand(live.DefaultAction, <f-args>)
     command! -nargs=* -complete=customlist,live.DoCompleteSh VSLiveSh live.DoCommand(live.DefaultAction, <f-args>)
     command! -nargs=* -complete=customlist,FindBuffer VSBuffer DoBufferAction(<f-args>)
@@ -16,23 +18,7 @@ enddef
 
 ## (Fuzzy) Find Files
 
-var prevdir = null_string
 cmd.AddOnSpaceHook('VSFind')
-cmd.AddCmdlineAbortHook(() => {
-    prevdir = null_string
-})
-def DoFindFiles(A: string, L: string, C: number): list<any>
-    def Cmdstr(dir: string): string
-        return $'find {dir} \! \( -path "*/.*" -prune \) -type f -follow'
-    enddef
-    var dirpath = getcmdline()->matchstr('\s\zs\S\+\ze/\.\.\./')  # In ' dir/.../pat', extract dir
-    if dirpath != prevdir
-        prevdir = dirpath
-        return fuzzy.FindFiles(A, L, C, Cmdstr(dirpath ?? '.'), null_string, true)
-    else
-        return fuzzy.FindFiles(A, L, C, Cmdstr('.'))
-    endif
-enddef
 
 ## (Live) Find Files
 

@@ -7,7 +7,7 @@ var items = []
 var matches = [[], [], []]
 var candidate = null_string
 var cmdname = null_string
-# export var user_data = null_string
+var prevdir = null_string
 
 export def Find(_: string, cmdline: string, cursorpos: number,
         GetItems: func(): list<any> = null_function,
@@ -44,27 +44,39 @@ export def Find(_: string, cmdline: string, cursorpos: number,
 enddef
 
 export def FindFiles(arglead: string, cmdline: string, cursorpos: number,
-        cmdstr: string, shellprefix = null_string, regenerate_items = false,
+        FindFn: func(string): string = null_function, shellprefix = null_string,
         async = true, timeout = 2000, max_items = 1000): list<any>
-    var items_exist = !regenerate_items
+    var regenerate_items = false
+    var FindCmd = FindFn ?? (dir) => {
+        var dpath = dir->expandcmd()
+        return $'find {dpath} \! \( -path "{dpath}/.*" -prune \) -type f -follow'
+    }
+    var findcmd = null_string
+    var dirpath = getcmdline()->matchstr('\s\zs\S\+\ze/\.\.\./')  # In ' dir/.../pat', extract dir
+    if dirpath != prevdir
+        prevdir = dirpath
+        findcmd = FindCmd(dirpath ?? '.')
+        regenerate_items = true
+    endif
     if cmdname == null_string
         cmdname = cmd.CmdLead()
         SetupHooksFindFiles(cmdname)
-        items_exist = false
+        regenerate_items = true
+        findcmd = FindCmd('.')
     elseif cmd.CmdLead() !=# cmdname  # When command is rewritten after <bs>
         return []
     endif
-    if !items_exist
+    if regenerate_items
         if async
             def ProcessItems(fpaths: list<any>)
                 items = fpaths
                 cmd.SetPopupMenu(items)
             enddef
-            var cmdany = shellprefix == null_string ? cmdstr : shellprefix->split() + [cmdstr]
+            var cmdany = shellprefix == null_string ? findcmd : shellprefix->split() + [findcmd]
             job.Start(cmdany, ProcessItems, timeout, max_items)
         else
             try
-                items = systemlist($'{shellprefix} {cmdstr}')
+                items = systemlist($'{shellprefix} {findcmd}')
             catch  # '\' and '"' cause E282
             endtry
             if items->empty()
@@ -73,7 +85,7 @@ export def FindFiles(arglead: string, cmdline: string, cursorpos: number,
             endif
         endif
     endif
-    var pat = getcmdline()->matchstr('.*\(/\.\.\./\|\s\).\{-}\zs\S\+$') # In 'dir/.../pat1 pat2', extract pat2
+    var pat = getcmdline()->matchstr('\S\+$')->substitute('.*/\.\.\./', '', '') # In 'dir/.../pat1 pat2', extract pat2
     if pat != null_string
         matches = pat->FuzzyMatchFiles()
         return matches[0]
@@ -175,7 +187,7 @@ def Clear()
     matches = [[], [], []]
     candidate = null_string
     cmdname = null_string
-    # user_data = null_string
+    prevdir = null_string
 enddef
 
 cmd.AddCmdlineAbortHook(() => {

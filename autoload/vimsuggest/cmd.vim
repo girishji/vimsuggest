@@ -184,7 +184,7 @@ export def Highlight(suffix: string, itms: list<any>,
 enddef
 
 export def SetPopupMenu(items: list<any>)
-    var context = getcmdline()
+    var context = Context()  # If getcmdline() is used the popup is in the wrong place
     var cmdname = CmdLead()
     var cmdsuffix = context->matchstr('\S\+$')
     if !options.highlight || context[-1] =~ '\s'

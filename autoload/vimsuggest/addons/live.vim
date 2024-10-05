@@ -12,8 +12,8 @@ var candidate: string
 export def DoComplete(context: string, line: string, cursorpos: number,
         cmdstr = null_string, shellprefix = null_string,
         async = true, timeout = 2000, max_items = 1000): list<any>
+    # Note: Both 'context' and 'line' arg contains text up to 'cursorpos' only.
     Clear()
-    # Note: 'line' arg contains text up to cursorpos only. Use the whole cmdline.
     var space_escaped = cmd.CmdStr()->substitute('\\ ', '', 'g') # Compress escaped spaces
     var parts = space_escaped->split()  # Split across spaces except for "\ "
     var cstr: string = null_string
