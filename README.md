@@ -75,4 +75,14 @@ o
 you may dislike popup that covers your buffer, but you have horizontal menu
 not just about saving a tab, but saving many tabs and <bs>
 
+
+After selecting a list from the popup menu of `fuzzy.QuickfixHistory()` or `fuzzy.LoclistHistory()`, you can automatically open the quickfix or location-list window. Add the following autocmd group:
+
+```vim
+augroup scope-quickfix-history
+    autocmd!
+    autocmd QuickFixCmdPost chistory cwindow
+    autocmd QuickFixCmdPost lhistory lwindow
+augroup END
+```
 </div>

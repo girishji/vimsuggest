@@ -11,7 +11,7 @@ var prevdir = null_string
 
 export def Complete(_: string, cmdline: string, cursorpos: number,
         GetItems: func(): list<any> = null_function,
-        GetText: func(dict<any>): string = null_function): list<any>
+        GetTextFn: func(dict<any>): string = null_function): list<any>
     if cmdname == null_string
         Clear()
         cmdname = cmd.CmdLead()
@@ -26,6 +26,7 @@ export def Complete(_: string, cmdline: string, cursorpos: number,
             return []
         endif
     endif
+    var GetText = GetTextFn ?? (item: dict<any>): string => item.text
     var text_items = (items[0]->type() == v:t_dict) ?
         items->mapnew((_, v) => GetText(v)) : items
     var lastword = getcmdline()->matchstr('\S\+$')
@@ -91,14 +92,15 @@ export def FindComplete(arglead: string, cmdline: string, cursorpos: number,
     return items
 enddef
 
-export def DoAction(arglead: string = null_string, DoAction: func(any) = null_function,
-        GetText: func(dict<any>): string = null_function)
+export def DoAction(arglead = null_string, ActionFn: func(any) = null_function,
+        GetTextFn: func(dict<any>): string = null_function)
     for str in [candidate, arglead] # After <c-s>, wildmenu can select an item in 'arglead'
         if str != null_string
             var isdict = (!items->empty() && items[0]->type() == v:t_dict)
+            var GetText = GetTextFn ?? (item: dict<any>): string => item.text
             var idx = isdict ? items->indexof((_, v) => GetText(v) == str) : items->index(str)
             if idx != -1
-                DoAction(items[idx])
+                ActionFn(items[idx])
                 break
             endif
         endif
@@ -203,10 +205,15 @@ def Clear()
     prevdir = null_string
 enddef
 
+cmd.AddCmdlineEnterHook(() => {
+    Clear()
+})
+
 cmd.AddCmdlineAbortHook(() => {
     Clear()
 })
 
-:defcompile  # Needed so that commands don't fail silently with compile errors
+:defcompile  # Debug: Just so that compilation errors show up when script is loaded.
+             # Otherwise, compilation is postponed until <tab> completion.
 
 # vim: tabstop=8 shiftwidth=4 softtabstop=4 expandtab

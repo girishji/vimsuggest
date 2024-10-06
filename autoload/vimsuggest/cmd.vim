@@ -30,11 +30,12 @@ class State
     public var items: list<any>
     # Following are the callbacks used by addons.
     public static var onspace_hook = {}
-    public static var cmdline_abort_hook = []
     public var highlight_hook = {}
     public var select_item_hook = {}
-    public var cmdline_leave_hook = {}
     public var noexclude_hook = {}
+    public var cmdline_leave_hook = {}
+    public static var cmdline_enter_hook = []
+    public static var cmdline_abort_hook = []  # Cmdline contents not available when <c-c> aborted
 
     def new()
         this.abbreviations = this._GetAbbrevs()
@@ -71,6 +72,9 @@ export def Setup()
             autocmd CmdlineEnter    :  {
                 state = State.new()
                 EnableCmdline()
+                for Hook in State.cmdline_enter_hook
+                    Hook()
+                endfor
             }
             autocmd CmdlineChanged  :  options.alwayson ? Complete() : TabComplete()
             autocmd CmdlineLeave    :  {
@@ -194,7 +198,7 @@ export def Highlight(suffix: string, itms: list<any>,
 enddef
 
 export def SetPopupMenu(items: list<any>)
-    var context = Context()  # If getcmdline() is used the popup is in the wrong place
+    var context = Context()  # Popup should be next to cursor
     var cmdname = CmdLead()
     var cmdsuffix = context->matchstr('\S\+$')
     if !options.highlight || context[-1] =~ '\s'
@@ -242,6 +246,9 @@ def FilterFn(winid: number, key: string): bool
         CmdlineAbortHook()
         state = null_object
         # remove(allprops, win_getid())
+    elseif key ==? "\<C-g>"  # 'g' as in 'Goto'
+        SendToQickfixOrArglist()
+        state.pmenu.Close(-1)
     elseif key ==? "\<CR>"
         # When <cr> simply opens the message window (ex :filt Menu hi), popup
         # lingers unless it is explicitly hidden. Focus stays in command-line.
@@ -271,8 +278,26 @@ def CallbackFn(winid: number, result: any)
         CmdlineAbortHook()
         state.Clear()
         state = null_object
-        # remove(allprops, win_getid())
         feedkeys("\<c-c>", 'n')
+    endif
+enddef
+
+# Send items either to a new quickfix list created at the end of the stack (in
+# case of grep output), or to arglist (in case of files).
+def SendToQickfixOrArglist()
+    if state.items[0]->empty()
+        return
+    endif
+    if !state.items[0][0]->filereadable()  # Send to quickfix list
+        var title = CmdLead()
+        var what = {nr: '$', title: title}
+        var lines = state.items[0]->mapnew((_, v) => v.text)  # Assume this is 'grep' output
+        setqflist([], ' ', what->extend({lines: lines}))
+        if exists($'#QuickFixCmdPost#clist')
+            execute $'doautocmd <nomodeline> QuickFixCmdPost clist'
+        endif
+    else
+        execute($'argadd {state.items[0]->join(" ")}')
     endif
 enddef
 
@@ -313,6 +338,10 @@ export def AddCmdlineLeaveHook(cmd: string, Callback: func(string, string))
     state.cmdline_leave_hook[cmd] = Callback
 enddef
 
+export def AddCmdlineEnterHook(Callback: func())
+    State.cmdline_enter_hook->add(Callback)
+enddef
+
 export def AddCmdlineAbortHook(Callback: func())
     State.cmdline_abort_hook->add(Callback)
 enddef
@@ -331,6 +360,7 @@ enddef
 
 export def PrintHooks()
     echom State.onspace_hook
+    echom State.cmdline_enter_hook
     echom State.cmdline_abort_hook
     echom state.cmdline_leave_hook
     echom state.select_item_hook

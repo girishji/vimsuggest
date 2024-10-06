@@ -1,7 +1,8 @@
 vim9script
 
 import autoload '../cmd.vim'
-import './fuzzy.vim'  # Do not autoload, commands fail silently with compile errors
+# import autoload './fuzzy.vim'
+import './fuzzy.vim' # Debug: Avoid autoloading to prevent delaying compilation until the autocompletion phase.
 import autoload './live.vim'
 
 export def Enable()
@@ -49,15 +50,12 @@ enddef
 
 cmd.AddOnSpaceHook('VSBuffer')
 def BufferComplete(arglead: string, cmdline: string, cursorpos: number): list<any>
-    return fuzzy.Complete(arglead, cmdline, cursorpos, function(Buffers, [false]), GetBufferName)
+    return fuzzy.Complete(arglead, cmdline, cursorpos, function(Buffers, [false]))
 enddef
 def DoBufferAction(arglead: string = null_string)
     fuzzy.DoAction(arglead, (item) => {
         :exe $'b {item->type() == v:t_dict ? item.bufnr : item}'
-    }, GetBufferName)
-enddef
-def GetBufferName(item: dict<any>): string
-    return item.text
+    })
 enddef
 def Buffers(list_all_buffers: bool): list<any>
     var blist = list_all_buffers ? getbufinfo({buloaded: 1}) : getbufinfo({buflisted: 1})
@@ -71,6 +69,34 @@ def Buffers(list_all_buffers: bool): list<any>
         [buffer_list[0], buffer_list[1]] = [buffer_list[1], buffer_list[0]]
     endif
     return buffer_list
+enddef
+
+## Code Artifacts
+
+cmd.AddOnSpaceHook('VSArtifacts')
+export def ArtifactsComplete(arglead: string, cmdline: string, cursorpos: number,
+        patterns: list<string> = []): list<any>
+    return fuzzy.Complete(arglead, cmdline, cursorpos, function(Artifacts, [patterns]))
+enddef
+export def DoArtifactsAction(arglead = null_string)
+    fuzzy.DoAction(arglead, (item) => {
+        exe $":{item.lnum}"
+        normal! zz
+    })
+enddef
+export def Artifacts(patterns: list<string>): list<any>
+    var items = []
+    for nr in range(1, line('$'))
+        var line = getline(nr)
+        for pat in patterns
+            var name = line->matchstr(pat)
+            if name != null_string
+                items->add({text: name, lnum: nr})
+                break
+            endif
+        endfor
+    endfor
+    return items->copy()->filter((_, v) => v.text !~ '^\s*#')
 enddef
 
 ## MRU - Most Recently Used Files
@@ -155,6 +181,8 @@ export def Disable()
     endfor
 enddef
 
-:defcompile  # Needed so that commands don't fail silently with compile errors
+:defcompile  # Debug: Just so that compilation errors show up when script is loaded.
+             # Otherwise, compilation is postponed until <tab> completion.
+
 
 # vim: tabstop=8 shiftwidth=4 softtabstop=4 expandtab

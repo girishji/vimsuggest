@@ -222,12 +222,12 @@ export class PopupMenu
         return this._winid->popup_getoptions() == {}
     enddef
 
-    def Close()
+    def Close(result = 0)
         if this._winid->popup_getoptions() != {} # popup exists
-            this._winid->popup_close()
+            this._winid->popup_close(result)
         endif
         if !this._pum && this._bgWinId->popup_getoptions() != {}
-            this._bgWinId->popup_close()
+            this._bgWinId->popup_close(result)
         endif
     enddef
 
