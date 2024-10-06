@@ -2,44 +2,43 @@ vim9script
 
 import autoload './popup.vim'
 
+# Configuration options
 export var options: dict<any> = {
-    enable: true,
-    pum: true,         #   'false' for flat and 'true' for vertically stacked popup menu
-    fuzzy: false,      #   fuzzy completion
-    alwayson: true,    #   when 'false' press <tab> to open popup menu
-    popupattrs: {      #   dictionary of attributes passed to popup window
-        maxheight: 12, #   line count of stacked menu (pum=true)
+    enable: true,               # Enable/disable the feature globally
+    pum: true,                  # 'false' for flat, 'true' for vertically stacked popup menu
+    fuzzy: false,               # Enable/disable fuzzy completion
+    alwayson: true,             # Open popup menu on <tab> if 'false'
+    popupattrs: {               # Attributes passed to the popup window
+        maxheight: 12,          # Maximum height for the stacked menu (when pum=true)
     },
-    range: 100,        #   line count per search attemp
-    timeout: 200,      #   millisec to search, when non-async is specified
-    async: true,       #   async search
-    asynctimeout: 3000,
-    asyncminlines: 1000,
-    highlight: true,
+    range: 100,                 # Number of lines to search in each batch
+    timeout: 200,               # Timeout for non-async searches (milliseconds)
+    async: true,                # Use async for searching
+    async_timeout: 3000,        # Async timeout in milliseconds
+    async_minlines: 1000,       # Minimum lines to enable async search
+    highlight: true,            # Enable search highlighting
 }
 
+# Represents the state of the current search
 class State
-    # Note: Variables are read-only by default, except for 'public', which is read/write.
-    #       If a variable starts with an underscore ('_'), it is treated as protected
-    #       and cannot not be accessed or modified outside the class.
-    public var items: list<any>       # Items displayed in the popup menu
-    public var candidates: list<any>  # Completion candidates (saved for async invocation)
-    public var context = null_string  # Cached command-line contents
-    public static var save_searchreg = null_string
-    public var save_esc_keymap = null_dict
+    public var items: list<any> = []            # Items to be displayed in the popup menu
+    public var candidates: list<any> = []       # Completion candidates (saved for async invocation)
+    public var context: string = null_string    # Cached command-line contents
+    public static var save_searchreg: string = null_string
+    public var save_esc_keymap: dict<any> = null_dict
     var pmenu: popup.PopupMenu = null_object
     var async: bool
     var curpos: list<any>
 
     def new()
         this.pmenu = popup.PopupMenu.new(FilterFn, CallbackFn, options.popupattrs, options.pum)
-        this.async = line('$') < options.asyncminlines ? false : options.async
+        this.async = line('$') < options.async_minlines ? false : options.async
         if this.async
             this.curpos = getcurpos()
         endif
         if this.async && v:hlsearch
             State.save_searchreg = getreg('/')
-            this.save_esc_keymap = maparg('<esc>', 'c', 0, 1) # In case <esc> is mapped to, say, ':nohls'
+            this.save_esc_keymap = maparg('<esc>', 'c', 0, 1) # Save <esc> keymap in case it's remapped
         endif
     enddef
 
@@ -61,14 +60,12 @@ endclass
 
 var state: State = null_object
 
-# During async search <esc> after a failed search (where pattern does not exist
+# During async search, <esc> after a failed search (where pattern does not exist
 # in buffer) should restore previous hlsearch if any.
 def RestoreHLSearch(): string
-    if state != null_object
-        if state.pmenu.Hidden() && State.save_searchreg != null_string
-            setreg('/', State.save_searchreg)
-            State.save_searchreg = null_string
-        endif
+    if state != null_object && state.pmenu.Hidden() && State.save_searchreg != null_string
+        setreg('/', State.save_searchreg)
+        State.save_searchreg = null_string
     elseif State.save_searchreg != null_string # After <c-e>, state is null_object
         setreg('/', State.save_searchreg)
         State.save_searchreg = null_string
@@ -79,13 +76,13 @@ enddef
 export def Setup()
     if options.enable
         augroup VimSuggestSearchAutocmds | autocmd!
-            autocmd CmdlineEnter    /,\?  {
+            autocmd CmdlineEnter /,\?  {
                 state = State.new()
                 state.Setup()
                 EnableCmdline()
             }
-            autocmd CmdlineChanged  /,\?  options.alwayson ? Complete() : TabComplete()
-            autocmd CmdlineLeave    /,\?  {
+            autocmd CmdlineChanged /,\?  options.alwayson ? Complete() : TabComplete()
+            autocmd CmdlineLeave   /,\?  {
                 if state != null_object
                     state.Clear()
                     state = null_object
@@ -498,7 +495,7 @@ def SearchWorker(attr: dict<any>, MatchFn: func(dict<any>): list<any>, timer: nu
         return # <cr> (CmdlineLeave) can happen in large files before search finishes
     endif
     var context = Context()
-    var timeoutasync = max([10, options.asynctimeout])
+    var timeoutasync = max([10, options.async_timeout])
     if context !=# attr.context ||
             (attr.starttime->reltime()->reltimefloat() * 1000) > timeoutasync ||
             attr.index >= attr.batches->len()

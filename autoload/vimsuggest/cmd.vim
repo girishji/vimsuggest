@@ -6,19 +6,18 @@ import autoload './popup.vim'
 import autoload './addons/addons.vim'
 
 export var options: dict<any> = {
-    enable: true,
-    pum: true,         #   'false' for flat and 'true' for stacked popup menu
-    fuzzy: false,   # fuzzy completion
-    exclude: [],    # keywords excluded from completion (use \c for ignorecase)
-    onspace: [],    # show menu for keyword+space (ex. :find , :buffer , etc.)
-    timeout: 500,   # max time in ms to search when '**' is specified in path
-    alwayson: true, # when 'false' press <tab> to open popup menu
-    popupattrs: {      #   dictionary of attributes passed to popup window
-        maxheight: 12, #   line count of stacked menu (pum=true)
+    enable: true,         # Enable/disable the completion functionality
+    pum: true,            # 'true' for stacked popup menu, 'false' for flat
+    fuzzy: false,         # Enable fuzzy completion matching
+    exclude: [],          # List of keywords to exclude from completion (use '\c' for ignore case)
+    onspace: [],          # Show menu for specific keyword + space (e.g., ':find ', ':buffer ', etc.)
+    alwayson: true,       # If 'false', press <tab> to open the popup menu manually
+    popupattrs: {         # Attributes for configuring the popup window
+        maxHeight: 12,    # Maximum number of lines for stacked menu (only if pum=true)
     },
-    wildignore: true,
-    highlight: true,
-    addons: true,
+    wildignore: true,     # Exclude wildignore patterns during file completion
+    highlight: true,      # Highlight matched terms in the completion list
+    addons: true,         # Enable additional completion addons (like fuzzy file finder)
 }
 
 class State
