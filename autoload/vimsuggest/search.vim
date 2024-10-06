@@ -1,9 +1,22 @@
 vim9script
 
-import autoload './options.vim' as opt
 import autoload './popup.vim'
 
-var options = opt.options.search
+export var options: dict<any> = {
+    enable: true,
+    pum: true,         #   'false' for flat and 'true' for vertically stacked popup menu
+    fuzzy: false,      #   fuzzy completion
+    alwayson: true,    #   when 'false' press <tab> to open popup menu
+    popupattrs: {      #   dictionary of attributes passed to popup window
+        maxheight: 12, #   line count of stacked menu (pum=true)
+    },
+    range: 100,        #   line count per search attemp
+    timeout: 200,      #   millisec to search, when non-async is specified
+    async: true,       #   async search
+    asynctimeout: 3000,
+    asyncminlines: 1000,
+    highlight: true,
+}
 
 class State
     # Note: Variables are read-only by default, except for 'public', which is read/write.

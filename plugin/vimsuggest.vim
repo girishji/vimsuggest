@@ -7,31 +7,24 @@ vim9script
 
 g:loaded_vimsuggest = true
 
-import autoload '../autoload/vimsuggest/options.vim' as opt
 import autoload '../autoload/vimsuggest/search.vim'
 import autoload '../autoload/vimsuggest/cmd.vim'
 
 def! g:VimSuggestSetOptions(opts: dict<any>)
-    var Update = (key) => {
-        if opts->has_key(key)
-            opt.options[key]->extend(opts[key])
+    for tgt in ['search', 'cmd']
+        if opts->has_key(tgt)
+            eval($'{tgt}.options')->extend(opts[tgt])
         endif
-    }
-    Update('search')
-    Update('cmd')
-    if opt.options.search.fuzzy
-        opt.options.search.async = false
+    endfor
+    if search.options.fuzzy
+        search.options.async = false
     endif
     Reset()
 enddef
 
-def! g:VimSuggestGetOptions(): dict<any>
-    return opt.options->deepcopy()
-enddef
-
 def VimSuggestgestEnable(flag: bool)
-    opt.options.search.enable = flag
-    opt.options.cmd.enable = flag
+    search.options.enable = flag
+    cmd.options.enable = flag
     Reset()
 enddef
 command! VimSuggestEnable  VimSuggestEnable(true)

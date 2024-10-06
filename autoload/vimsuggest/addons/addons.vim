@@ -1,7 +1,7 @@
 vim9script
 
 import autoload '../cmd.vim'
-import autoload './fuzzy.vim'
+import './fuzzy.vim'  # Do not autoload, commands fail silently with compile errors
 import autoload './live.vim'
 
 export def Enable()
@@ -92,7 +92,6 @@ export def Disable()
     endfor
 enddef
 
-# If not compiled here, commands silently fail when syntax errors are present.
-:defcompile
+:defcompile  # Needed so that commands don't fail silently with compile errors
 
 # vim: tabstop=8 shiftwidth=4 softtabstop=4 expandtab

@@ -2,11 +2,24 @@ vim9script
 
 # Autocomplete Vimscript commands, functions, variables, help, filenames, buffers, etc.
 
-import autoload './options.vim' as opt
 import autoload './popup.vim'
 import autoload './addons/addons.vim'
 
-var options = opt.options.cmd
+export var options: dict<any> = {
+    enable: true,
+    pum: true,         #   'false' for flat and 'true' for stacked popup menu
+    fuzzy: false,   # fuzzy completion
+    exclude: [],    # keywords excluded from completion (use \c for ignorecase)
+    onspace: [],    # show menu for keyword+space (ex. :find , :buffer , etc.)
+    timeout: 500,   # max time in ms to search when '**' is specified in path
+    alwayson: true, # when 'false' press <tab> to open popup menu
+    popupattrs: {      #   dictionary of attributes passed to popup window
+        maxheight: 12, #   line count of stacked menu (pum=true)
+    },
+    wildignore: true,
+    highlight: true,
+    addons: true,
+}
 
 class State
     var pmenu: popup.PopupMenu = null_object
@@ -78,9 +91,7 @@ enddef
 export def Teardown()
     augroup VimSuggestCmdAutocmds | autocmd!
     augroup END
-    if options.addons
-        addons.Disable()
-    endif
+    addons.Disable()
 enddef
 
 def EnableCmdline()

@@ -209,4 +209,6 @@ cmd.AddCmdlineAbortHook(() => {
     Clear()
 })
 
+:defcompile  # Needed so that commands don't fail silently with compile errors
+
 # vim: tabstop=8 shiftwidth=4 softtabstop=4 expandtab
