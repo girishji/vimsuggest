@@ -11,8 +11,7 @@ var prevdir = null_string
 
 export def Complete(_: string, cmdline: string, cursorpos: number,
         GetItems: func(): list<any> = null_function,
-        GetText: func(dict<any>): string = null_function,
-        FuzzyMatcher: func(list<any>, string): list<any> = null_function): list<any>
+        GetText: func(dict<any>): string = null_function): list<any>
     if cmdname == null_string
         Clear()
         cmdname = cmd.CmdLead()
@@ -31,8 +30,7 @@ export def Complete(_: string, cmdline: string, cursorpos: number,
         items->mapnew((_, v) => GetText(v)) : items
     var lastword = getcmdline()->matchstr('\S\+$')
     if lastword != null_string
-        matches = FuzzyMatcher != null_function ? items->FuzzyMatcher(lastword) :
-            text_items->matchfuzzypos(lastword, {matchseq: 1, limit: 100})
+        matches = text_items->matchfuzzypos(lastword, {matchseq: 1, limit: 100})
         matches[1]->map((idx, v) => {
             # Char to byte index (needed by matchaddpos)
             return v->mapnew((_, c) => matches[0][idx]->byteidx(c))
@@ -93,20 +91,6 @@ export def FindComplete(arglead: string, cmdline: string, cursorpos: number,
     return items
 enddef
 
-def FindCmd(dir: string): string
-    if dir == '.'
-        return 'find . \! \( -path "*/.*" -prune \) -type f -follow'
-    else
-        var dpath = dir->expandcmd()
-        return $'find {dpath} \! \( -path "{dpath}/.*" -prune \) -type f -follow'
-    endif
-enddef
-
-def ExtractPattern(): string
-    return getcmdline()->matchstr('\S\+$')
-        ->substitute('.*/\.\.\./', '', '') # In 'dir/.../pat1 pat2', extract pat2
-enddef
-
 export def DoAction(arglead: string = null_string, DoAction: func(any) = null_function,
         GetText: func(dict<any>): string = null_function)
     for str in [candidate, arglead] # After <c-s>, wildmenu can select an item in 'arglead'
@@ -138,6 +122,24 @@ export def DoFindAction(action: string, arg1 = null_string, arg2 = null_string,
         endif
     endif
     Clear()
+enddef
+
+export def OnSpace(cmdstr: string)
+    cmd.AddOnSpaceHook(cmdstr)
+enddef
+
+def FindCmd(dir: string): string
+    if dir == '.'
+        return 'find . \! \( -path "*/.*" -prune \) -type f -follow'
+    else
+        var dpath = dir->expandcmd()
+        return $'find {dpath} \! \( -path "{dpath}/.*" -prune \) -type f -follow'
+    endif
+enddef
+
+def ExtractPattern(): string
+    return getcmdline()->matchstr('\S\+$')
+        ->substitute('.*/\.\.\./', '', '') # In 'dir/.../pat1 pat2', extract pat2
 enddef
 
 def SetupHooks(name: string)
@@ -172,10 +174,6 @@ def SetupFindHooks(name: string)
         return true # Do not update cmdline with selected item
     })
     cmd.AddNoExcludeHook(name)
-enddef
-
-export def OnSpace(cmdstr: string)
-    cmd.AddOnSpaceHook(cmdstr)
 enddef
 
 def FuzzyMatchFiles(pat: string): list<any>
