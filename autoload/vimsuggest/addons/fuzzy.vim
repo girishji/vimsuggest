@@ -9,7 +9,7 @@ var candidate = null_string
 var cmdname = null_string
 var prevdir = null_string
 
-export def Find(_: string, cmdline: string, cursorpos: number,
+export def Complete(_: string, cmdline: string, cursorpos: number,
         GetItems: func(): list<any> = null_function,
         GetText: func(dict<any>): string = null_function,
         FuzzyMatcher: func(list<any>, string): list<any> = null_function): list<any>
@@ -43,7 +43,7 @@ export def Find(_: string, cmdline: string, cursorpos: number,
     return text_items
 enddef
 
-export def FindFiles(arglead: string, cmdline: string, cursorpos: number,
+export def FindComplete(arglead: string, cmdline: string, cursorpos: number,
         FindFn: func(string): string = null_function, shellprefix = null_string,
         async = true, timeout = 2000, max_items = 1000): list<any>
     var regenerate_items = false
@@ -52,7 +52,7 @@ export def FindFiles(arglead: string, cmdline: string, cursorpos: number,
     var dirpath = getcmdline()->matchstr('\s\zs\S\+\ze/\.\.\./')  # In ' dir/.../pat', extract dir
     if cmdname == null_string
         cmdname = cmd.CmdLead()
-        SetupHooksFindFiles(cmdname)
+        SetupFindHooks(cmdname)
         prevdir = dirpath ?? '.'
         findcmd = FindCmdFn(prevdir)
         regenerate_items = true
@@ -126,7 +126,7 @@ enddef
 #   <Command> <pattern1> <pattern2> <pattern3>
 #   When <pattern1> does not show expected result, start typing <pattern2> with
 #   better heuristics. No need to erase <pattern1>. Same applies to <pattern3>.
-export def DoFileAction(action: string, arg1 = null_string, arg2 = null_string,
+export def DoFindAction(action: string, arg1 = null_string, arg2 = null_string,
         arg3 = null_string)
     if candidate != null_string
         :exe $'{action} {candidate}'
@@ -156,7 +156,7 @@ def SetupHooks(name: string)
     })
 enddef
 
-def SetupHooksFindFiles(name: string)
+def SetupFindHooks(name: string)
     if !cmd.ValidState()
         return  # After <c-s>, cmd 'state' object has been removed
     endif
