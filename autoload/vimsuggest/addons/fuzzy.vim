@@ -2,12 +2,14 @@ vim9script
 
 import autoload '../cmd.vim'
 import autoload './job.vim'
+import autoload './exec.vim'
 
 var items = []
 var matches = [[], [], []]
 var candidate = null_string
 var cmdname = null_string
 var prevdir = null_string
+var exit_key = null_string
 
 export def Complete(_: string, cmdline: string, cursorpos: number,
         GetItems: func(): list<any> = null_function,
@@ -92,7 +94,7 @@ export def FindComplete(arglead: string, cmdline: string, cursorpos: number,
     return items
 enddef
 
-export def DoAction(arglead = null_string, ActionFn: func(any) = null_function,
+export def DoAction(arglead = null_string, ActionFn: func(any, string) = null_function,
         GetTextFn: func(dict<any>): string = null_function)
     for str in [candidate, arglead] # After <c-s>, wildmenu can select an item in 'arglead'
         if str != null_string
@@ -100,7 +102,7 @@ export def DoAction(arglead = null_string, ActionFn: func(any) = null_function,
             var GetText = GetTextFn ?? (item: dict<any>): string => item.text
             var idx = isdict ? items->indexof((_, v) => GetText(v) == str) : items->index(str)
             if idx != -1
-                ActionFn(items[idx])
+                ActionFn(items[idx], exit_key)
                 break
             endif
         endif
@@ -112,16 +114,16 @@ enddef
 #   <Command> <pattern1> <pattern2> <pattern3>
 #   When <pattern1> does not show expected result, start typing <pattern2> with
 #   better heuristics. No need to erase <pattern1>. Same applies to <pattern3>.
-export def DoFindAction(action: string, arg1 = null_string, arg2 = null_string,
+export def DoFindAction(arg1 = null_string, arg2 = null_string,
         arg3 = null_string)
     if candidate != null_string
-        :exe $'{action} {candidate}'
-    else
-        var args = [arg3, arg2, arg1]
-        var idx = args->indexof("v:val != null_string")
-        if idx != 1 && items->index(args[idx]) != -1
-            :exe $'{action} {args[idx]}'
-        endif
+        exec.VisitFile(exit_key, candidate)
+    # else
+    #     var args = [arg3, arg2, arg1]
+    #     var idx = args->indexof("v:val != null_string")
+    #     if idx != 1 && items->index(args[idx]) != -1
+    #         :exe $'{action} {args[idx]}'
+    #         exec.VisitFile(exit_key, args[idx])
     endif
     Clear()
 enddef
@@ -131,6 +133,7 @@ export def OnSpace(cmdstr: string)
 enddef
 
 def FindCmd(dir: string): string
+    # XXX win32
     if dir == '.'
         return 'find . \! \( -path "*/.*" -prune \) -type f -follow'
     else
@@ -156,8 +159,9 @@ def AddHooks(name: string)
         return suffix != null_string && !matches[0]->empty() ?
             matches : items
     })
-    cmd.AddCmdlineLeaveHook(name, (selected_item, first_item) => {
+    cmd.AddCmdlineLeaveHook(name, (selected_item, first_item, key) => {
         candidate = selected_item == null_string ? first_item : selected_item
+        exit_key = key
     })
     cmd.AddSelectItemHook(name, (_) => {
         return true # Do not update cmdline with selected item
@@ -173,8 +177,9 @@ def AddFindHooks(name: string)
         return pat != null_string && !matches[0]->empty() ?
             matches : [items]
     })
-    cmd.AddCmdlineLeaveHook(name, (selected_item, first_item) => {
+    cmd.AddCmdlineLeaveHook(name, (selected_item, first_item, key) => {
         candidate = selected_item == null_string ? first_item : selected_item
+        exit_key = key
     })
     cmd.AddSelectItemHook(name, (_) => {
         return true # Do not update cmdline with selected item
@@ -207,6 +212,7 @@ def Clear()
     candidate = null_string
     cmdname = null_string
     prevdir = null_string
+    exit_key = null_string
 enddef
 
 cmd.AddCmdlineEnterHook(() => {

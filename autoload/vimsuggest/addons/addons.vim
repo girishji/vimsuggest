@@ -53,23 +53,11 @@ vim9script
 #    nnoremap <key> :VSExec grep -RIHins "" . --exclude-dir={.git,"node_*"} --exclude=".*"<c-left><c-left><c-left><left><left>
 #    nnoremap <key> :VSExec grep -IHins "" **/*<c-left><left><left> # Slower
 #
-#  Options 3:
-#
-#  :VSExecDo {vim_command} {grep_shell_command}
-#
-#      Same as Option #2 but takes additional argument. {vim_command} can be one of:
-#      'b'        -> Open file in current window
-#      'sb'       -> Open file in split window
-#      'vert\ sb' -> Open file in vertical split
-#      'tab\ sb'  -> Open file in tab window
-#      Spaces should be escaped by '\'.
-#
 #  Note: If above options are not adequate, you can define your own command
 #  using the boilerplate examples in this file.
 #
 # 3. Live Find
 #
-#    var cmd = {"\<C-j>": 'split', "\<C-v>": 'vert split', "\<C-t>": 'tabe'}
 # 4. Fuzzy Find Buffers, MRU (:h v:oldfiles), Keymaps, Marks, and Registers
 #
 #  :VSBuffer [fuzzy_pattern]
@@ -104,7 +92,7 @@ import './exec.vim'
 
 export def Enable()
     ## (Fuzzy) Find Files
-    command! -nargs=* -complete=customlist,fuzzy.FindComplete VSFind fuzzy.DoFindAction('edit', <f-args>)
+    command! -nargs=* -complete=customlist,fuzzy.FindComplete VSFind fuzzy.DoFindAction(<f-args>)
     ## (Live) Grep
     command! -nargs=+ -complete=customlist,GrepComplete VSGrep exec.DoAction(null_function, <f-args>)
     # Execute Shell Command (ex. grep, find, etc.)
@@ -137,8 +125,8 @@ def BufferComplete(arglead: string, cmdline: string, cursorpos: number): list<an
     return fuzzy.Complete(arglead, cmdline, cursorpos, function(Buffers, [false]))
 enddef
 def DoBufferAction(arglead: string = null_string)
-    fuzzy.DoAction(arglead, (it) => {
-        :exe $'b {it.bufnr}'
+    fuzzy.DoAction(arglead, (it, key) => {
+        exec.VisitBuffer(key, it.bufnr)
     })
 enddef
 def Buffers(list_all_buffers: bool): list<any>
@@ -190,8 +178,8 @@ def MRUComplete(arglead: string, cmdline: string, cursorpos: number): list<any>
     return fuzzy.Complete(arglead, cmdline, cursorpos, MRU)
 enddef
 def DoMRUAction(arglead: string = null_string)
-    fuzzy.DoAction(arglead, (item) => {
-        :exe $'e {item}'
+    fuzzy.DoAction(arglead, (item, key) => {
+        exec.VisitFile(key, item)
     })
 enddef
 def MRU(): list<any>

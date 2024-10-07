@@ -5,6 +5,7 @@ import autoload './job.vim'
 
 var items: list<any>
 var candidate: string
+var exit_key: string
 
 # Usage:
 # :<Command> Shell_cmd Shell_cmd_arg1 Shell_cmd_arg2 ...
@@ -15,6 +16,7 @@ export def Complete(context: string, line: string, cursorpos: number,
     # Note: Both 'context' and 'line' arg contains text up to 'cursorpos' only.
     items = []
     candidate = null_string
+    exit_key = null_string
     var cstr = null_string
     var shell_prefix = shellprefix
     if cmdstr != null_string
@@ -56,23 +58,23 @@ export def Complete(context: string, line: string, cursorpos: number,
     return items
 enddef
 
-# Usage:
-# :<Command> Ex_cmd[\ Ex_cmd_arg1\ Ex_cmd_arg2 ...] Shell_cmd Shell_cmd_arg1 Shell_cmd_arg2 ...
-export def CompleteEx(context: string, line: string, cursorpos: number,
-        async = true, timeout = 2000, max_items = 1000): list<any>
-    var escaped_spaces_removed = cmd.CmdStr()->substitute('\\ ', '', 'g')
-    var parts = escaped_spaces_removed->split()
-    if parts->len() > 1
-        parts->remove(1)
-    endif
-    return Complete(context, parts->join(' '), cursorpos, null_string,
-        null_string, async, timeout, max_items)
-enddef
+# # Usage:
+# # :<Command> Ex_cmd[\ Ex_cmd_arg1\ Ex_cmd_arg2 ...] Shell_cmd Shell_cmd_arg1 Shell_cmd_arg2 ...
+# export def CompleteEx(context: string, line: string, cursorpos: number,
+#         async = true, timeout = 2000, max_items = 1000): list<any>
+#     var escaped_spaces_removed = cmd.CmdStr()->substitute('\\ ', '', 'g')
+#     var parts = escaped_spaces_removed->split()
+#     if parts->len() > 1
+#         parts->remove(1)
+#     endif
+#     return Complete(context, parts->join(' '), cursorpos, null_string,
+#         null_string, async, timeout, max_items)
+# enddef
 
 # Usage:
 # :<Command> Shell_cmd Shell_cmd_arg1 Shell_cmd_arg2 ...
 # :<Command> <pattern>
-export def DoAction(ActionFn: func(string), arg1: string = '',
+export def DoAction(ActionFn: func(string, string), arg1: string = '',
         arg2: string = '', arg3: string = '', arg4: string = '',
         arg5: string = '', arg6: string = '', arg7: string = '',
         arg8: string = '', arg9: string = '', arg10: string = '',
@@ -82,55 +84,52 @@ export def DoAction(ActionFn: func(string), arg1: string = '',
         arg20: string = '')
     if candidate != null_string
         if ActionFn != null_function
-            ActionFn(candidate)
+            ActionFn(candidate, exit_key)
         else
-            DefaultAction(candidate)
+            DefaultAction(candidate, exit_key)
         endif
     endif
 enddef
 
-# Usage:
-# :<Command> Ex_cmd[\ Ex_cmd_arg1\ Ex_cmd_arg2 ...] Shell_cmd Shell_cmd_arg1 Shell_cmd_arg2 ...
-export def DoActionEx(action: string, arg1: string = '',
-        arg2: string = '', arg3: string = '', arg4: string = '',
-        arg5: string = '', arg6: string = '', arg7: string = '',
-        arg8: string = '', arg9: string = '', arg10: string = '',
-        arg11: string = '', arg12: string = '', arg13: string = '',
-        arg14: string = '', arg15: string = '', arg16: string = '',
-        arg17: string = '', arg18: string = '', arg19: string = '',
-        arg20: string = '')
-    if candidate != null_string
-        ExecAction(candidate, action->substitute('\\ ', ' ', 'g'))
-    endif
-enddef
+# # Usage:
+# # :<Command> Ex_cmd[\ Ex_cmd_arg1\ Ex_cmd_arg2 ...] Shell_cmd Shell_cmd_arg1 Shell_cmd_arg2 ...
+# export def DoActionEx(action: string, arg1: string = '',
+#         arg2: string = '', arg3: string = '', arg4: string = '',
+#         arg5: string = '', arg6: string = '', arg7: string = '',
+#         arg8: string = '', arg9: string = '', arg10: string = '',
+#         arg11: string = '', arg12: string = '', arg13: string = '',
+#         arg14: string = '', arg15: string = '', arg16: string = '',
+#         arg17: string = '', arg18: string = '', arg19: string = '',
+#         arg20: string = '')
+#     if candidate != null_string
+#         ExecAction(candidate, action->substitute('\\ ', ' ', 'g'))
+#     endif
+# enddef
 
-export def DefaultAction(tgt: string)
-    ExecAction(tgt)
-enddef
-
-export def ExecAction(tgt: string, excmd = null_string)
+export def DefaultAction(tgt: string, key: string)
     if tgt->filereadable()
-        :exe $'{excmd ?? "e"} {tgt}'
+        VisitFile(key, tgt)
     else  # Assume 'tgt' is a 'grep' output line
-        GrepVisitFile(excmd ?? "b", tgt)
+        GrepVisitFile(key, tgt)
     endif
 enddef
 
 # Extract file from grep output and edit it.
 # Let quicfix parse output of 'grep' for filename, line, column. It deals with
 # ':' in filename and other corner cases.
-export def GrepVisitFile(excmd: string, line: string)
+export def GrepVisitFile(key: string, line: string)
     var qfitem = getqflist({lines: [line]}).items[0]
     if qfitem->has_key('bufnr')
-        VisitBuffer(excmd ?? 'b', qfitem.bufnr, qfitem.lnum, qfitem.col, qfitem.vcol > 0)
+        VisitBuffer(key, qfitem.bufnr, qfitem.lnum, qfitem.col, qfitem.vcol > 0)
         if !qfitem.bufnr->getbufvar('&buflisted') # getqflist keeps buffer unlisted
             setbufvar(qfitem.bufnr, '&buflisted', 1)
         endif
     endif
 enddef
 
-def VisitBuffer(excmd: string, bufnr: number, lnum = -1, col = -1, visualcol = false)
-    var cmdstr = excmd
+export def VisitBuffer(key: string, bufnr: number, lnum = -1, col = -1, visualcol = false)
+    var keymap = {"\<C-j>": 'sb', "\<C-v>": 'vert sb', "\<C-t>": 'tab sb'}
+    var cmdstr = keymap->get(key, 'b')
     if lnum > 0
         if col > 0
             var pos = visualcol ? 'setcharpos' : 'setpos'
@@ -142,12 +141,22 @@ def VisitBuffer(excmd: string, bufnr: number, lnum = -1, col = -1, visualcol = f
     :exe $":{cmdstr} {bufnr}"
 enddef
 
+export def VisitFile(key: string, filename: string, lnum: number = -1)
+    var keymap = {"\<C-j>": 'split', "\<C-v>": 'vert split', "\<C-t>": 'tabe'}
+    if lnum > 0
+        exe $":{keymap->get(key, 'e')} +{lnum} {filename}"
+    else
+        exe $":{keymap->get(key, 'e')} {filename}"
+    endif
+enddef
+
 def AddHooks(name: string)
     if !cmd.ValidState()
         return  # After <c-s>, cmd 'state' object has been removed
     endif
-    cmd.AddCmdlineLeaveHook(name, (selected_item, first_item) => {
+    cmd.AddCmdlineLeaveHook(name, (selected_item, first_item, key) => {
         candidate = selected_item == null_string ? first_item : selected_item
+        exit_key = key
     })
     cmd.AddSelectItemHook(name, (_) => {
         return true # Do not update cmdline with selected item

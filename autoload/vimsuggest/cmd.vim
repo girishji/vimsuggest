@@ -29,6 +29,7 @@ class State
     var exclude = ['~', '!', '%', '(', ')', '+', '-', '=', '<', '>', '?', ',']
     public var items: list<any>
     public var insertion_point: number
+    public var exit_key: string = null_string # Key pressed before closing the menu
     # Following are the callbacks used by addons.
     public static var onspace_hook = {}
     public var highlight_hook = {}
@@ -80,7 +81,8 @@ export def Setup()
             autocmd CmdlineChanged  :  options.alwayson ? Complete() : TabComplete()
             autocmd CmdlineLeave    :  {
                 if state != null_object # <c-s> removes this object
-                    CmdlineLeaveHook(state.pmenu.SelectedItem(), state.pmenu.FirstItem())
+                    CmdlineLeaveHook(state.pmenu.SelectedItem(),
+                        state.pmenu.FirstItem(), state.exit_key)
                     state.Clear()
                     state = null_object
                 endif
@@ -271,6 +273,9 @@ def FilterFn(winid: number, key: string): bool
     elseif key ==? "\<C-g>"  # 'g' as in 'Goto'
         SendToQickfixOrArglist()
         state.pmenu.Close(-1)
+    elseif key ==? "\<C-j>" || key ==? "\<C-v>" || key ==? "\<C-t>"
+        state.exit_key = key
+        feedkeys("\<cr>", 'n')
     elseif key ==? "\<CR>"
         # When <cr> simply opens the message window (ex :filt Menu hi), popup
         # lingers unless it is explicitly hidden. Focus stays in command-line.
@@ -335,10 +340,10 @@ export def CmdLead(): string
     return CmdStr()->matchstr('^\S\+')
 enddef
 
-def CmdlineLeaveHook(selected_item: string, first_item: string)
+def CmdlineLeaveHook(selected_item: string, first_item: string, key: string)
     var cmdname = CmdLead()
     if state.cmdline_leave_hook->has_key(cmdname)
-        state.cmdline_leave_hook[cmdname](selected_item, first_item)
+        state.cmdline_leave_hook[cmdname](selected_item, first_item, key)
     endif
 enddef
 
@@ -356,7 +361,7 @@ export def AddNoExcludeHook(cmd: string)
     state.noexclude_hook[cmd] = 1
 enddef
 
-export def AddCmdlineLeaveHook(cmd: string, Callback: func(string, string))
+export def AddCmdlineLeaveHook(cmd: string, Callback: func(string, string, string))
     state.cmdline_leave_hook[cmd] = Callback
 enddef
 
