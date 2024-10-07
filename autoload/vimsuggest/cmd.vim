@@ -28,6 +28,7 @@ class State
     # are shown by getcompletion()
     var exclude = ['~', '!', '%', '(', ')', '+', '-', '=', '<', '>', '?', ',']
     public var items: list<any>
+    public var insertion_point: number
     # Following are the callbacks used by addons.
     public static var onspace_hook = {}
     public var highlight_hook = {}
@@ -208,9 +209,9 @@ export def SetPopupMenu(items: list<any>)
     else  # Add properties for syntax highlighting
         state.items = Highlight(cmdsuffix, items)
     endif
-    # '&' and '$' completes Vim options and env variables respectively.
-    var pos = max([' ', '&', '$']->mapnew((_, v) => context->strridx(v)))
-    state.pmenu.SetText(state.items, options.pum ? pos + 2 : 1)
+    var pos = state.items[0]->len() > 0 ? InsertionPoint(state.items[0][0]) + 1 : 1
+    state.insertion_point = pos - 1
+    state.pmenu.SetText(state.items, options.pum ? pos : 1)
     if state.items[0]->len() > 0
         state.pmenu.Show()
         # Note: If command-line is not disabled here, it will intercept key inputs
@@ -220,11 +221,32 @@ export def SetPopupMenu(items: list<any>)
     endif
 enddef
 
+# When ':h :range' is present, insertion of completion text should happen at the
+# end of range.
+def InsertionPoint(replacement: string): number
+    var context = Context()
+    var pos = max([' ', '&', '$']->mapnew((_, v) => context->strridx(v))) + 1
+    # '&' and '$' completes Vim options and env variables respectively.
+    if pos == context->len()
+        return pos
+    endif
+    var word = context->slice(pos)
+    var wordlen = word->len()
+    for i in range(wordlen)
+        if word->slice(i) ==? replacement->slice(0, wordlen - i)
+            return i + pos
+        endif
+    endfor
+    return pos
+enddef
+
 def SelectItemPost(index: number)
     var cmdname = CmdLead()
-    if !state.select_item_hook->has_key(cmdname) || !state.select_item_hook[cmdname](state.items[0][index])
+    if !state.select_item_hook->has_key(cmdname) ||
+            !state.select_item_hook[cmdname](state.items[0][index])
         var context = Context()
-        setcmdline(context->matchstr('^.*\s\ze') .. state.items[0][index])
+        var replacement = state.items[0][index]
+        setcmdline(context->slice(0, state.insertion_point) .. replacement)
     endif
 enddef
 

@@ -152,17 +152,21 @@ def AddHooks(name: string)
     cmd.AddSelectItemHook(name, (_) => {
         return true # Do not update cmdline with selected item
     })
-    def MatchGrepLine(line: string, pat: string): list<any> # Match grep output
+    def Strip(pat: string): string
         # Remove " and ' around pattern, if any.
         var p = pat->substitute('^"', '', '')->substitute('"$', '', '')
         if p ==# pat
             p = p->substitute("^'", '', '')->substitute("'$", '', '')
         endif
+        return p
+    enddef
+    def MatchGrepLine(line: string, pat: string): list<any> # Match grep output
+        var p = pat->Strip()
         return line->matchstrpos($'.*:.\{{-}}\zs{p}')  # Remove filename, linenum, and colnum
     enddef
     cmd.AddHighlightHook(name, (suffix: string, itms: list<any>): list<any> => {
         # grep command can have a dir argument at the end. Match only what is before the cursor.
-        if suffix != null_string && !itms->empty()
+        if suffix->Strip() != null_string && !itms->empty()
             return cmd.Highlight(suffix, itms,
                 itms[0]->filereadable() ? null_function : MatchGrepLine)
         endif
