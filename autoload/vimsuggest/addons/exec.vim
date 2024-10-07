@@ -40,7 +40,6 @@ export def Complete(context: string, line: string, cursorpos: number,
     if cstr != null_string
         if async
             var cmdany = shell_prefix == null_string ? cstr : shell_prefix->split() + [cstr]
-            echom 'here1' cmdany
             def ProcessItems(itms: list<any>)
                 cmd.SetPopupMenu(itms)
                 items = itms

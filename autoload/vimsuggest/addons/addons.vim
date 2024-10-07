@@ -1,7 +1,104 @@
 vim9script
 
+# Use commands defined in this file directly, or bind them to your favorite
+# keys. Use this file as a boilerplate to define customized alternatives.
+# Note: Legacy script users can also use ':import' (see :h import-legacy).
+#
+# Usage:
+#
+#   Note:
+#     <Tab>/<S-Tab> to select the menu item. If no item is selected <CR> visits
+#     the first item in the menu.
+#
+# 1. Fuzzy Find Files
+#
+#  :VSFind [dirpath/.../][fuzzy_pattern]
+#     Uses 'find' command in a separate job to asynchronously gather files once
+#     and executes fuzzy search. '/.../' separates optional directory (to
+#     search for files) from pattern. Hidden files and directories are excluded.
+#
+#  Map it to your favorite key:
+#    nnoremap <key> :VSFind<space>
+#    nnoremap <key> :VSFind ~/.vim/.../
+#    nnoremap <key> :VSFind $VIMRUNTIME/.../
+#
+#  Note: Define your own command using the boilerplate below if you prefer to
+#  use 'find' with your favorite options or other alternatives like 'fd'.
+#
+# 2. (Live) Grep
+#
+#     Execute 'grep' command every time a user types a key and show the results.
+#
+#  Option 1:
+#
+#  :VSGrep [fuzzy_pattern]
+#
+#  Execute 'grep' in the current directory. Exclude hidden files and directories
+#  from being searched.
+#
+#  Map it to your favorite key:
+#    nnoremap <key> :VSGrep ""<left>
+#    nnoremap <key> :VSGrep "<c-r>=expand('<cword>')<cr>"<left>
+#
+#  Option 2:
+#
+#  :VSExec {grep_shell_command}
+#
+#     Define your own 'grep' command. You can use alternatives like 'rg', 'ag', etc.
+#     {grep_shell_command} is executed within your '$SHELL'. This way, brace
+#     expansion ({,}), globbing wildcards ('**', '***', '**~'), etc. work if
+#     your shell support them. File read errors are ignored.
+#
+#  Map it to your favorite key:
+#    nnoremap <key> :VSExec grep -RIHins "" . --exclude-dir={.git,"node_*"} --exclude=".*"<c-left><c-left><c-left><left><left>
+#    nnoremap <key> :VSExec grep -IHins "" **/*<c-left><left><left> # Slower
+#
+#  Options 3:
+#
+#  :VSExecDo {vim_command} {grep_shell_command}
+#
+#      Same as Option #2 but takes additional argument. {vim_command} can be one of:
+#      'b'        -> Open file in current window
+#      'sb'       -> Open file in split window
+#      'vert\ sb' -> Open file in vertical split
+#      'tab\ sb'  -> Open file in tab window
+#      Spaces should be escaped by '\'.
+#
+#  Note: If above options are not adequate, you can define your own command
+#  using the boilerplate examples in this file.
+#
+# 3. Live Find
+#
+#    var cmd = {"\<C-j>": 'split', "\<C-v>": 'vert split', "\<C-t>": 'tabe'}
+# 4. Fuzzy Find Buffers, MRU (:h v:oldfiles), Keymaps, Marks, and Registers
+#
+#  :VSBuffer [fuzzy_pattern]
+#  :VSMru [fuzzy_pattern]
+#  :VSKeymap [fuzzy_pattern]
+#  :VSMark [fuzzy_pattern]
+#  :VSRegister [fuzzy_pattern]
+#
+#      VSKeymap opens file where keymap is defined when <CR> is pressed. VSMark
+#      jumps to the mark. VSRegister pastes the contents of the register.
+#
+#  Map it to your favorite key:
+#    nnoremap <key> :VSBuffer<space>
+#    nnoremap <key> :VSMru<space>
+#    nnoremap <key> :VSKeymap<space>
+#    nnoremap <key> :VSMark<space>
+#    nnoremap <key> :VSRegister<space>
+#
+# 4. Artifacts
+#
+
+    # nnoremap <leader>fk :VSKeymap<space>
+    # nnoremap <leader>fr :VSRegister<space>
+    # nnoremap <leader>fm :VSMark<space>
+
 import autoload '../cmd.vim'
-# Debug: Avoid autoloading to prevent delaying compilation until the autocompletion phase.
+# Debug: Avoid autoloading (in combination with :defcompile) the following
+# scrits to prevent delaying compilation until the autocompletion phase. A Vim
+# bug is causing commands to die silently when compilation errors are present.
 import './fuzzy.vim'
 import './exec.vim'
 
@@ -12,7 +109,7 @@ export def Enable()
     command! -nargs=+ -complete=customlist,GrepComplete VSGrep exec.DoAction(null_function, <f-args>)
     # Execute Shell Command (ex. grep, find, etc.)
     command! -nargs=* -complete=customlist,exec.Complete VSExec exec.DoAction(null_function, <f-args>)
-    command! -nargs=* -complete=customlist,exec.CompleteEx VSExecEx exec.DoActionEx(null_function, <f-args>)
+    command! -nargs=* -complete=customlist,exec.CompleteEx VSExecDo exec.DoActionEx(null_function, <f-args>)
     # Others
     command! -nargs=* -complete=customlist,BufferComplete VSBuffer DoBufferAction(<f-args>)
     command! -nargs=* -complete=customlist,MRUComplete VSMru DoMRUAction(<f-args>)
@@ -167,7 +264,6 @@ export def Disable()
     endfor
 enddef
 
-:defcompile  # Debug: Just so that compilation errors show up when script is loaded.
-             # Otherwise, compilation is postponed until <tab> completion.
+:defcompile  # Debug: See note above.
 
 # vim: tabstop=8 shiftwidth=4 softtabstop=4 expandtab

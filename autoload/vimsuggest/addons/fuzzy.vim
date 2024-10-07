@@ -217,7 +217,6 @@ cmd.AddCmdlineAbortHook(() => {
     Clear()
 })
 
-:defcompile  # Debug: Just so that compilation errors show up when script is loaded.
-             # Otherwise, compilation is postponed until <tab> completion.
+:defcompile
 
 # vim: tabstop=8 shiftwidth=4 softtabstop=4 expandtab
