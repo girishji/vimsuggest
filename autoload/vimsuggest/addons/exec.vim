@@ -1,65 +1,79 @@
 vim9script
 
-# Usage:
-# :<Command> Ex_cmd[\ Ex_cmd_arg1\ Ex_cmd_arg2 ...] Shell_cmd Shell_cmd_arg1 Shell_cmd_arg2 ...
-
 import autoload '../cmd.vim'
 import autoload './job.vim'
 
-var items = []
+var items: list<any>
 var candidate: string
 
-export def DoComplete(context: string, line: string, cursorpos: number,
+# Usage:
+# :<Command> Shell_cmd Shell_cmd_arg1 Shell_cmd_arg2 ...
+# :<Command> <pattern>
+export def Complete(context: string, line: string, cursorpos: number,
         cmdstr = null_string, shellprefix = null_string,
         async = true, timeout = 2000, max_items = 1000): list<any>
     # Note: Both 'context' and 'line' arg contains text up to 'cursorpos' only.
-    Clear()
-    var space_escaped = cmd.CmdStr()->substitute('\\ ', '', 'g') # Compress escaped spaces
-    var parts = space_escaped->split()  # Split across spaces except for "\ "
-    var cstr: string = null_string
+    items = []
+    candidate = null_string
+    var cstr = null_string
+    var shell_prefix = shellprefix
     if cmdstr != null_string
         var suffix = cmd.CmdStr()->matchstr('\S\+\s*\zs.*$')
         if suffix != null_string
-            # Note: Double quoting suffix seems like a good idea but it
-            # introduces side effects. 1) User will have to escape a double
-            # quote within a pattern, 2) ':VSLiveFind |*' will not complete
-            # through a keymap, since cursor is before a <space>. It can to be
-            # solved using timer_start to send <left> through feedkeys(), so
-            # that completion mechanism sees 'VSLiveFind *' before cursor is
-            # moved to the left. 3) You cannot specify a directory after pattern.
+            # Note: Double quoting suffix has side effects:
+            # 1) User will have to escape a double quotes when typing pattern,
+            # 2) Cannot specify a directory after pattern,
+            # 3) ':VSLiveFind |*' will not complete through a keymap,
+            # since cursor is before a <space> (can be solved through timer_start).
             # cstr = $'{cmdstr} "{suffix}"'
             cstr = $'{cmdstr} {suffix}'
         endif
-    elseif parts->len() > 3  # Ex cmd and Sh cmd entered through cmdline
-        # 'expandcmd' expands '~/path', but also causes '\' to be removed, causing '\' hell.
-        cstr = parts[2 : ]->mapnew((_, v) => v =~ '[~$]' ? expandcmd(v) : v)->join(' ')
+    else
+        var parts = cmd.CmdStr()->split()
+        if parts->len() > 1
+            # Note: 'expandcmd' expands '~/path', but also causes '\' to be removed.
+            cstr = parts[1 : ]->mapnew((_, v) => v =~ '[~$]' ? expandcmd(v) : v)->join(' ')
+            shell_prefix = expand("$SHELL") != null_string ? $'{expand("$SHELL")} -c' : ''
+            # shell_prefix = '/bin/sh -c'
+        endif
     endif
     if cstr != null_string
         if async
-            var cmdany = shellprefix == null_string ? cstr : shellprefix->split() + [cstr]
-            def ProcessItems(fpaths: list<any>)
-                cmd.SetPopupMenu(fpaths)
-                items = fpaths
+            var cmdany = shell_prefix == null_string ? cstr : shell_prefix->split() + [cstr]
+            echom 'here1' cmdany
+            def ProcessItems(itms: list<any>)
+                cmd.SetPopupMenu(itms)
+                items = itms
             enddef
             job.Start(cmdany, ProcessItems, timeout, max_items)
         else
             try
-                items = systemlist($'{shellprefix} {cstr}')
+                items = systemlist($'{shell_prefix} {cstr}')
             catch  # '\' and '"' cause E282
             endtry
         endif
     endif
-    SetupHooks(cmd.CmdLead())
+    AddHooks(cmd.CmdLead())
     return items
 enddef
 
-# XXX
-export def DoCompleteSh(context: string, line: string, cursorpos: number,
+# Usage:
+# :<Command> Ex_cmd[\ Ex_cmd_arg1\ Ex_cmd_arg2 ...] Shell_cmd Shell_cmd_arg1 Shell_cmd_arg2 ...
+export def CompleteEx(context: string, line: string, cursorpos: number,
         async = true, timeout = 2000, max_items = 1000): list<any>
-    return DoComplete(context, line, cursorpos, '', 'sh -c', async, timeout, max_items)
+    var escaped_spaces_removed = cmd.CmdStr()->substitute('\\ ', '', 'g')
+    var parts = escaped_spaces_removed->split()
+    if parts->len() > 1
+        parts->remove(1)
+    endif
+    return Complete(context, parts->join(' '), cursorpos, null_string,
+        null_string, async, timeout, max_items)
 enddef
 
-export def DoCommand(ActionFn: func(string), action: string, arg1: string = '',
+# Usage:
+# :<Command> Shell_cmd Shell_cmd_arg1 Shell_cmd_arg2 ...
+# :<Command> <pattern>
+export def DoAction(ActionFn: func(string), arg1: string = '',
         arg2: string = '', arg3: string = '', arg4: string = '',
         arg5: string = '', arg6: string = '', arg7: string = '',
         arg8: string = '', arg9: string = '', arg10: string = '',
@@ -71,36 +85,31 @@ export def DoCommand(ActionFn: func(string), action: string, arg1: string = '',
         if ActionFn != null_function
             ActionFn(candidate)
         else
-            DoAction(candidate, action->substitute('\\ ', ' ', 'g'))
+            DefaultAction(candidate)
         endif
     endif
 enddef
 
-# export def DoCommand(action: string, arg1: string, arg2: string = '',
-#         arg3: string = '', arg4: string = '', arg5: string = '',
-#         arg6: string = '', arg7: string = '', arg8: string = '',
-#         arg9: string = '', arg10: string = '', arg11: string = '',
-#         arg12: string = '', arg13: string = '', arg14: string = '',
-#         arg15: string = '', arg16: string = '', arg17: string = '',
-#         arg18: string = '', arg19: string = '', arg20: string = '')
-#     if candidate != null_string
-#         DefaultAction(candidate, action->substitute('\\ ', ' ', 'g'))
-#     endif
-# enddef
-
-# export def DoCmdAction(arg: string = null_string, ActionFn: func(string) = null_function)
-#     if candidate != null_string
-#         var A = (ActionFn != null_function) ? ActionFn : DefaultAction
-#         A(candidate)
-#     endif
-#     Clear()
-# enddef
-
-export def DefaultAction(tgt: string)
-    DoAction(null_string, tgt)
+# Usage:
+# :<Command> Ex_cmd[\ Ex_cmd_arg1\ Ex_cmd_arg2 ...] Shell_cmd Shell_cmd_arg1 Shell_cmd_arg2 ...
+export def DoActionEx(action: string, arg1: string = '',
+        arg2: string = '', arg3: string = '', arg4: string = '',
+        arg5: string = '', arg6: string = '', arg7: string = '',
+        arg8: string = '', arg9: string = '', arg10: string = '',
+        arg11: string = '', arg12: string = '', arg13: string = '',
+        arg14: string = '', arg15: string = '', arg16: string = '',
+        arg17: string = '', arg18: string = '', arg19: string = '',
+        arg20: string = '')
+    if candidate != null_string
+        ExecAction(candidate, action->substitute('\\ ', ' ', 'g'))
+    endif
 enddef
 
-export def DoAction(excmd: string, tgt: string)
+export def DefaultAction(tgt: string)
+    ExecAction(tgt)
+enddef
+
+export def ExecAction(tgt: string, excmd = null_string)
     if tgt->filereadable()
         :exe $'{excmd ?? "e"} {tgt}'
     else  # Assume 'tgt' is a 'grep' output line
@@ -109,8 +118,8 @@ export def DoAction(excmd: string, tgt: string)
 enddef
 
 # Extract file from grep output and edit it.
-# Let quicfix parse output of 'grep' for filename, line, column.
-# It deals with ':' in filename and other corner cases.
+# Let quicfix parse output of 'grep' for filename, line, column. It deals with
+# ':' in filename and other corner cases.
 export def GrepVisitFile(excmd: string, line: string)
     var qfitem = getqflist({lines: [line]}).items[0]
     if qfitem->has_key('bufnr')
@@ -134,9 +143,9 @@ def VisitBuffer(excmd: string, bufnr: number, lnum = -1, col = -1, visualcol = f
     :exe $":{cmdstr} {bufnr}"
 enddef
 
-def SetupHooks(name: string)
+def AddHooks(name: string)
     if !cmd.ValidState()
-        return  # After <c-e>, cmd 'state' object has been removed
+        return  # After <c-s>, cmd 'state' object has been removed
     endif
     cmd.AddCmdlineLeaveHook(name, (selected_item, first_item) => {
         candidate = selected_item == null_string ? first_item : selected_item
@@ -150,9 +159,10 @@ def SetupHooks(name: string)
         if p ==# pat
             p = p->substitute("^'", '', '')->substitute("'$", '', '')
         endif
-        return line->matchstrpos($'.*:.\{{-}}\zs{p}')
+        return line->matchstrpos($'.*:.\{{-}}\zs{p}')  # Remove filename, linenum, and colnum
     enddef
     cmd.AddHighlightHook(name, (suffix: string, itms: list<any>): list<any> => {
+        # grep command can have a dir argument at the end. Match only what is before the cursor.
         if suffix != null_string && !itms->empty()
             return cmd.Highlight(suffix, itms,
                 itms[0]->filereadable() ? null_function : MatchGrepLine)
@@ -162,9 +172,6 @@ def SetupHooks(name: string)
     cmd.AddNoExcludeHook(name)
 enddef
 
-def Clear()
-    items = []
-    candidate = null_string
-enddef
+:defcompile
 
 # vim: tabstop=8 shiftwidth=4 softtabstop=4 expandtab

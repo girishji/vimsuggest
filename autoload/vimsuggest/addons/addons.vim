@@ -1,28 +1,23 @@
 vim9script
 
 import autoload '../cmd.vim'
-# import autoload './fuzzy.vim'
-import './fuzzy.vim' # Debug: Avoid autoloading to prevent delaying compilation until the autocompletion phase.
-import autoload './live.vim'
+# Debug: Avoid autoloading to prevent delaying compilation until the autocompletion phase.
+import './fuzzy.vim'
+import './exec.vim'
 
 export def Enable()
     ## (Fuzzy) Find Files
     command! -nargs=* -complete=customlist,fuzzy.FindComplete VSFind fuzzy.DoFindAction('edit', <f-args>)
     ## (Live) Grep
-    command! -nargs=+ -complete=customlist,DoLiveGrepComplete VSLiveGrep live.DoCommand(live.DefaultAction, <f-args>)
-
-    # command! -nargs=+ -complete=customlist,DoLiveFindComplete VSLiveFind live.DoCommand(live.DefaultAction, <f-args>)
-    # command! -nargs=* -complete=customlist,live.DoComplete VSLive live.DoCommand(live.DefaultAction, <f-args>)
-    # command! -nargs=* -complete=customlist,live.DoCompleteSh VSLiveSh live.DoCommand(live.DefaultAction, <f-args>)
-
+    command! -nargs=+ -complete=customlist,GrepComplete VSGrep exec.DoAction(null_function, <f-args>)
+    # Execute Shell Command (ex. grep, find, etc.)
+    command! -nargs=* -complete=customlist,exec.Complete VSExec exec.DoAction(null_function, <f-args>)
+    command! -nargs=* -complete=customlist,exec.CompleteEx VSExecEx exec.DoActionEx(null_function, <f-args>)
+    # Others
     command! -nargs=* -complete=customlist,BufferComplete VSBuffer DoBufferAction(<f-args>)
-
     command! -nargs=* -complete=customlist,MRUComplete VSMru DoMRUAction(<f-args>)
-
     command! -nargs=* -complete=customlist,KeymapComplete VSKeymap DoKeymapAction(<f-args>)
-
     command! -nargs=* -complete=customlist,MarkComplete VSMark DoMarkAction(<f-args>)
-
     command! -nargs=* -complete=customlist,RegisterComplete VSRegister DoRegisterAction(<f-args>)
 enddef
 
@@ -30,20 +25,12 @@ enddef
 
 cmd.AddOnSpaceHook('VSFind')
 
-## (Live) Find Files
-
-# def DoLiveFindComplete(A: string, L: string, C: number): list<any>
-#     return live.DoComplete(A, L, C, 'find . \! \( -path "*/.*" -prune \) -type f -follow -name')
-# enddef
-
 ## (Live) Grep
 
-def DoLiveGrepComplete(A: string, L: string, C: number): list<any>
-    var macos = has('macunix')
-    var flags = macos ? '-REIHSins' : '-REIHins'
-    var cmdstr = $'grep --color=never {flags}'
-    # 'sh -c' is needed for {} shell substitution.
-    return live.DoComplete(A, L, C, cmdstr .. ' --exclude="{.gitignore,.swp,.zwc,tags,./.git/*}"', 'sh -c')
+def GrepComplete(A: string, L: string, C: number): list<any>
+    var cmdstr = $'grep --color=never {has("macunix") ? "-REIHSins" : "-REIHins"}'
+    var excl = '--exclude-dir=node_modules --exclude-dir=build --exclude-dir="*/.*" --exclude="*/.*" --exclude=tags'
+    return exec.Complete(A, L, C, $'{cmdstr} {excl}')
 enddef
 
 ## Buffers
@@ -53,8 +40,8 @@ def BufferComplete(arglead: string, cmdline: string, cursorpos: number): list<an
     return fuzzy.Complete(arglead, cmdline, cursorpos, function(Buffers, [false]))
 enddef
 def DoBufferAction(arglead: string = null_string)
-    fuzzy.DoAction(arglead, (item) => {
-        :exe $'b {item->type() == v:t_dict ? item.bufnr : item}'
+    fuzzy.DoAction(arglead, (it) => {
+        :exe $'b {it.bufnr}'
     })
 enddef
 def Buffers(list_all_buffers: bool): list<any>
@@ -173,8 +160,7 @@ enddef
 ##
 
 export def Disable()
-    # XXX
-    for c in ['VSFind', 'VSLiveFind', 'VSBuffer', 'VSMru']
+    for c in ['VSFind', 'VSGrep', 'VSExec', 'VSExecEx', 'VSBuffer', 'VSMru', 'VSKeymap', 'VSMark', 'VSRegister']
         if exists($":{c}") == 2
             :exec $'delcommand {c}'
         endif
@@ -183,6 +169,5 @@ enddef
 
 :defcompile  # Debug: Just so that compilation errors show up when script is loaded.
              # Otherwise, compilation is postponed until <tab> completion.
-
 
 # vim: tabstop=8 shiftwidth=4 softtabstop=4 expandtab

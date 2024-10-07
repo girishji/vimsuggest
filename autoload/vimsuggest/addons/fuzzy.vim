@@ -20,7 +20,7 @@ export def Complete(_: string, cmdline: string, cursorpos: number,
             Clear()
             return []
         endif
-        SetupHooks(cmdname)
+        AddHooks(cmdname)
     else
         if cmd.CmdLead() !=# cmdname  # When command is rewritten after <bs>
             return []
@@ -48,10 +48,10 @@ export def FindComplete(arglead: string, cmdline: string, cursorpos: number,
     var regenerate_items = false
     var findcmd = null_string
     var FindCmdFn = FindFn ?? FindCmd
-    var dirpath = getcmdline()->matchstr('\s\zs\S\+\ze/\.\.\./')  # In ' dir/.../pat', extract dir
+    var dirpath = ExtractDir()
     if cmdname == null_string
         cmdname = cmd.CmdLead()
-        SetupFindHooks(cmdname)
+        AddFindHooks(cmdname)
         prevdir = dirpath ?? '.'
         findcmd = FindCmdFn(prevdir)
         regenerate_items = true
@@ -139,12 +139,16 @@ def FindCmd(dir: string): string
     endif
 enddef
 
-def ExtractPattern(): string
+export def ExtractDir(): string
+    return getcmdline()->matchstr('\s\zs\S\+\ze/\.\.\./')  # In ' dir/.../pat', extract dir
+enddef
+
+export def ExtractPattern(): string
     return getcmdline()->matchstr('\S\+$')
         ->substitute('.*/\.\.\./', '', '') # In 'dir/.../pat1 pat2', extract pat2
 enddef
 
-def SetupHooks(name: string)
+def AddHooks(name: string)
     if !cmd.ValidState()
         return  # After <c-s>, cmd 'state' object has been removed
     endif
@@ -160,7 +164,7 @@ def SetupHooks(name: string)
     })
 enddef
 
-def SetupFindHooks(name: string)
+def AddFindHooks(name: string)
     if !cmd.ValidState()
         return  # After <c-s>, cmd 'state' object has been removed
     endif
