@@ -270,8 +270,11 @@ def FilterFn(winid: number, key: string): bool
         CmdlineAbortHook()
         state = null_object
         # remove(allprops, win_getid())
-    elseif key ==? "\<C-g>"  # 'g' as in 'Goto'
-        SendToQickfixOrArglist()
+    elseif key ==? "\<C-q>"
+        SendToQickfixList()
+        state.pmenu.Close(-1)
+    elseif key ==? "\<C-r>"
+        execute($'argadd {state.items[0]->join(" ")}')
         state.pmenu.Close(-1)
     elseif key ==? "\<C-j>" || key ==? "\<C-v>" || key ==? "\<C-t>"
         state.exit_key = key
@@ -311,20 +314,22 @@ enddef
 
 # Send items either to a new quickfix list created at the end of the stack (in
 # case of grep output), or to arglist (in case of files).
-def SendToQickfixOrArglist()
-    if state.items[0]->empty()
-        return
-    endif
-    if !state.items[0][0]->filereadable()  # Send to quickfix list
-        var title = CmdLead()
-        var what = {nr: '$', title: title}
-        var lines = state.items[0]->mapnew((_, v) => v.text)  # Assume this is 'grep' output
-        setqflist([], ' ', what->extend({lines: lines}))
-        if exists($'#QuickFixCmdPost#clist')
-            execute $'doautocmd <nomodeline> QuickFixCmdPost clist'
-        endif
+def SendToQickfixList()
+    var title = CmdLead()
+    var what: dict<any>
+    if !state.items[0][0]->filereadable()  # Assume grep output
+        what = {nr: '$', title: title, lines: state.items[0]}
     else
-        execute($'argadd {state.items[0]->join(" ")}')
+        var itms = state.items[0]->mapnew((_, v) => {
+            return {text: v}
+        })
+        what = {nr: '$', title: title, items: itms}
+    endif
+    setqflist([], ' ', what)
+    if exists($'#QuickFixCmdPost#clist')
+        timer_start(0, (_) => {
+            :execute $'doautocmd <nomodeline> QuickFixCmdPost clist'
+        })
     endif
 enddef
 

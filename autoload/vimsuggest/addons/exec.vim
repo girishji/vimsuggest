@@ -6,6 +6,7 @@ import autoload './job.vim'
 var items: list<any>
 var candidate: string
 var exit_key: string
+var hooks_added: dict<any>
 
 # Usage:
 # :<Command> Shell_cmd Shell_cmd_arg1 Shell_cmd_arg2 ...
@@ -20,23 +21,22 @@ export def Complete(context: string, line: string, cursorpos: number,
     var cstr = null_string
     var shell_prefix = shellprefix
     if cmdstr != null_string
-        var suffix = cmd.CmdStr()->matchstr('\S\+\s*\zs.*$')
-        if suffix != null_string
-            # Note: Double quoting suffix has side effects:
-            # 1) User will have to escape a double quotes when typing pattern,
-            # 2) Cannot specify a directory after pattern,
-            # 3) ':VSLiveFind |*' will not complete through a keymap,
-            # since cursor is before a <space> (can be solved through timer_start).
-            # cstr = $'{cmdstr} "{suffix}"'
-            cstr = $'{cmdstr} {suffix}'
+        var argstr = cmd.CmdStr()->matchstr('^\s*\S\+\s\+\zs.*')
+        var arglist = argstr->split()
+        var parts = cmdstr->split('$\*')
+        if parts->len() > 2  # vimsuggest_findprg
+            arglist = arglist->len() == 1 ? (arglist + ['.']) : arglist
+            cstr = $'{parts[0]} {arglist[1 : ]->join(" ")} {parts[1]} {arglist[0]}' ..
+                (parts->len() > 2 ? $' {parts[2]}' : '')
+        else
+            cstr = $'{parts[0]} {argstr}{parts->len() == 2 ? $" {parts[1]}" : ""}'
         endif
     else
         var parts = cmd.CmdStr()->split()
         if parts->len() > 1
-            # Note: 'expandcmd' expands '~/path', but also causes '\' to be removed.
+            # Note: 'expandcmd' expands '~/path', but removes '\'. Use it minimally.
             cstr = parts[1 : ]->mapnew((_, v) => v =~ '[~$]' ? expandcmd(v) : v)->join(' ')
             shell_prefix = expand("$SHELL") != null_string ? $'{expand("$SHELL")} -c' : ''
-            # shell_prefix = '/bin/sh -c'
         endif
     endif
     if cstr != null_string
@@ -54,22 +54,13 @@ export def Complete(context: string, line: string, cursorpos: number,
             endtry
         endif
     endif
-    AddHooks(cmd.CmdLead())
+    var cmdlead = cmd.CmdLead()
+    if !hooks_added->has_key(cmdlead)
+        hooks_added[cmdlead] = 1
+        AddHooks(cmdlead)
+    endif
     return items
 enddef
-
-# # Usage:
-# # :<Command> Ex_cmd[\ Ex_cmd_arg1\ Ex_cmd_arg2 ...] Shell_cmd Shell_cmd_arg1 Shell_cmd_arg2 ...
-# export def CompleteEx(context: string, line: string, cursorpos: number,
-#         async = true, timeout = 2000, max_items = 1000): list<any>
-#     var escaped_spaces_removed = cmd.CmdStr()->substitute('\\ ', '', 'g')
-#     var parts = escaped_spaces_removed->split()
-#     if parts->len() > 1
-#         parts->remove(1)
-#     endif
-#     return Complete(context, parts->join(' '), cursorpos, null_string,
-#         null_string, async, timeout, max_items)
-# enddef
 
 # Usage:
 # :<Command> Shell_cmd Shell_cmd_arg1 Shell_cmd_arg2 ...
@@ -90,21 +81,6 @@ export def DoAction(ActionFn: func(string, string), arg1: string = '',
         endif
     endif
 enddef
-
-# # Usage:
-# # :<Command> Ex_cmd[\ Ex_cmd_arg1\ Ex_cmd_arg2 ...] Shell_cmd Shell_cmd_arg1 Shell_cmd_arg2 ...
-# export def DoActionEx(action: string, arg1: string = '',
-#         arg2: string = '', arg3: string = '', arg4: string = '',
-#         arg5: string = '', arg6: string = '', arg7: string = '',
-#         arg8: string = '', arg9: string = '', arg10: string = '',
-#         arg11: string = '', arg12: string = '', arg13: string = '',
-#         arg14: string = '', arg15: string = '', arg16: string = '',
-#         arg17: string = '', arg18: string = '', arg19: string = '',
-#         arg20: string = '')
-#     if candidate != null_string
-#         ExecAction(candidate, action->substitute('\\ ', ' ', 'g'))
-#     endif
-# enddef
 
 export def DefaultAction(tgt: string, key: string)
     if tgt->filereadable()
@@ -184,6 +160,9 @@ def AddHooks(name: string)
     cmd.AddNoExcludeHook(name)
 enddef
 
+cmd.AddCmdlineEnterHook(() => {
+    hooks_added = {}
+})
 :defcompile
 
 # vim: tabstop=8 shiftwidth=4 softtabstop=4 expandtab
