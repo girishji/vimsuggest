@@ -16,6 +16,9 @@ export def Complete(_: string, cmdline: string, cursorpos: number,
     if cmdname == null_string
         Clear()
         cmdname = cmd.CmdLead()
+        if cmdname == null_string
+            return []
+        endif
         items = GetItems()
         if items->empty()
             Clear()
