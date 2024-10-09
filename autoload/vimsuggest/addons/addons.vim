@@ -222,7 +222,7 @@ def KeymapComplete(arglead: string, cmdline: string, cursorpos: number): list<an
     })
 enddef
 def DoKeymapAction(arglead: string = null_string)
-    fuzzy.DoAction(arglead, (item) => {
+    fuzzy.DoAction(arglead, (item, _) => {
         var m = item->matchlist('\v^(\a)?\s+(\S+)')
         if m->len() > 2
             var cmdstr = $'verbose {m[1]}map {m[2]}'
@@ -246,7 +246,7 @@ def MarkComplete(arglead: string, cmdline: string, cursorpos: number): list<any>
     })
 enddef
 def DoMarkAction(arglead: string = null_string)
-    fuzzy.DoAction(arglead, (item) => {
+    fuzzy.DoAction(arglead, (item, _) => {
         var mark = item->matchstr('\v^\s*\zs\S+')
         :exe $"normal! '{mark}"
     })
@@ -261,7 +261,7 @@ def RegisterComplete(arglead: string, cmdline: string, cursorpos: number): list<
     })
 enddef
 def DoRegisterAction(arglead: string = null_string)
-    fuzzy.DoAction(arglead, (item) => {
+    fuzzy.DoAction(arglead, (item, _) => {
         var reg = item->matchstr('\v^\s*\S+\s+\zs\S+')
         :exe $'normal! {reg}p'
     })
