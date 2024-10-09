@@ -12,8 +12,7 @@ var prevdir = null_string
 var exit_key = null_string
 
 export def Complete(_: string, cmdline: string, cursorpos: number,
-        GetItems: func(): list<any> = null_function,
-        GetTextFn: func(dict<any>): string = null_function): list<any>
+        GetItems: func(): list<any> = null_function): list<any>
     if cmdname == null_string
         Clear()
         cmdname = cmd.CmdLead()
@@ -28,9 +27,8 @@ export def Complete(_: string, cmdline: string, cursorpos: number,
             return []
         endif
     endif
-    var GetText = GetTextFn ?? (item: dict<any>): string => item.text
     var text_items = (items[0]->type() == v:t_dict) ?
-        items->mapnew((_, v) => GetText(v)) : items
+        items->mapnew((_, v) => v.text) : items
     var lastword = getcmdline()->matchstr('\S\+$')
     if lastword != null_string
         matches = text_items->matchfuzzypos(lastword, {matchseq: 1, limit: 100})
@@ -94,13 +92,11 @@ export def FindComplete(arglead: string, cmdline: string, cursorpos: number,
     return items
 enddef
 
-export def DoAction(arglead = null_string, ActionFn: func(any, string) = null_function,
-        GetTextFn: func(dict<any>): string = null_function)
+export def DoAction(arglead = null_string, ActionFn: func(any, string) = null_function)
     for str in [candidate, arglead] # After <c-s>, wildmenu can select an item in 'arglead'
         if str != null_string
             var isdict = (!items->empty() && items[0]->type() == v:t_dict)
-            var GetText = GetTextFn ?? (item: dict<any>): string => item.text
-            var idx = isdict ? items->indexof((_, v) => GetText(v) == str) : items->index(str)
+            var idx = isdict ? items->indexof((_, v) => v.text ==# str) : items->index(str)
             if idx != -1
                 ActionFn(items[idx], exit_key)
                 break
@@ -156,8 +152,9 @@ def AddHooks(name: string)
         return  # After <c-s>, cmd 'state' object has been removed
     endif
     cmd.AddHighlightHook(name, (arglead: string, _: list<any>): list<any> => {
-        return arglead != null_string && !matches[0]->empty() ?
-            matches : items
+        var isdict = (!items->empty() && items[0]->type() == v:t_dict)
+        return (arglead != null_string && !matches[0]->empty()) ?
+            matches : (isdict ? [items->mapnew((_, v) => v.text)] : [items])
     })
     cmd.AddCmdlineLeaveHook(name, (selected_item, first_item, key) => {
         candidate = selected_item == null_string ? first_item : selected_item

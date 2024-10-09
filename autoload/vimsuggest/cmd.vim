@@ -9,8 +9,8 @@ export var options: dict<any> = {
     enable: true,         # Enable/disable the completion functionality
     pum: true,            # 'true' for stacked popup menu, 'false' for flat
     fuzzy: false,         # Enable fuzzy completion matching
-    exclude: [],          # List of keywords to exclude from completion (use '\c' for ignore case)
-    onspace: [],          # Show menu for specific keyword + space (e.g., ':find ', ':buffer ', etc.)
+    exclude: [],          # List of (regex) patterns to exclude from completion
+    onspace: [],          # Complete after the space after the command (e.g., ':find ', ':buffer ', etc.)
     alwayson: true,       # If 'false', press <tab> to open the popup menu manually
     popupattrs: {         # Attributes for configuring the popup window
         maxHeight: 12,    # Maximum number of lines for stacked menu (only if pum=true)
@@ -27,11 +27,11 @@ class State
     # Do not complete after the following characters. No worthwhile completions
     # are shown by getcompletion()
     var exclude = ['~', '!', '%', '(', ')', '+', '-', '=', '<', '>', '?', ',']
-    public var items: list<any>
+    public var items: list<list<any>>
     public var insertion_point: number
     public var exit_key: string = null_string # Key pressed before closing the menu
     # Following are the callbacks used by addons.
-    public static var onspace_hook = {}
+    public static var onspace_hook = {}  # Complete after space anywhere (unlike options.onspace)
     public var highlight_hook = {}
     public var select_item_hook = {}
     # public var noexclude_hook = {}

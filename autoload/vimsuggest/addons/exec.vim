@@ -36,25 +36,11 @@ export def GrepComplete(A: string, L: string, C: number, shellprefix = null_stri
     Clear()
     var cmdstr = get(g:, 'vimsuggest_grepprg', &grepprg)
     var argstr = cmd.CmdStr()->matchstr('^\s*\S\+\s\+\zs.*$')
-    # echom $'{argstr}|' 'argstr' $'{cmd.CmdStr()}|' 'full' $'{getcmdline()}|'
     if cmdstr != null_string && argstr->Strip() != null_string
         var parts = cmdstr->split('$\*')
         var cstr = $'{parts[0]} {argstr}{parts->len() == 2 ? $" {parts[1]}" : ""}'
         var itemss = CompletionItems(cstr, shellprefix, async, timeout, max_items)
-        # Extract quoted or space escaped string to highlight (rest is dir path).
-        # for pat in ['([^'']*)', '^''\zs.\{-}''\ze', '^"\zs.\{-}\(\\\)\@<!\ze"',
-
-        # ary\ '
         var arglead = argstr->matchstr(MatchPattern())
-
-            # '^"\zs\([^"\\]*\(\\"[^"\\]*\)*\)\ze"'
-            # '^''\zs\([^'']*\(''''[^'']*\)*\)\ze'''
-            #     '\%(\\ \|[^ ]\)\+']
-        #     arglead = argstr->matchstr(pat)
-        #     if arglead != null_string
-        #         break
-        #     endif
-        # endfor
         if arglead != null_string
             var cmdlead = cmd.CmdLead()
             cmd.AddHighlightHook(cmdlead, (_: string, itms: list<any>): list<any> => {
