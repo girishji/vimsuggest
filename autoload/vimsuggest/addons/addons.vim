@@ -95,7 +95,7 @@ export def Enable()
     command! -nargs=* -complete=customlist,fuzzy.FindComplete VSFind fuzzy.DoFindAction(<f-args>)
     ## (Live) Grep and Find
     command! -nargs=+ -complete=customlist,exec.GrepComplete VSGrep exec.DoAction(null_function, <f-args>)
-    # command! -nargs=+ -complete=customlist,LiveFindComplete VSFindL exec.DoAction(null_function, <f-args>)
+    command! -nargs=+ -complete=customlist,exec.FindComplete VSFindL exec.DoAction(null_function, <f-args>)
     # Execute Shell Command (ex. grep, find, etc.)
     command! -nargs=* -complete=customlist,exec.Complete VSExec exec.DoAction(null_function, <f-args>)
     command! -nargs=* -complete=customlist,exec.CompleteEx VSExecDo exec.DoActionEx(null_function, <f-args>)
@@ -176,7 +176,7 @@ export def ArtifactsComplete(arglead: string, cmdline: string, cursorpos: number
     return fuzzy.Complete(arglead, cmdline, cursorpos, function(Artifacts, [patterns]))
 enddef
 export def DoArtifactsAction(arglead = null_string)
-    fuzzy.DoAction(arglead, (item) => {
+    fuzzy.DoAction(arglead, (item, _) => {
         exe $":{item.lnum}"
         normal! zz
     })

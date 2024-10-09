@@ -8,12 +8,6 @@ var candidate: string
 var exit_key: string
 var hooks_added: dict<any>
 
-export def Clear()
-    items = []
-    candidate = null_string
-    exit_key = null_string
-enddef
-
 # Usage:
 # :<Command> Shell_cmd Shell_cmd_arg1 Shell_cmd_arg2 ...
 # :<Command> <pattern>
@@ -36,45 +30,44 @@ export def GrepComplete(A: string, L: string, C: number, shellprefix = null_stri
     Clear()
     var cmdstr = get(g:, 'vimsuggest_grepprg', &grepprg)
     var argstr = cmd.CmdStr()->matchstr('^\s*\S\+\s\+\zs.*$')
-    if cmdstr != null_string && argstr->Strip() != null_string
+    var arglead = argstr->matchstr(MatchPattern())->Strip()
+    if cmdstr != null_string && arglead != null_string
         var parts = cmdstr->split('$\*')
         var cstr = $'{parts[0]} {argstr}{parts->len() == 2 ? $" {parts[1]}" : ""}'
         var itemss = CompletionItems(cstr, shellprefix, async, timeout, max_items)
-        var arglead = argstr->matchstr(MatchPattern())
-        if arglead != null_string
-            var cmdlead = cmd.CmdLead()
-            cmd.AddHighlightHook(cmdlead, (_: string, itms: list<any>): list<any> => {
-                DoHighlight(arglead)
-                return [itms]
-            })
-        endif
+        cmd.AddHighlightHook(cmd.CmdLead(), (_: string, itms: list<any>): list<any> => {
+            DoHighlight(arglead)
+            return [itms]
+        })
         return itemss
     endif
     return []
 enddef
 
-# export def FindComplete(A: string, L: string, C: number): list<any>
-#     var cmdstr = get(g:, 'vimsuggest_findprg', null_string)
-#     if cmdstr != null_string
-#         cmdstr = (cmdstr->split('$\*')->len() == 2) ? $'{cmdstr} $*' : cmdstr
-#         return exec.Complete(A, L, C, cmdstr)
-#     endif
-#     Clear()
-#     return []
-#         var argstr = cmd.CmdStr()->matchstr('^\s*\S\+\s\+\zs.*')
-#         if cmd.Strip(argstr) != null_string
-#             var arglist = argstr->split()
-#             var parts = cmdstr->split('$\*')
-#             if parts->len() > 2  # vimsuggest_findprg
-#                 arglist = arglist->len() == 1 ? (arglist + ['.']) : arglist
-#                 cstr = $'{parts[0]} {arglist[1 : ]->join(" ")} {parts[1]} {arglist[0]}' ..
-#                     (parts->len() > 2 ? $' {parts[2]}' : '')
-#             else
-#                 cstr = $'{parts[0]} {argstr}{parts->len() == 2 ? $" {parts[1]}" : ""}'
-#             endif
-#         endif
-
-# enddef
+export def FindComplete(A: string, L: string, C: number, shellprefix = null_string,
+        async = true, timeout = 3000, max_items = 100000): list<any>
+    Clear()
+    var findcmd = get(g:, 'vimsuggest_findprg', null_string)
+    var argstr = cmd.CmdStr()->matchstr('^\s*\S\+\s\+\zs.*$')
+    var argpat = argstr->matchstr(MatchPattern())
+    var cstr = null_string
+    if findcmd->len() > 0 && argpat->Strip() != null_string
+        var argdir = argstr->slice(argpat->len())
+        var fcmd = $'{findcmd} '->split('$\*')
+        if fcmd->len() == 3
+            cstr = $'{fcmd[0]} {argdir ?? "."} {fcmd[1]} {argpat} {fcmd[2]}'
+        else
+            cstr = $'{fcmd[0]} {argstr} {fcmd->len() == 2 ? fcmd[1] : null_string}'
+        endif
+        var itemss = CompletionItems(cstr, shellprefix, async, timeout, max_items)
+        cmd.AddHighlightHook(cmd.CmdLead(), (_: string, itms: list<any>): list<any> => {
+            DoHighlight(argpat->Strip())
+            return [itms]
+        })
+        return itemss
+    endif
+    return []
+enddef
 
 export def CompletionItems(cmdstr = null_string, shellprefix = null_string,
         async = true, timeout = 2000, max_items = 1000): list<any>
@@ -132,7 +125,7 @@ enddef
 # Pattern to match everything inside quotes including " and ' escaped as \" and '',
 # and to match space escaped non-quoted text.
 def MatchPattern(): string
-  return '\%(^"\zs\([^"\\]*\(\\"[^"\\]*\)*\)\ze"\|^''\zs\([^'']*\(''''[^'']*\)*\)\ze''\|\%(\\ \|[^ ]\)\+\)'
+  return '\%(^"\([^"\\]*\(\\"[^"\\]*\)*\)"\|^''\([^'']*\(''''[^'']*\)*\)''\|\%(\\ \|[^ ]\)\+\)'
 enddef
 
 # Extract file from grep output and edit it.
@@ -171,14 +164,17 @@ export def VisitFile(key: string, filename: string, lnum: number = -1)
     endif
 enddef
 
-def Strip(pat: string): string
-    # Remove " and ' around pattern, if any.
-    var p = pat->substitute('^"', '', '')->substitute('"$', '', '')
-    if p ==# pat
-        p = p->substitute("^'", '', '')->substitute("'$", '', '')
-    endif
-    return p
+def Strip(pat: string): string # Remove surrounding quotes if any
+    return pat->matchstr('^[''"]\?\zs\(.\{-}\)\ze[''"]\?$')
 enddef
+
+#     # Remove " and ' around pattern, if any.
+#     var p = pat->substitute('^"', '', '')->substitute('"$', '', '')
+#     if p ==# pat
+#         p = p->substitute("^'", '', '')->substitute("'$", '', '')
+#     endif
+#     return p
+# enddef
 
 def AddHooks(name: string)
     if !cmd.ValidState()
@@ -215,7 +211,6 @@ export def DoHighlight(pattern: string, ignorecase = true)
     if pattern != null_string
         # var pat = Escape4Highlight(pattern)
         var pat = pattern
-        # echom $'{pat}|'
         try
             if ignorecase
                 win_execute(cmd.state.pmenu.Winid(), $"syn match VimSuggestMatch \"\\c{pat}\"")
@@ -233,6 +228,12 @@ export def Escape4Highlight(s: string): string
         pat = $'{pat}\'
     endif
     return pat
+enddef
+
+export def Clear()
+    items = []
+    candidate = null_string
+    exit_key = null_string
 enddef
 
 cmd.AddCmdlineEnterHook(() => {
