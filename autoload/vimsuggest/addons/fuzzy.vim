@@ -46,7 +46,7 @@ enddef
 
 export def FindComplete(arglead: string, cmdline: string, cursorpos: number,
         FindFn: func(string): string = null_function, shellprefix = null_string,
-        async = true, timeout = 2000, max_items = 1000): list<any>
+        async = true, timeout = 2000, max_items = 100000): list<any>
     var regenerate_items = false
     var findcmd = null_string
     var FindCmdFn = FindFn ?? FindCmd
@@ -155,8 +155,8 @@ def AddHooks(name: string)
     if !cmd.ValidState()
         return  # After <c-s>, cmd 'state' object has been removed
     endif
-    cmd.AddHighlightHook(name, (suffix: string, _: list<any>): list<any> => {
-        return suffix != null_string && !matches[0]->empty() ?
+    cmd.AddHighlightHook(name, (arglead: string, _: list<any>): list<any> => {
+        return arglead != null_string && !matches[0]->empty() ?
             matches : items
     })
     cmd.AddCmdlineLeaveHook(name, (selected_item, first_item, key) => {
@@ -184,7 +184,7 @@ def AddFindHooks(name: string)
     cmd.AddSelectItemHook(name, (_) => {
         return true # Do not update cmdline with selected item
     })
-    cmd.AddNoExcludeHook(name)
+    # cmd.AddNoExcludeHook(name)
 enddef
 
 def FuzzyMatchFiles(pat: string): list<any>

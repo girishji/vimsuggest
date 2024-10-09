@@ -267,6 +267,10 @@ export class PopupMenu
             :redraw
         endif
     enddef
+
+    def Winid(): number
+        return this._winid
+    enddef
 endclass
 
 # vim: tabstop=8 shiftwidth=4 softtabstop=4 expandtab

@@ -94,8 +94,8 @@ export def Enable()
     ## (Fuzzy) Find Files
     command! -nargs=* -complete=customlist,fuzzy.FindComplete VSFind fuzzy.DoFindAction(<f-args>)
     ## (Live) Grep and Find
-    command! -nargs=+ -complete=customlist,GrepComplete VSGrep exec.DoAction(null_function, <f-args>)
-    command! -nargs=+ -complete=customlist,LiveFindComplete VSFindL exec.DoAction(null_function, <f-args>)
+    command! -nargs=+ -complete=customlist,exec.GrepComplete VSGrep exec.DoAction(null_function, <f-args>)
+    # command! -nargs=+ -complete=customlist,LiveFindComplete VSFindL exec.DoAction(null_function, <f-args>)
     # Execute Shell Command (ex. grep, find, etc.)
     command! -nargs=* -complete=customlist,exec.Complete VSExec exec.DoAction(null_function, <f-args>)
     command! -nargs=* -complete=customlist,exec.CompleteEx VSExecDo exec.DoActionEx(null_function, <f-args>)
@@ -113,22 +113,35 @@ cmd.AddOnSpaceHook('VSFind')
 
 ## (Live) Grep and Find
 
-def GrepComplete(A: string, L: string, C: number): list<any>
-    var cmdstr = get(g:, 'vimsuggest_grepprg', &grepprg)
-    if cmdstr != null_string
-        return exec.Complete(A, L, C, cmdstr)
-    endif
-    return []
-enddef
+# def GrepComplete(A: string, L: string, C: number): list<any>
+#     var cmdstr = get(g:, 'vimsuggest_grepprg', &grepprg)
+#     if cmdstr != null_string
+#         return exec.Complete(A, L, C, cmdstr)
+#     endif
+#     return []
+# enddef
 
-def LiveFindComplete(A: string, L: string, C: number): list<any>
-    var cmdstr = get(g:, 'vimsuggest_findprg', null_string)
-    if cmdstr != null_string
-        cmdstr = (cmdstr->split('$\*')->len() == 2) ? $'{cmdstr} $*' : cmdstr
-        return exec.Complete(A, L, C, cmdstr)
-    endif
-    return []
-enddef
+#     if cmdstr != null_string
+#         var argstr = cmd.CmdStr()->matchstr('^\s*\S\+\s\+\zs.*')
+#         if cmd.Strip(argstr) != null_string
+#             var arglist = argstr->split()
+#             var parts = cmdstr->split('$\*')
+#             if parts->len() > 2  # vimsuggest_findprg
+#                 arglist = arglist->len() == 1 ? (arglist + ['.']) : arglist
+#                 cstr = $'{parts[0]} {arglist[1 : ]->join(" ")} {parts[1]} {arglist[0]}' ..
+#                     (parts->len() > 2 ? $' {parts[2]}' : '')
+#             else
+#                 cstr = $'{parts[0]} {argstr}{parts->len() == 2 ? $" {parts[1]}" : ""}'
+#             endif
+#         endif
+# def LiveFindComplete(A: string, L: string, C: number): list<any>
+#     var cmdstr = get(g:, 'vimsuggest_findprg', null_string)
+#     if cmdstr != null_string
+#         cmdstr = (cmdstr->split('$\*')->len() == 2) ? $'{cmdstr} $*' : cmdstr
+#         return exec.Complete(A, L, C, cmdstr)
+#     endif
+#     return []
+# enddef
 
 ## Buffers
 
