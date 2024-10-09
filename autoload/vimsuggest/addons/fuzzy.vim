@@ -134,7 +134,6 @@ def FindCmd(dir: string): string
 enddef
 
 export def ExtractDir(): string
-    # return getcmdline()->matchstr('\s\zs\S\+\ze/\.\.\./')  # In ' dir/.../pat', extract dir
     var dir = cmd.CmdStr()->matchstr('\s*\S\+\s\+\zs\%(\\ \|\S\)\+\ze\s')
     return dir->expandcmd()->isdirectory() ? dir : null_string
 enddef
@@ -147,8 +146,6 @@ export def ExtractPattern(): string
         return parts[-1]
     endif
     return null_string
-    # return getcmdline()->matchstr('\S\+$')
-    #     ->substitute('.*/\.\.\./', '', '') # In 'dir/.../pat1 pat2', extract pat2
 enddef
 
 def AddHooks(name: string)
@@ -185,7 +182,6 @@ def AddFindHooks(name: string)
     cmd.AddSelectItemHook(name, (_) => {
         return true # Do not update cmdline with selected item
     })
-    # cmd.AddNoExcludeHook(name)
 enddef
 
 def FuzzyMatchFiles(pat: string): list<any>
