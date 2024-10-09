@@ -107,19 +107,11 @@ export def DoAction(arglead = null_string, ActionFn: func(any, string) = null_fu
 enddef
 
 # Usage:
-#   <Command> <pattern1> <pattern2> <pattern3>
-#   When <pattern1> does not show expected result, start typing <pattern2> with
-#   better heuristics. No need to erase <pattern1>. Same applies to <pattern3>.
+# <Command> {pattern|dir} {pattern} {pattern} {pattern}
 export def DoFindAction(arg1 = null_string, arg2 = null_string,
-        arg3 = null_string)
+        arg3 = null_string, arg4 = null_string)
     if candidate != null_string
         exec.VisitFile(exit_key, candidate)
-    # else
-    #     var args = [arg3, arg2, arg1]
-    #     var idx = args->indexof("v:val != null_string")
-    #     if idx != 1 && items->index(args[idx]) != -1
-    #         :exe $'{action} {args[idx]}'
-    #         exec.VisitFile(exit_key, args[idx])
     endif
     Clear()
 enddef
@@ -129,7 +121,10 @@ export def OnSpace(cmdstr: string)
 enddef
 
 def FindCmd(dir: string): string
-    # XXX win32
+    if has('win32')
+        var dpath = (dir == '.') ? dir : dir->expandcmd()
+        return $'powershell -command "gci {dpath} -r -n -File"'
+    endif
     if dir == '.'
         return 'find . \! \( -path "*/.*" -prune \) -type f -follow'
     else
@@ -139,12 +134,21 @@ def FindCmd(dir: string): string
 enddef
 
 export def ExtractDir(): string
-    return getcmdline()->matchstr('\s\zs\S\+\ze/\.\.\./')  # In ' dir/.../pat', extract dir
+    # return getcmdline()->matchstr('\s\zs\S\+\ze/\.\.\./')  # In ' dir/.../pat', extract dir
+    var dir = cmd.CmdStr()->matchstr('\s*\S\+\s\+\zs\%(\\ \|\S\)\+\ze\s')
+    return dir->expandcmd()->isdirectory() ? dir : null_string
 enddef
 
 export def ExtractPattern(): string
-    return getcmdline()->matchstr('\S\+$')
-        ->substitute('.*/\.\.\./', '', '') # In 'dir/.../pat1 pat2', extract pat2
+    var parts = cmd.CmdStr()->split('[^\\]\s\+')
+    var dir = ExtractDir()
+    if (dir == null_string && parts->len() > 1) ||
+            (dir != null_string && parts->len() > 2)
+        return parts[-1]
+    endif
+    return null_string
+    # return getcmdline()->matchstr('\S\+$')
+    #     ->substitute('.*/\.\.\./', '', '') # In 'dir/.../pat1 pat2', extract pat2
 enddef
 
 def AddHooks(name: string)

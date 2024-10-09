@@ -51,7 +51,7 @@ export def FindComplete(A: string, L: string, C: number, shellprefix = null_stri
     var argstr = cmd.CmdStr()->matchstr('^\s*\S\+\s\+\zs.*$')
     var argpat = argstr->matchstr(MatchPattern())
     var cstr = null_string
-    if findcmd->len() > 0 && argpat->Strip() != null_string
+    if findcmd != null_string && argpat->Strip() != null_string
         var argdir = argstr->slice(argpat->len())
         var fcmd = $'{findcmd} '->split('$\*')
         if fcmd->len() == 3

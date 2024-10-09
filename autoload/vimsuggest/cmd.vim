@@ -335,7 +335,7 @@ def SendToQickfixList()
         what = {nr: '$', title: title, lines: state.items[0]}
     else
         var itms = state.items[0]->mapnew((_, v) => {
-            return {text: v}
+            return {filename: v, valid: 1}
         })
         what = {nr: '$', title: title, items: itms}
     endif
