@@ -98,8 +98,6 @@ export def Enable()
     command! -nargs=+ -complete=customlist,exec.FindComplete VSFindL exec.DoAction(null_function, <f-args>)
     ## Search in Buffer
     command! -nargs=* -complete=customlist,GlobalComplete VSGlobal exec.DoAction(JumpToLine, <f-args>)
-    ## Functions
-    command! -nargs=* -complete=customlist,FuncComplete VSFunc DoFuncAction(<f-args>)
     # Execute Shell Command (ex. grep, find, etc.)
     command! -nargs=* -complete=customlist,exec.Complete VSExec exec.DoAction(null_function, <f-args>)
     command! -nargs=* -complete=customlist,exec.CompleteEx VSExecDo exec.DoActionEx(null_function, <f-args>)
@@ -292,45 +290,6 @@ def DoChangeListAction(arglead: string = null_string)
         var n = item->matchstr('^\s*\zs\d\+')
         :exe $'normal! {n}g;'
     })
-enddef
-
-## Syntax Group 'Statement'
-
-def FuncComplete(arglead: string, cmdline: string, cursorpos: number): list<any>
-    return fuzzy.Complete(arglead, cmdline, cursorpos,
-        function(GetLinesInSyntaxGroup, ['\(function\|def\|method\)$']))
-enddef
-def DoFuncAction(arglead: string = null_string)
-    fuzzy.DoAction(arglead, (it, _) => {
-        Jump(it.lnum)
-    })
-enddef
-def GetLinesInSyntaxGroup(pattern: string): list<any>
-    var lines = []
-    var lnum = 1
-    while lnum <= line('$')
-        var line = getline(lnum)
-        var col = 1
-        while col <= line->len()
-            if line[col - 1] =~ '\s'
-                col += 1
-                continue
-            endif
-            var word = line[col - 1 : ]->matchstr('\k\+')
-            if !word->empty()
-                var synID = synIDattr(synID(lnum, col, 1), "name")
-                if synID =~? pattern
-                    lines->add({text: $'{lnum}: {line}', lnum: lnum})
-                    break
-                endif
-                col += word->len()
-            else
-                col += 1
-            endif
-        endwhile
-        lnum += 1
-    endwhile
-    return lines
 enddef
 
 ##
