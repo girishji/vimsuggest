@@ -16,8 +16,8 @@ export var options: dict<any> = {
         maxHeight: 12,    # Maximum number of lines for stacked menu (only if pum=true)
     },
     wildignore: true,     # Exclude wildignore patterns during file completion
-    # highlight: true,      # Highlight matched terms in the completion list
     addons: true,         # Enable additional completion addons (like fuzzy file finder)
+    autoselect: false,    # Automatically select the first item (if none selected) when <CR> is pressed
 }
 
 class State
@@ -233,8 +233,11 @@ def FilterFn(winid: number, key: string): bool
         state.exit_key = key
         feedkeys("\<cr>", 'n')
     elseif key ==? "\<CR>"
-        # When <cr> simply opens the message window (ex :filt Menu hi), popup
-        # lingers unless it is explicitly hidden. Focus stays in command-line.
+        if options.autoselect
+            state.pmenu.SelectItem('j', SelectItemPost)
+        endif
+        # Note: When <cr> simply opens the message window (ex :filt Menu hi), popup
+        # lingers unless it is explicitly hidden.
         state.pmenu.Hide()
         :redraw
         return false # Let Vim process these keys further
