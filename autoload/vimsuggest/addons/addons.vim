@@ -96,15 +96,13 @@ export def Enable()
     ## (Live) Grep and Find
     command! -nargs=+ -complete=customlist,exec.GrepComplete VSGrep exec.DoAction(null_function, <f-args>)
     command! -nargs=+ -complete=customlist,exec.FindComplete VSFindL exec.DoAction(null_function, <f-args>)
-    ## Search in Buffer
+    ## Global (:h :g) (Search Within Buffer)
     command! -nargs=* -complete=customlist,GlobalComplete VSGlobal exec.DoAction(JumpToLine, <f-args>)
     # Execute Shell Command (ex. grep, find, etc.)
     command! -nargs=* -complete=customlist,exec.Complete VSExec exec.DoAction(null_function, <f-args>)
-    command! -nargs=* -complete=customlist,exec.CompleteEx VSExecDo exec.DoActionEx(null_function, <f-args>)
     # Others
     command! -nargs=* -complete=customlist,BufferComplete VSBuffer DoBufferAction(<f-args>)
     command! -nargs=* -complete=customlist,MRUComplete VSMru DoMRUAction(<f-args>)
-    # command! -nargs=* -complete=customlist,BufLineComplete VSBufLine DoArtifactsAction(<f-args>)
     command! -nargs=* -complete=customlist,KeymapComplete VSKeymap DoKeymapAction(<f-args>)
     command! -nargs=* -complete=customlist,MarkComplete VSMark DoMarkAction(<f-args>)
     command! -nargs=* -complete=customlist,RegisterComplete VSRegister DoRegisterAction(<f-args>)
@@ -193,18 +191,6 @@ export def Artifacts(patterns: list<string>): list<any>
     endfor
     return items->copy()->filter((_, v) => v.text !~ '^\s*#')
 enddef
-
-## Buffer Fuzzy Search
-
-# cmd.AddOnSpaceHook('VSBufLine')
-# export def BufLineComplete(arglead: string, cmdline: string, cursorpos: number): list<any>
-#     return fuzzy.Complete(arglead, cmdline, cursorpos, function(BufLines, ['%']))
-# enddef
-# def BufLines(s: string): list<any>
-#     return getbufline(s ?? '%', 1, '$')->mapnew((i, v) => {
-#         return {text: v, lnum: i}
-#     })
-# enddef
 
 ## MRU - Most Recently Used Files
 
