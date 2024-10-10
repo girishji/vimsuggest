@@ -312,19 +312,20 @@ def GetLinesInSyntaxGroup(pattern: string): list<any>
         var line = getline(lnum)
         var col = 1
         while col <= line->len()
-            var synID = synIDattr(synID(lnum, col, 1), "name")
-            if synID =~? pattern
-                lines->add({text: $'{lnum}: {line}', lnum: lnum})
-                break
+            if line[col - 1] =~ '\s'
+                col += 1
+                continue
             endif
-            var space = line->stridx(' ', col - 1)
-            if space != -1
-                while space + 1 < line->len() && line[space + 1] == ' '
-                    space += 1
-                endwhile
-                col = space + 2
+            var word = line[col - 1 : ]->matchstr('\k\+')
+            if !word->empty()
+                var synID = synIDattr(synID(lnum, col, 1), "name")
+                if synID =~? pattern
+                    lines->add({text: $'{lnum}: {line}', lnum: lnum})
+                    break
+                endif
+                col += word->len()
             else
-                break
+                col += 1
             endif
         endwhile
         lnum += 1
