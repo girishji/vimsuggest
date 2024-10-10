@@ -105,6 +105,10 @@ export def CompleteExCmd(context: string, line: string, cursorpos: number,
             hooks_added[cmdlead] = 1
             AddHooks(cmdlead)
         endif
+        cmd.AddHighlightHook(cmdlead, (_: string, itms: list<any>): list<any> => {
+            DoHighlight(argstr)
+            return [itms]
+        })
     endif
     return items
 enddef

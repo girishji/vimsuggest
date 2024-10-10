@@ -98,6 +98,8 @@ export def Enable()
     command! -nargs=+ -complete=customlist,exec.FindComplete VSFindL exec.DoAction(null_function, <f-args>)
     ## Search in Buffer
     command! -nargs=* -complete=customlist,GlobalComplete VSGlobal exec.DoAction(JumpToLine, <f-args>)
+    ## Include File Search
+    # command! -nargs=* -complete=customlist,IListComplete VSIList exec.DoAction(JumpToLine, <f-args>)
     # Execute Shell Command (ex. grep, find, etc.)
     command! -nargs=* -complete=customlist,exec.Complete VSExec exec.DoAction(null_function, <f-args>)
     command! -nargs=* -complete=customlist,exec.CompleteEx VSExecDo exec.DoActionEx(null_function, <f-args>)
@@ -119,13 +121,44 @@ cmd.AddOnSpaceHook('VSFind')
 
 def GlobalComplete(arglead: string, cmdline: string, cursorpos: number): list<any>
     return exec.CompleteExCmd(arglead, cmdline, cursorpos, (args) => {
-        return execute($'g/{args}')->split("\n")
+        var saved_incsearch = &incsearch
+        set noincsearch
+        var saved_cursor = getcurpos()
+        try
+            return execute($'g/{args}')->split("\n")
+        finally
+            if saved_incsearch
+                set incsearch
+            else
+                set noincsearch
+            endif
+            setpos('.', saved_cursor)
+        endtry
+        return []
     })
 enddef
 def JumpToLine(line: string, _: string)
     var lnum = line->matchstr('\d\+')->str2nr()
     Jump(lnum)
 enddef
+
+## Search Include Files
+
+# def IListComplete(arglead: string, cmdline: string, cursorpos: number): list<any>
+#     return exec.CompleteExCmd(arglead, cmdline, cursorpos, (args) => {
+#         return execute($'il /{args}/')->split("\n")
+#     })
+# enddef
+# def VisitFile(line: string, key: string)
+#     var lnum = line->matchstr('\d\+')->str2nr()
+#     exec.VisitFile(key, fpath)
+#     Jump(lnum)
+# def DoMRUAction(arglead: string = null_string)
+#     fuzzy.DoAction(arglead, (item, key) => {
+#         exec.VisitFile(key, item)
+#     })
+# enddef
+# enddef
 
 ## Buffers
 

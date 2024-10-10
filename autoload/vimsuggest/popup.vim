@@ -83,8 +83,14 @@ export class PopupMenu
             if moveto > 0
                 this._winid->popup_move({col: moveto})
             endif
+            # if this._items[0]->empty()
+            #     win_execute(this._winid, "setl nocursorline")
+            # else
+            #     win_execute(this._winid, "setl cursorline")
+            #     win_execute(this._winid, "normal! gg")
+            # endif
             this._winid->popup_settext(this._Printify())
-            win_execute(this._winid, "normal! gg")
+            this._winid->popup_setoptions({cursorline: false})
         else
             this._HMenu(0, 'left')
             try
@@ -93,7 +99,6 @@ export class PopupMenu
             endtry
         endif
         this._index = -1
-        this._winid->popup_setoptions({cursorline: false})
         this._selMatchId = 0
     enddef
 
@@ -139,15 +144,17 @@ export class PopupMenu
         def SelectVert()
             if !this._winid->popup_getoptions().cursorline
                 this._winid->popup_setoptions({cursorline: true})
-                this._index = 0
                 if direction ==# 'k'
-                    this._winid->popup_filter_menu('k')
-                    this._index -= 1
-                    this._index %= count
+                    this._index = 0
+                    this._winid->popup_filter_menu(direction)
                 endif
             else
                 this._winid->popup_filter_menu(direction)
-                this._index += (direction ==# 'j' ? 1 : -1)
+            endif
+            this._index += (direction ==# 'j' ? 1 : -1)
+            if this._index < 0
+                this._index = count - 1
+            else
                 this._index %= count
             endif
             if items->len() > 1
