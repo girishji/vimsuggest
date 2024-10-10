@@ -28,6 +28,18 @@ Example: >
 let s=reltime()|call getcompletion('find **', 'cmdline')|echo s->reltime()->reltimestr()
 1sec in vim/*
 
+- Use symbol-based navigation (:h E387 include-search). To search inside files
+  for symbols (ignoring comments) use ':il /pat'. Use `<num>[<tab>` to jump to
+  the <num> occurance of the symbol shown by ':il'. `[<tab>` jumps to first
+  definition, just like 'gd'. 'ilist' etc. search #include'd files while
+  'dlist' lists symbols defined under #define. (Note: `gd` also goes to
+  definition, but it searches within the bufer and highlights all matches
+  unlike `[<tab>`.). See the section at the end of this file.
+- Search buffer using ':g//' or ':g//caddexpr' (cmdline add expr to quickfix).
+- If you have a lot of files to edit (say log files) for some symbol, fill a
+  buffer (see command below) with filenames and use `gf` to go through files
+  and `<c-o>` to bounce back.
+  `:enew \| :r !find . -type f -name "*.log"`
 
 (video=pattern search, alwayson, border, searching defs, multiword search)
 ❯ video=keymaps

@@ -11,24 +11,18 @@ var cmdname = null_string
 var prevdir = null_string
 var exit_key = null_string
 
-export def Complete(_: string, cmdline: string, cursorpos: number,
+export def Complete(_: string, line: string, cursorpos: number,
         GetItems: func(): list<any> = null_function): list<any>
-    if cmdname == null_string
+    var cname = cmd.CmdLead()
+    if cmdname == null_string || cname !=# cmdname  # When command is overwritten
         Clear()
-        cmdname = cmd.CmdLead()
-        if cmdname == null_string
-            return []
-        endif
         items = GetItems()
         if items->empty()
             Clear()
             return []
         endif
-        AddHooks(cmdname)
-    else
-        if cmd.CmdLead() !=# cmdname  # When command is rewritten after <bs>
-            return []
-        endif
+        cmdname = cname
+        AddHooks(cname)
     endif
     var text_items = (items[0]->type() == v:t_dict) ?
         items->mapnew((_, v) => v.text) : items
@@ -45,28 +39,25 @@ export def Complete(_: string, cmdline: string, cursorpos: number,
     return text_items
 enddef
 
-export def FindComplete(arglead: string, cmdline: string, cursorpos: number,
+export def FindComplete(arglead: string, line: string, cursorpos: number,
         FindFn: func(string): string = null_function, shellprefix = null_string,
         async = true, timeout = 2000, max_items = 100000): list<any>
+    var cname = cmd.CmdLead()
     var regenerate_items = false
     var findcmd = null_string
     var FindCmdFn = FindFn ?? FindCmd
     var dirpath = ExtractDir()
-    if cmdname == null_string
-        cmdname = cmd.CmdLead()
-        AddFindHooks(cmdname)
+    if cmdname == null_string || cname !=# cmdname  # When a command is overwritten
+        Clear()
+        cmdname = cname
         prevdir = dirpath ?? '.'
         findcmd = FindCmdFn(prevdir)
         regenerate_items = true
-    else
-        if cmd.CmdLead() !=# cmdname  # When command is rewritten after <bs>
-            return []
-        endif
-        if dirpath != prevdir
-            prevdir = dirpath
-            findcmd = FindCmdFn(dirpath ?? '.')
-            regenerate_items = true
-        endif
+        AddFindHooks(cmdname)
+    elseif dirpath != prevdir
+        prevdir = dirpath
+        findcmd = FindCmdFn(dirpath ?? '.')
+        regenerate_items = true
     endif
     if regenerate_items
         if async

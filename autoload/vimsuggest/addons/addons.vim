@@ -96,6 +96,8 @@ export def Enable()
     ## (Live) Grep and Find
     command! -nargs=+ -complete=customlist,exec.GrepComplete VSGrep exec.DoAction(null_function, <f-args>)
     command! -nargs=+ -complete=customlist,exec.FindComplete VSFindL exec.DoAction(null_function, <f-args>)
+    ## Search in Buffer
+    command! -nargs=* -complete=customlist,GlobalComplete VSGlobal exec.DoAction(JumpToLine, <f-args>)
     # Execute Shell Command (ex. grep, find, etc.)
     command! -nargs=* -complete=customlist,exec.Complete VSExec exec.DoAction(null_function, <f-args>)
     command! -nargs=* -complete=customlist,exec.CompleteEx VSExecDo exec.DoActionEx(null_function, <f-args>)
@@ -106,43 +108,24 @@ export def Enable()
     command! -nargs=* -complete=customlist,KeymapComplete VSKeymap DoKeymapAction(<f-args>)
     command! -nargs=* -complete=customlist,MarkComplete VSMark DoMarkAction(<f-args>)
     command! -nargs=* -complete=customlist,RegisterComplete VSRegister DoRegisterAction(<f-args>)
+    command! -nargs=* -complete=customlist,ChangelistComplete VSChangelist DoChangeListAction(<f-args>)
 enddef
 
 ## (Fuzzy) Find Files
 
 cmd.AddOnSpaceHook('VSFind')
 
-## (Live) Grep and Find
+## Search within Buffer
 
-# def GrepComplete(A: string, L: string, C: number): list<any>
-#     var cmdstr = get(g:, 'vimsuggest_grepprg', &grepprg)
-#     if cmdstr != null_string
-#         return exec.Complete(A, L, C, cmdstr)
-#     endif
-#     return []
-# enddef
-
-#     if cmdstr != null_string
-#         var argstr = cmd.CmdStr()->matchstr('^\s*\S\+\s\+\zs.*')
-#         if cmd.Strip(argstr) != null_string
-#             var arglist = argstr->split()
-#             var parts = cmdstr->split('$\*')
-#             if parts->len() > 2  # vimsuggest_findprg
-#                 arglist = arglist->len() == 1 ? (arglist + ['.']) : arglist
-#                 cstr = $'{parts[0]} {arglist[1 : ]->join(" ")} {parts[1]} {arglist[0]}' ..
-#                     (parts->len() > 2 ? $' {parts[2]}' : '')
-#             else
-#                 cstr = $'{parts[0]} {argstr}{parts->len() == 2 ? $" {parts[1]}" : ""}'
-#             endif
-#         endif
-# def LiveFindComplete(A: string, L: string, C: number): list<any>
-#     var cmdstr = get(g:, 'vimsuggest_findprg', null_string)
-#     if cmdstr != null_string
-#         cmdstr = (cmdstr->split('$\*')->len() == 2) ? $'{cmdstr} $*' : cmdstr
-#         return exec.Complete(A, L, C, cmdstr)
-#     endif
-#     return []
-# enddef
+def GlobalComplete(arglead: string, cmdline: string, cursorpos: number): list<any>
+    return exec.CompleteExCmd(arglead, cmdline, cursorpos, (args) => {
+        return execute($'g/{args}')->split("\n")
+    })
+enddef
+def JumpToLine(line: string, _: string)
+    var lnum = line->matchstr('\d\+')->str2nr()
+    Jump(lnum)
+enddef
 
 ## Buffers
 
@@ -176,11 +159,12 @@ export def ArtifactsComplete(arglead: string, cmdline: string, cursorpos: number
         patterns: list<string> = []): list<any>
     return fuzzy.Complete(arglead, cmdline, cursorpos, function(Artifacts, [patterns]))
 enddef
+export def Jump(lnum: number)
+    exe $":{lnum}"
+    normal! zz
+enddef
 export def DoArtifactsAction(arglead = null_string)
-    fuzzy.DoAction(arglead, (item, _) => {
-        exe $":{item.lnum}"
-        normal! zz
-    })
+    fuzzy.DoAction(arglead, (item, _) => Jump(item.lnum))
 enddef
 export def Artifacts(patterns: list<string>): list<any>
     var items = []
@@ -277,6 +261,21 @@ def DoRegisterAction(arglead: string = null_string)
     fuzzy.DoAction(arglead, (item, _) => {
         var reg = item->matchstr('\v^\s*\S+\s+\zs\S+')
         :exe $'normal! {reg}p'
+    })
+enddef
+
+## Changelist
+
+cmd.AddOnSpaceHook('VSChangelist')
+def ChangelistComplete(arglead: string, cmdline: string, cursorpos: number): list<any>
+    return fuzzy.Complete(arglead, cmdline, cursorpos, (): list<any> => {
+        return 'changes'->execute()->split("\n")->slice(1)->reverse()
+    })
+enddef
+def DoChangeListAction(arglead: string = null_string)
+    fuzzy.DoAction(arglead, (item, _) => {
+        var n = item->matchstr('^\s*\zs\d\+')
+        :exe $'normal! {n}g;'
     })
 enddef
 

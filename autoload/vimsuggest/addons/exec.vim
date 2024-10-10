@@ -29,7 +29,7 @@ export def GrepComplete(A: string, L: string, C: number, shellprefix = null_stri
         async = true, timeout = 2000, max_items = 1000): list<any>
     Clear()
     var cmdstr = get(g:, 'vimsuggest_grepprg', &grepprg)
-    var argstr = cmd.CmdStr()->matchstr('^\s*\S\+\s\+\zs.*$')
+    var argstr = ArgsStr()
     var arglead = argstr->matchstr(MatchPattern())->Strip()
     if cmdstr != null_string && arglead != null_string
         var parts = cmdstr->split('$\*')
@@ -48,7 +48,7 @@ export def FindComplete(A: string, L: string, C: number, shellprefix = null_stri
         async = true, timeout = 3000, max_items = 100000): list<any>
     Clear()
     var findcmd = get(g:, 'vimsuggest_findprg', null_string)
-    var argstr = cmd.CmdStr()->matchstr('^\s*\S\+\s\+\zs.*$')
+    var argstr = ArgsStr()
     var argpat = argstr->matchstr(MatchPattern())
     var cstr = null_string
     if findcmd != null_string && argpat->Strip() != null_string
@@ -94,6 +94,21 @@ export def CompletionItems(cmdstr = null_string, shellprefix = null_string,
     return items
 enddef
 
+export def CompleteExCmd(context: string, line: string, cursorpos: number,
+        ExCmdFn: func(string): list<any>): list<any>
+    Clear()
+    var argstr = ArgsStr()
+    if argstr != null_string
+        items = ExCmdFn(argstr)
+        var cmdlead = cmd.CmdLead()
+        if !hooks_added->has_key(cmdlead)
+            hooks_added[cmdlead] = 1
+            AddHooks(cmdlead)
+        endif
+    endif
+    return items
+enddef
+
 # Usage:
 # :<Command> Shell_cmd Shell_cmd_arg1 Shell_cmd_arg2 ...
 # :<Command> <pattern>
@@ -120,6 +135,10 @@ export def DefaultAction(tgt: string, key: string)
     else  # Assume 'tgt' is a 'grep' output line
         GrepVisitFile(key, tgt)
     endif
+enddef
+
+def ArgsStr(): string
+    return cmd.CmdStr()->matchstr('^\s*\S\+\s\+\zs.*$')
 enddef
 
 # Pattern to match everything inside quotes including " and ' escaped as \" and '',
@@ -168,14 +187,6 @@ def Strip(pat: string): string # Remove surrounding quotes if any
     return pat->matchstr('^[''"]\?\zs\(.\{-}\)\ze[''"]\?$')
 enddef
 
-#     # Remove " and ' around pattern, if any.
-#     var p = pat->substitute('^"', '', '')->substitute('"$', '', '')
-#     if p ==# pat
-#         p = p->substitute("^'", '', '')->substitute("'$", '', '')
-#     endif
-#     return p
-# enddef
-
 def AddHooks(name: string)
     if !cmd.ValidState()
         return  # After <c-s>, cmd 'state' object has been removed
@@ -187,29 +198,15 @@ def AddHooks(name: string)
     cmd.AddSelectItemHook(name, (_) => {
         return true # Do not update cmdline with selected item
     })
-    # def MatchGrepLine(line: string, pat: string): list<any> # Match grep output
-    #     var p = pat->Strip()
-    #     return line->matchstrpos($'.*:.\{{-}}\zs{p}')  # Remove filename, linenum, and colnum
-    # enddef
-    # cmd.AddHighlightHook(name, (suffix: string, itms: list<any>): list<any> => {
-    #     # grep command can have a dir argument at the end. Match only what is before the cursor.
-    #     if suffix->Strip() != null_string && !itms->empty()
-    #         return cmd.Highlight(suffix, itms,
-    #             itms[0]->filereadable() ? null_function : MatchGrepLine)
-    #     endif
-    #     return [itms]
-    # })
     cmd.AddHighlightHook(name, (arglead: string, itms: list<any>): list<any> => {
         DoHighlight(arglead)
         return [itms]
     })
-    # cmd.AddNoExcludeHook(name)
 enddef
 
 export def DoHighlight(pattern: string, ignorecase = true)
     win_execute(cmd.state.pmenu.Winid(), "syn clear VimSuggestMatch")
     if pattern != null_string
-        # var pat = Escape4Highlight(pattern)
         var pat = pattern
         try
             if ignorecase
