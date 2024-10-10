@@ -83,12 +83,6 @@ export class PopupMenu
             if moveto > 0
                 this._winid->popup_move({col: moveto})
             endif
-            # if this._items[0]->empty()
-            #     win_execute(this._winid, "setl nocursorline")
-            # else
-            #     win_execute(this._winid, "setl cursorline")
-            #     win_execute(this._winid, "normal! gg")
-            # endif
             this._winid->popup_settext(this._Printify())
             this._winid->popup_setoptions({cursorline: false})
         else

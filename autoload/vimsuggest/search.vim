@@ -66,7 +66,7 @@ def RestoreHLSearch(): string
     if state != null_object && state.pmenu.Hidden() && State.save_searchreg != null_string
         setreg('/', State.save_searchreg)
         State.save_searchreg = null_string
-    elseif State.save_searchreg != null_string # After <c-e>, state is null_object
+    elseif State.save_searchreg != null_string # After <c-s>, state is null_object
         setreg('/', State.save_searchreg)
         State.save_searchreg = null_string
     endif
@@ -161,6 +161,7 @@ enddef
 def ShowPopupMenu()
     state.pmenu.SetText(state.items)
     state.pmenu.Show()
+    :redraw  # Menu will not show otherwise, during noincsearch.
     # Note: If command-line is not disabled here, it will intercept key inputs
     # before the popup does. This prevents the popup from handling certain keys,
     # such as <Tab> properly.
@@ -181,12 +182,12 @@ def FilterFn(winid: number, key: string): bool
         state.pmenu.PageUp()
     elseif key == "\<PageDown>"
         state.pmenu.PageDown()
-    elseif key == "\<C-e>"
+    elseif key == "\<C-s>"
         IncSearchHighlightClear()
         setcmdline('')
         feedkeys(state.context, 'n')
         if State.save_searchreg != null_string
-            setreg('/', State.save_searchreg) # Needed by <c-e><esc> to restore previous hlsearch
+            setreg('/', State.save_searchreg) # Needed by <c-s><esc> to restore previous hlsearch
         endif
         # Remove the popup menu and resign from autocompletion.
         state.Clear()
