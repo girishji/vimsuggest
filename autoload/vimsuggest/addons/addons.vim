@@ -98,8 +98,8 @@ export def Enable()
     command! -nargs=+ -complete=customlist,exec.FindComplete VSFindL exec.DoAction(null_function, <f-args>)
     ## Search in Buffer
     command! -nargs=* -complete=customlist,GlobalComplete VSGlobal exec.DoAction(JumpToLine, <f-args>)
-    ## Include File Search
-    # command! -nargs=* -complete=customlist,IListComplete VSIList exec.DoAction(JumpToLine, <f-args>)
+    ## Functions
+    command! -nargs=* -complete=customlist,FuncComplete VSFunc DoFuncAction(<f-args>)
     # Execute Shell Command (ex. grep, find, etc.)
     command! -nargs=* -complete=customlist,exec.Complete VSExec exec.DoAction(null_function, <f-args>)
     command! -nargs=* -complete=customlist,exec.CompleteEx VSExecDo exec.DoActionEx(null_function, <f-args>)
@@ -141,24 +141,6 @@ def JumpToLine(line: string, _: string)
     var lnum = line->matchstr('\d\+')->str2nr()
     Jump(lnum)
 enddef
-
-## Search Include Files
-
-# def IListComplete(arglead: string, cmdline: string, cursorpos: number): list<any>
-#     return exec.CompleteExCmd(arglead, cmdline, cursorpos, (args) => {
-#         return execute($'il /{args}/')->split("\n")
-#     })
-# enddef
-# def VisitFile(line: string, key: string)
-#     var lnum = line->matchstr('\d\+')->str2nr()
-#     exec.VisitFile(key, fpath)
-#     Jump(lnum)
-# def DoMRUAction(arglead: string = null_string)
-#     fuzzy.DoAction(arglead, (item, key) => {
-#         exec.VisitFile(key, item)
-#     })
-# enddef
-# enddef
 
 ## Buffers
 
@@ -310,6 +292,44 @@ def DoChangeListAction(arglead: string = null_string)
         var n = item->matchstr('^\s*\zs\d\+')
         :exe $'normal! {n}g;'
     })
+enddef
+
+## Syntax Group 'Statement'
+
+def FuncComplete(arglead: string, cmdline: string, cursorpos: number): list<any>
+    return fuzzy.Complete(arglead, cmdline, cursorpos,
+        function(GetLinesInSyntaxGroup, ['\(function\|def\|method\)$']))
+enddef
+def DoFuncAction(arglead: string = null_string)
+    fuzzy.DoAction(arglead, (it, _) => {
+        Jump(it.lnum)
+    })
+enddef
+def GetLinesInSyntaxGroup(pattern: string): list<any>
+    var lines = []
+    var lnum = 1
+    while lnum <= line('$')
+        var line = getline(lnum)
+        var col = 1
+        while col <= line->len()
+            var synID = synIDattr(synID(lnum, col, 1), "name")
+            if synID =~? pattern
+                lines->add({text: $'{lnum}: {line}', lnum: lnum})
+                break
+            endif
+            var space = line->stridx(' ', col - 1)
+            if space != -1
+                while space + 1 < line->len() && line[space + 1] == ' '
+                    space += 1
+                endwhile
+                col = space + 2
+            else
+                break
+            endif
+        endwhile
+        lnum += 1
+    endwhile
+    return lines
 enddef
 
 ##
