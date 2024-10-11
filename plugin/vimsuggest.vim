@@ -35,6 +35,7 @@ if empty(prop_type_get('VimSuggestMatch'))
     prop_type_add('VimSuggestMatch', {highlight: "VimSuggestMatch", override: false})
 endif
 :highlight default link VimSuggestMatchSel PmenuMatchSel
+:highlight default link VimSuggestMute NonText
 
 def Reset()
     search.Teardown()

@@ -36,7 +36,11 @@ export def GrepComplete(A: string, L: string, C: number, shellprefix = null_stri
         var cstr = $'{parts[0]} {argstr}{parts->len() == 2 ? $" {parts[1]}" : ""}'
         var itemss = CompletionItems(cstr, shellprefix, async, timeout, max_items)
         cmd.AddHighlightHook(cmd.CmdLead(), (_: string, itms: list<any>): list<any> => {
-            DoHighlight(arglead)
+            win_execute(cmd.state.pmenu.Winid(), "syn clear VimSuggestMatch")
+            try
+                win_execute(cmd.state.pmenu.Winid(), $"syn match VimSuggestMatch \"\\c:\\d\\+:.*\\zs{arglead}\"")
+            catch # ignore any rogue exceptions.
+            endtry
             return [itms]
         })
         return itemss
@@ -106,7 +110,7 @@ export def CompleteExCmd(context: string, line: string, cursorpos: number,
             AddHooks(cmdlead)
         endif
         cmd.AddHighlightHook(cmdlead, (_: string, itms: list<any>): list<any> => {
-            DoHighlight(argstr)
+            DoHighlight(argstr->escape('\'))
             return [itms]
         })
     endif
@@ -141,7 +145,7 @@ export def DefaultAction(tgt: string, key: string)
     endif
 enddef
 
-def ArgsStr(): string
+export def ArgsStr(): string
     return cmd.CmdStr()->matchstr('^\s*\S\+\s\+\zs.*$')
 enddef
 
@@ -199,7 +203,7 @@ def AddHooks(name: string)
         candidate = selected_item == null_string ? first_item : selected_item
         exit_key = key
     })
-    cmd.AddSelectItemHook(name, (_) => {
+    cmd.AddSelectItemHook(name, (_, _) => {
         return true # Do not update cmdline with selected item
     })
     cmd.AddHighlightHook(name, (arglead: string, itms: list<any>): list<any> => {
@@ -211,13 +215,8 @@ enddef
 export def DoHighlight(pattern: string, ignorecase = true)
     win_execute(cmd.state.pmenu.Winid(), "syn clear VimSuggestMatch")
     if pattern != null_string
-        var pat = pattern
         try
-            if ignorecase
-                win_execute(cmd.state.pmenu.Winid(), $"syn match VimSuggestMatch \"\\c{pat}\"")
-            else
-                win_execute(cmd.state.pmenu.Winid(), $"syn match VimSuggestMatch \"{pat}\"")
-            endif
+            win_execute(cmd.state.pmenu.Winid(), $"syn match VimSuggestMatch \"{pattern}\"")
         catch # ignore any rogue exceptions.
         endtry
     endif

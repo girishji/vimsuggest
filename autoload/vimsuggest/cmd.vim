@@ -195,10 +195,10 @@ def InsertionPoint(replacement: string): number
     return pos
 enddef
 
-def SelectItemPost(index: number)
+export def SelectItemPost(index: number, dir: string)
     var cmdname = CmdLead()
     if !state.select_item_hook->has_key(cmdname) ||
-            !state.select_item_hook[cmdname](state.items[0][index])
+            !state.select_item_hook[cmdname](state.items[0][index], dir)
         var context = Context()
         var replacement = state.items[0][index]
         setcmdline(context->slice(0, state.insertion_point) .. replacement)
@@ -330,7 +330,7 @@ export def AddCmdlineAbortHook(Callback: func())
     State.cmdline_abort_hook->add(Callback)
 enddef
 
-export def AddSelectItemHook(cmd: string, Callback: func(string): bool)
+export def AddSelectItemHook(cmd: string, Callback: func(string, string): bool)
     state.select_item_hook[cmd] = Callback
 enddef
 

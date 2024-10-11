@@ -168,7 +168,7 @@ def ShowPopupMenu()
     DisableCmdline()
 enddef
 
-def SelectItemPost(index: number)
+def SelectItemPost(index: number, dir: string)
     setcmdline(state.items[0][index]->escape('~/'))
 enddef
 

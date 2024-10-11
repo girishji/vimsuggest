@@ -155,26 +155,17 @@ def AddHooks(name: string)
         candidate = selected_item == null_string ? first_item : selected_item
         exit_key = key
     })
-    cmd.AddSelectItemHook(name, (_) => {
+    cmd.AddSelectItemHook(name, (_, _) => {
         return true # Do not update cmdline with selected item
     })
 enddef
 
 def AddFindHooks(name: string)
-    if !cmd.ValidState()
-        return  # After <c-s>, cmd 'state' object has been removed
-    endif
+    AddHooks(name)
     cmd.AddHighlightHook(name, (_: string, _: list<any>): list<any> => {
         var pat = ExtractPattern()
         return pat != null_string && !matches[0]->empty() ?
             matches : [items]
-    })
-    cmd.AddCmdlineLeaveHook(name, (selected_item, first_item, key) => {
-        candidate = selected_item == null_string ? first_item : selected_item
-        exit_key = key
-    })
-    cmd.AddSelectItemHook(name, (_) => {
-        return true # Do not update cmdline with selected item
     })
 enddef
 

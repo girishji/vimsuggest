@@ -96,11 +96,13 @@ export def Enable()
     ## (Live) Grep and Find
     command! -nargs=+ -complete=customlist,exec.GrepComplete VSGrep exec.DoAction(null_function, <f-args>)
     command! -nargs=+ -complete=customlist,exec.FindComplete VSFindL exec.DoAction(null_function, <f-args>)
+    ## Execute Shell Command (ex. grep, find, etc.)
+    command! -nargs=* -complete=customlist,exec.Complete VSExec exec.DoAction(null_function, <f-args>)
     ## Global (:h :g) (Search Within Buffer)
     command! -nargs=* -complete=customlist,GlobalComplete VSGlobal exec.DoAction(JumpToLine, <f-args>)
-    # Execute Shell Command (ex. grep, find, etc.)
-    command! -nargs=* -complete=customlist,exec.Complete VSExec exec.DoAction(null_function, <f-args>)
-    # Others
+    ## Include Search (:h include-search) (Search for keywords in the included files)
+    command! -nargs=* -complete=customlist,InclSearchComplete VSInclSearch exec.DoAction(JumpToDef, <f-args>)
+    ## Others
     command! -nargs=* -complete=customlist,BufferComplete VSBuffer DoBufferAction(<f-args>)
     command! -nargs=* -complete=customlist,MRUComplete VSMru DoMRUAction(<f-args>)
     command! -nargs=* -complete=customlist,KeymapComplete VSKeymap DoKeymapAction(<f-args>)
@@ -136,6 +138,40 @@ enddef
 def JumpToLine(line: string, _: string)
     var lnum = line->matchstr('\d\+')->str2nr()
     Jump(lnum)
+enddef
+
+## Search for Keywords in the Current Buffer and Included Files
+
+var inc_search_pattern = null_string
+def InclSearchComplete(arglead: string, cmdline: string, cursorpos: number): list<any>
+    inc_search_pattern = exec.ArgsStr()
+    var lines = exec.CompleteExCmd(arglead, cmdline, cursorpos, (args) => {
+        return execute($'ilist /{args}/')->split("\n")
+            ->copy()->filter((_, v) => v !~? 'includes previously listed match')
+    })
+    if !lines->empty()
+        var cmdlead = cmd.CmdLead()
+        cmd.AddSelectItemHook(cmdlead, SelectItemPostCallback)
+        cmd.AddHighlightHook(cmdlead, (_: string, itms: list<any>): list<any> => {
+            win_execute(cmd.state.pmenu.Winid(), "syn clear VimSuggestMute")
+            try
+                win_execute(cmd.state.pmenu.Winid(), $"syn match VimSuggestMute \"^\\S\\+$\"")
+            catch
+            endtry
+            return [itms]
+        })
+    endif
+    return lines
+enddef
+def SelectItemPostCallback(line: string, dir: string): bool
+    if line->expandcmd()->filereadable()
+        cmd.state.pmenu.SelectItem(dir, cmd.SelectItemPost)
+    endif
+    return true
+enddef
+def JumpToDef(line: string, _: string)
+    var jnum = line->matchstr('\d\+')->str2nr()
+    :exe $"ijump {jnum} /{inc_search_pattern}/"
 enddef
 
 ## Buffers

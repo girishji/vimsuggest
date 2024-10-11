@@ -131,7 +131,7 @@ export class PopupMenu
     enddef
 
     # select next/prev item in popup menu; wrap around at end of list
-    def SelectItem(direction: string, CallbackFn: func(number))
+    def SelectItem(direction: string, CallbackFn: func(number, string))
         const count = this._items[0]->len()
         const items = this._items
 
@@ -214,7 +214,7 @@ export class PopupMenu
 
         this._pum ? SelectVert() : SelectHoriz()
         if CallbackFn != null_function
-            CallbackFn(this._index)
+            CallbackFn(this._index, direction)
         endif
         :redraw  # Needed for <tab> selected menu item highlighting to work
     enddef
