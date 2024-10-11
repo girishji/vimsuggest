@@ -127,7 +127,8 @@ export class PopupMenu
             overflowl = idx > 0
         endif
         var htext = (overflowl ? '< ' : '') .. selected->join('  ') .. (overflowr ? ' >' : '')
-        this._hmenu->extend({text: htext, ibegin: atleft ? startidx : idx, iend: atleft ? idx : startidx, offset: overflowl ? 2 : 0})
+        this._hmenu->extend({text: htext, ibegin: atleft ? startidx : idx,
+            iend: atleft ? idx : startidx, offset: overflowl ? 2 : 0})
     enddef
 
     # select next/prev item in popup menu; wrap around at end of list
