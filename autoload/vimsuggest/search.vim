@@ -24,8 +24,10 @@ class State
     public var items: list<any> = []            # Items to be displayed in the popup menu
     public var candidates: list<any> = []       # Completion candidates (saved for async invocation)
     public var context: string = null_string    # Cached command-line contents
-    public static var save_searchreg: string = null_string
-    public var save_esc_keymap: dict<any> = null_dict
+    public static var saved_searchreg: string = null_string
+    var saved_esc_keymap: dict<any> = null_dict
+    var saved_ttimeout: bool
+    var saved_ttimeoutlen: number
     var pmenu: popup.PopupMenu = null_object
     var async: bool
     var curpos: list<any>
@@ -37,9 +39,12 @@ class State
             this.curpos = getcurpos()
         endif
         if this.async && v:hlsearch
-            State.save_searchreg = getreg('/')
-            this.save_esc_keymap = maparg('<esc>', 'c', 0, 1) # Save <esc> keymap in case it's remapped
+            State.saved_searchreg = getreg('/')
+            this.saved_esc_keymap = maparg('<esc>', 'c', 0, 1) # Save <esc> keymap in case it was mapped
         endif
+        this.saved_ttimeout = &ttimeout  # Needs to be set, otherwise <esc> delays when closing menu 
+        this.saved_ttimeoutlen = &ttimeoutlen
+        :set ttimeout ttimeoutlen=100
     enddef
 
     def Setup()
@@ -51,10 +56,14 @@ class State
 
     def Clear()
         this.pmenu.Close()
-        if this.save_esc_keymap != null_dict
-            mapset('c', 0, this.save_esc_keymap)
+        if this.saved_esc_keymap != null_dict
+            mapset('c', 0, this.saved_esc_keymap)
         endif
         IncSearchHighlightClear()
+        if this.saved_ttimeout
+            :set ttimeout
+            &ttimeoutlen = this.saved_ttimeoutlen
+        endif
     enddef
 endclass
 
@@ -63,12 +72,12 @@ var state: State = null_object
 # During async search, <esc> after a failed search (where pattern does not exist
 # in buffer) should restore previous hlsearch if any.
 def RestoreHLSearch(): string
-    if state != null_object && state.pmenu.Hidden() && State.save_searchreg != null_string
-        setreg('/', State.save_searchreg)
-        State.save_searchreg = null_string
-    elseif State.save_searchreg != null_string # After <c-s>, state is null_object
-        setreg('/', State.save_searchreg)
-        State.save_searchreg = null_string
+    if state != null_object && state.pmenu.Hidden() && State.saved_searchreg != null_string
+        setreg('/', State.saved_searchreg)
+        State.saved_searchreg = null_string
+    elseif State.saved_searchreg != null_string # After <c-s>, state is null_object
+        setreg('/', State.saved_searchreg)
+        State.saved_searchreg = null_string
     endif
     return null_string
 enddef
@@ -185,8 +194,8 @@ def FilterFn(winid: number, key: string): bool
         IncSearchHighlightClear()
         setcmdline('')
         feedkeys(state.context, 'n')
-        if State.save_searchreg != null_string
-            setreg('/', State.save_searchreg) # Needed by <c-s><esc> to restore previous hlsearch
+        if State.saved_searchreg != null_string
+            setreg('/', State.saved_searchreg) # Needed by <c-s><esc> to restore previous hlsearch
         endif
         # Remove the popup menu and resign from autocompletion.
         state.Clear()
@@ -196,8 +205,8 @@ def FilterFn(winid: number, key: string): bool
         return false
     elseif key == "\<ESC>"
         IncSearchHighlightClear()
-        if State.save_searchreg != null_string
-            setreg('/', State.save_searchreg) # Restore previous hlsearch
+        if State.saved_searchreg != null_string
+            setreg('/', State.saved_searchreg) # Restore previous hlsearch
         endif
         return false  # 'false' causes search to be abandoned, and trigger CmdlineLeave
     else
@@ -216,8 +225,8 @@ def CallbackFn(winid: number, result: any)
     IncSearchHighlightClear()
     if result == -1 # Popup force closed due to <c-c> or cursor mvmt
         feedkeys("\<c-c>", 'n')
-        if State.save_searchreg != null_string
-            setreg('/', State.save_searchreg) # Restore previous hlsearch
+        if State.saved_searchreg != null_string
+            setreg('/', State.saved_searchreg) # Restore previous hlsearch
         endif
     endif
 enddef
@@ -256,7 +265,7 @@ enddef
 
 def GetFirstMatch(): list<any>
     var pos = []
-    var save_cursor = getcurpos()
+    var saved_cursor = getcurpos()
     setpos('.', state.curpos)
     try
         var [blnum, bcol] = state.context->searchpos(v:searchforward ? 'nw' : 'nwb')
@@ -278,7 +287,7 @@ def GetFirstMatch(): list<any>
         # E33 is thrown when '~' is the first character of search.
         # '~' stands for previously substituted pattern in ':s'.
     endtry
-    setpos('.', save_cursor)
+    setpos('.', saved_cursor)
     return pos
 enddef
 
@@ -339,7 +348,7 @@ enddef
 # Search across line breaks. This is less efficient and likely not very useful.
 # Warning: Syntax highlighting inside popup is not supported by this function.
 def BufMatchMultiLine(batch: dict<any> = null_dict): list<any>
-    var save_cursor = getcurpos()
+    var saved_cursor = getcurpos()
     var timeout = max([10, options.timeout])
     var flags = state.async ? (v:searchforward ? '' : 'b') : (v:searchforward ? 'w' : 'wb')
     var pattern = state.context =~ '\s' ? $'{state.context}\w*' : $'\w*{state.context}\w*'
@@ -361,7 +370,7 @@ def BufMatchMultiLine(batch: dict<any> = null_dict): list<any>
         endif
     catch # '*' with magic can throw E871
         # echom v:exception
-        setpos('.', save_cursor)
+        setpos('.', saved_cursor)
         return []
     endtry
     var matches = []
@@ -392,7 +401,7 @@ def BufMatchMultiLine(batch: dict<any> = null_dict): list<any>
             break
         endif
     endwhile
-    setpos('.', save_cursor)
+    setpos('.', saved_cursor)
     return matches->mapnew((_, v) => {
         return {text: v}
     })

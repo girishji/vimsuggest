@@ -21,7 +21,9 @@ export var options: dict<any> = {
 
 class State
     var pmenu: popup.PopupMenu = null_object
-    var save_wildmenu: bool
+    var saved_wildmenu: bool
+    var saved_ttimeout: bool
+    var saved_ttimeoutlen: number
     # Do not complete after the following characters. No worthwhile completions
     # are shown by getcompletion()
     var exclude = ['~', '!', '%', '(', ')', '+', '-', '=', '<', '>', '?', ',']
@@ -37,14 +39,21 @@ class State
     public static var cmdline_abort_hook = []  # Cmdline contents not available when <c-c> aborted
 
     def new()
-        this.save_wildmenu = &wildmenu
+        this.saved_ttimeout = &ttimeout  # Needs to be set, otherwise <esc> delays when closing menu 
+        this.saved_ttimeoutlen = &ttimeoutlen
+        :set ttimeout ttimeoutlen=100
+        this.saved_wildmenu = &wildmenu
         :set nowildmenu
         this.pmenu = popup.PopupMenu.new(FilterFn, CallbackFn, options.popupattrs, options.pum)
     enddef
 
     def Clear()
-        if this.save_wildmenu
+        if this.saved_wildmenu
             :set wildmenu
+        endif
+        if this.saved_ttimeout
+            :set ttimeout
+            &ttimeoutlen = this.saved_ttimeoutlen
         endif
         this.pmenu.Close()
     enddef
