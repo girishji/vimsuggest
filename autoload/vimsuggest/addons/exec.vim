@@ -36,11 +36,8 @@ export def GrepComplete(A: string, L: string, C: number, shellprefix = null_stri
         var cstr = $'{parts[0]} {argstr}{parts->len() == 2 ? $" {parts[1]}" : ""}'
         var itemss = CompletionItems(cstr, shellprefix, async, timeout, max_items)
         cmd.AddHighlightHook(cmd.CmdLead(), (_: string, itms: list<any>): list<any> => {
-            win_execute(cmd.state.pmenu.Winid(), "syn clear VimSuggestMatch")
-            try
-                win_execute(cmd.state.pmenu.Winid(), $"syn match VimSuggestMatch \"\\c:\\d\\+:.*\\zs{arglead}\"")
-            catch # ignore any rogue exceptions.
-            endtry
+            DoHighlight($'\c{arglead}')
+            DoHighlight('^.*:\d\+:', 'VimSuggestMute')
             return [itms]
         })
         return itemss
@@ -109,10 +106,6 @@ export def CompleteExCmd(context: string, line: string, cursorpos: number,
             hooks_added[cmdlead] = 1
             AddHooks(cmdlead)
         endif
-        cmd.AddHighlightHook(cmdlead, (_: string, itms: list<any>): list<any> => {
-            DoHighlight(argstr->escape('\'))
-            return [itms]
-        })
     endif
     return items
 enddef
@@ -212,11 +205,11 @@ def AddHooks(name: string)
     })
 enddef
 
-export def DoHighlight(pattern: string, ignorecase = true)
-    win_execute(cmd.state.pmenu.Winid(), "syn clear VimSuggestMatch")
+export def DoHighlight(pattern: string, group = 'VimSuggestMatch')
+    win_execute(cmd.state.pmenu.Winid(), $"syn clear {group}")
     if pattern != null_string
         try
-            win_execute(cmd.state.pmenu.Winid(), $"syn match VimSuggestMatch \"{pattern}\"")
+            win_execute(cmd.state.pmenu.Winid(), $'syn match {group} ''{pattern}''')
         catch # ignore any rogue exceptions.
         endtry
     endif

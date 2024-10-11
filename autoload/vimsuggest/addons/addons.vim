@@ -118,7 +118,7 @@ cmd.AddOnSpaceHook('VSFind')
 ## Search within Buffer
 
 def GlobalComplete(arglead: string, cmdline: string, cursorpos: number): list<any>
-    return exec.CompleteExCmd(arglead, cmdline, cursorpos, (args) => {
+    var lines = exec.CompleteExCmd(arglead, cmdline, cursorpos, (args) => {
         var saved_incsearch = &incsearch
         set noincsearch
         var saved_cursor = getcurpos()
@@ -134,6 +134,12 @@ def GlobalComplete(arglead: string, cmdline: string, cursorpos: number): list<an
         endtry
         return []
     })
+    cmd.AddHighlightHook(cmd.CmdLead(), (_: string, itms: list<any>): list<any> => {
+        exec.DoHighlight(exec.ArgsStr())
+        exec.DoHighlight('^\s*\d\+', 'VimSuggestMute')
+        return [itms]
+    })
+    return lines
 enddef
 def JumpToLine(line: string, _: string)
     var lnum = line->matchstr('\d\+')->str2nr()
@@ -142,9 +148,9 @@ enddef
 
 ## Search for Keywords in the Current Buffer and Included Files
 
-var inc_search_pattern = null_string
+var incl_search_pattern = null_string
 def InclSearchComplete(arglead: string, cmdline: string, cursorpos: number): list<any>
-    inc_search_pattern = exec.ArgsStr()
+    incl_search_pattern = exec.ArgsStr()
     var lines = exec.CompleteExCmd(arglead, cmdline, cursorpos, (args) => {
         return execute($'ilist /{args}/')->split("\n")
             ->copy()->filter((_, v) => v !~? 'includes previously listed match')
@@ -153,11 +159,8 @@ def InclSearchComplete(arglead: string, cmdline: string, cursorpos: number): lis
         var cmdlead = cmd.CmdLead()
         cmd.AddSelectItemHook(cmdlead, SelectItemPostCallback)
         cmd.AddHighlightHook(cmdlead, (_: string, itms: list<any>): list<any> => {
-            win_execute(cmd.state.pmenu.Winid(), "syn clear VimSuggestMute")
-            try
-                win_execute(cmd.state.pmenu.Winid(), $"syn match VimSuggestMute \"^\\S\\+$\"")
-            catch
-            endtry
+            exec.DoHighlight(exec.ArgsStr())
+            exec.DoHighlight('^\(\S\+$\|\s*\d\+:\s\+\d\+\)', 'VimSuggestMute')
             return [itms]
         })
     endif
@@ -171,7 +174,7 @@ def SelectItemPostCallback(line: string, dir: string): bool
 enddef
 def JumpToDef(line: string, _: string)
     var jnum = line->matchstr('\d\+')->str2nr()
-    :exe $"ijump {jnum} /{inc_search_pattern}/"
+    :exe $'ijump {jnum} /{incl_search_pattern}/'
 enddef
 
 ## Buffers
@@ -317,7 +320,9 @@ enddef
 ##
 
 export def Disable()
-    for c in ['VSFind', 'VSGrep', 'VSExec', 'VSExecEx', 'VSBuffer', 'VSMru', 'VSKeymap', 'VSMark', 'VSRegister']
+    for c in ['VSFind', 'VSGrep', 'VSFindL', 'VSExec', 'VSGlobal',
+            'VSInclSearch', 'VSBuffer', 'VSMru', 'VSKeymap', 'VSMark',
+            'VSRegister', 'VSChangelist']
         if exists($":{c}") == 2
             :exec $'delcommand {c}'
         endif
