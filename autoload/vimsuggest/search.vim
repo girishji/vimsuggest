@@ -5,7 +5,7 @@ import autoload './popup.vim'
 # Configuration options
 export var options: dict<any> = {
     enable: true,               # Enable/disable the feature globally
-    pum: true,                  # 'false' for flat, 'true' for vertically stacked popup menu
+    pum: false,                 # 'false' for flat, 'true' for vertically stacked popup menu
     fuzzy: false,               # Enable/disable fuzzy completion
     alwayson: true,             # Open popup menu on <tab> if 'false'
     popupattrs: {               # Attributes passed to the popup window
@@ -128,7 +128,6 @@ def Complete()
     state.items = []
     const withspace = state.context =~ '[^\\]\+\\n\|^\\n' # Pattern contains spaces, resort to searchpos().
     const MatchFn = withspace ? BufMatchMultiLine : BufMatchLine
-
     if state.context =~# '^\\%' # \%V to search visual region only, etc.
         state.items = BufMatchMultiLine()->MakeUnique()->Itemify()
     elseif options.fuzzy
@@ -200,7 +199,7 @@ def FilterFn(winid: number, key: string): bool
         if State.save_searchreg != null_string
             setreg('/', State.save_searchreg) # Restore previous hlsearch
         endif
-        return false
+        return false  # 'false' causes search to be abandoned, and trigger CmdlineLeave
     else
         IncSearchHighlightClear()
         state.pmenu.Hide()

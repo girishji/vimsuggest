@@ -135,7 +135,6 @@ def DoComplete(oldcontext: string, timer: number)
         :redraw # popup_hide() already called in FilterFn, redraw to hide the popup
         return
     endif
-    # echom $'docmd after |{getcmdline()}|'
     var completions: list<any> = []
     try
         if options.wildignore && cmdstr =~# '^\s*\(e\%[dit]!\?\|fin\%[d]!\?\)\s'

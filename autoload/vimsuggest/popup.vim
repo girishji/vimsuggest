@@ -34,7 +34,8 @@ export class PopupMenu
             this._winid = popup_menu([], attr->extend(attributes))
         endif
         if !this._pum && this._bgWinId->popup_getoptions() == {}
-            this._bgWinId = popup_create(' ', {line: &lines - &cmdheight, col: 1, minwidth: winwidth(0)})
+            this._bgWinId = popup_create(' ',
+                {line: &lines - &cmdheight, col: 1, minwidth: winwidth(0), hidden: true})
         endif
     enddef
 
@@ -89,7 +90,7 @@ export class PopupMenu
             this._HMenu(0, 'left')
             try
                 this._winid->popup_settext(this._Printify())
-            catch /^Vim\%((\a\+)\)\=:E964:/ # Vim throws E964 occasionally when non-ascii wide chars are present
+            catch /^Vim\%((\a\+)\)\=:E964:/ # E964 is thrown for some non-ascii wide chars
             endtry
         endif
         this._index = -1
@@ -235,11 +236,17 @@ export class PopupMenu
 
     def Show()
         this._winid->popup_show()
+        if !this._pum
+            this._bgWinId->popup_show()
+        endif
     enddef
 
     def Hide()
         if !this.Hidden()
             this._winid->popup_hide()
+            if !this._pum
+                this._bgWinId->popup_hide()
+            endif
         endif
     enddef
 
