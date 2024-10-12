@@ -226,17 +226,20 @@ def FilterFn(winid: number, key: string): bool
         state.pmenu.PageUp()
     elseif key ==? "\<PageDown>"
         state.pmenu.PageDown()
-    elseif key ==? "\<C-s>"
+    elseif key ==? "\<C-s>"  # Dismiss auto-completion
         state.pmenu.Hide()
         :redraw
         state.Clear()
         CmdlineAbortHook()
         state = null_object
-    elseif key ==? "\<C-q>"
+    elseif key ==? "\<C-q>" # Add to quickfix list
         SendToQickfixList()
         state.pmenu.Close(-1)
-    elseif key ==? "\<C-r>"
+    elseif key ==? "\<C-r>"  # Add to arglist
         execute($'argadd {state.items[0]->join(" ")}')
+        state.pmenu.Close(-1)
+    elseif key ==? "\<C-g>"  # Add to system clipboard ("+ register)
+        @+ = state.items[0]->join("\n")
         state.pmenu.Close(-1)
     elseif key ==? "\<C-j>" || key ==? "\<C-v>" || key ==? "\<C-t>"
         state.exit_key = key
