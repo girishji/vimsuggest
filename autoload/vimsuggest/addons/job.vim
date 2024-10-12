@@ -1,5 +1,10 @@
 vim9script
 
+# This Vim9 script defines functions for asynchronous command execution.
+# It provides 'Start()' to run a command with callbacks and optional timeout,
+# and 'Stop()' to terminate the running job. The script handles output
+# processing, implements a polling mechanism, and manages job lifecycle.
+
 import autoload '../cmd.vim'
 
 var jobid: job

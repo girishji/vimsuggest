@@ -1,6 +1,8 @@
 vim9script
 
-# Autocomplete Vimscript commands, functions, variables, help, filenames, buffers, etc.
+# This Vim9 script implements command-line auto-completion for the ':' command.
+# It uses 'getcompletion()' to gather completion candidates and show them in a
+# popup window.
 
 import autoload './popup.vim'
 import autoload './addons/addons.vim'

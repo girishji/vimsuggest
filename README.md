@@ -24,6 +24,10 @@ Example: >
 
 
 
+#
+#   Note:
+#     <Tab>/<S-Tab> to select the menu item. If no item is selected <CR> visits
+#     the first item in the menu.
 
 let s=reltime()|call getcompletion('find **', 'cmdline')|echo s->reltime()->reltimestr()
 1sec in vim/*

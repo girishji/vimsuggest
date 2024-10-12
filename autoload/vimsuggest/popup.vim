@@ -1,6 +1,12 @@
 vim9script
 
-# Implement stacked menu (pum=true) and flat menu (pum=false)
+# PopupMenu class to handle both stacked (pum=true) and flat (pum=false) pop-up menus in Vim9
+# - Supports custom filtering and callback functions
+# - Stacked mode displays items vertically, similar to Vim's built-in popup menu
+# - Flat mode displays items horizontally for a more compact presentation
+# - Implements navigation functions for selecting, moving, and highlighting items
+# - Includes methods for showing, hiding, and closing the menu
+# - Handles scrolling (PageUp/PageDown) and adjusting the menu layout dynamically
 
 export class PopupMenu
     var _winid: number

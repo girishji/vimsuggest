@@ -1,5 +1,11 @@
 vim9script
 
+# This Vim9 script implements an search suggestion system for Vim's
+# command-line. It provides fuzzy matching, asynchronous searching, and a
+# customizable popup menu for search results. The script includes functions
+# for incsearch highlighting, multi-line searching, and various utility
+# functions to enhance the search experience in Vim.
+
 import autoload './popup.vim'
 
 # Configuration options

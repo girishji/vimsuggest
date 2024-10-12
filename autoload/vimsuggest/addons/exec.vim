@@ -1,5 +1,11 @@
 vim9script
 
+# This Vim9 script implements non-fuzzy (regex) command-line auto-completion.
+# It provides completion for shell commands, like live grep, and find
+# operations, with support for asynchronous execution, as well as Ex commands.
+# The script includes functions for highlighting matches, handling file visits
+# from grep results, and various utility functions.
+
 import autoload '../cmd.vim'
 import autoload './job.vim'
 
@@ -8,12 +14,36 @@ var candidate: string
 var exit_key: string
 var hooks_added: dict<any>
 
+# Generates a list of completion items based on the current command line.
+# Command line should contain a shell command like 'find', 'grep' or 'ls -1'.
+# Commands are executed in user's $SHELL.
+# Arguments:
+# - arglead: string
+# - line: string
+# - cursorpos: number
+#     See :h command-completion-custom
+# - async: bool
+#     A boolean flag indicating whether the completion should be executed asynchronously.
+#     When set to true, it allows for non-blocking execution, enabling the user interface
+#     to remain responsive.
+# - timeout: number
+#     The maximum amount of time (in milliseconds) to wait for the completion operation
+#     to finish before giving up. This is particularly useful for asynchronous operations
+#     where a delay might occur.
+# - max_items: number
+#     The maximum number of completion items to return. This limits the number of results
+#     presented to the user, helping to manage performance and usability.
+# Returns:
+# - A list of completion items based on the provided line and arglead. If no valid
+# completions are found, an empty list is returned.
+# Note: Both 'arglead' and 'line' arg contains text up to 'cursorpos' only.
 # Usage:
 # :<Command> Shell_cmd Shell_cmd_arg1 Shell_cmd_arg2 ...
 # :<Command> <pattern>
-export def Complete(context: string, line: string, cursorpos: number,
+# Example:
+# :nnoremap <key> :VSExec find -EL . \! \( -regex ".*\.(swp\|git\|zsh_.*)" -prune \) -type f -name "*"<left><left>
+export def Complete(arglead: string, line: string, cursorpos: number,
         async = true, timeout = 2000, max_items = 1000): list<any>
-    # Note: Both 'context' and 'line' arg contains text up to 'cursorpos' only.
     Clear()
     var parts = cmd.CmdStr()->split()
     if parts->len() > 1
@@ -25,6 +55,10 @@ export def Complete(context: string, line: string, cursorpos: number,
     return []
 enddef
 
+# Same as Complete() above, except 'grep' shell command is obtained from
+# g:vimsuggest_grepprg variable or 'grepprg' option. 'shellprefix' can be
+# '/bin/sh -c'. When not provided, shell command is executed directly without
+# shell environment and recursive glob expansion.
 export def GrepComplete(A: string, L: string, C: number, shellprefix = null_string,
         async = true, timeout = 2000, max_items = 1000): list<any>
     Clear()
@@ -45,6 +79,8 @@ export def GrepComplete(A: string, L: string, C: number, shellprefix = null_stri
     return []
 enddef
 
+# Same as GrepComplete() above except 'find' shell command is obtained from
+# g:vimsuggest_findprg variable.
 export def FindComplete(A: string, L: string, C: number, shellprefix = null_string,
         async = true, timeout = 3000, max_items = 100000): list<any>
     Clear()
@@ -70,6 +106,23 @@ export def FindComplete(A: string, L: string, C: number, shellprefix = null_stri
     return []
 enddef
 
+# Same as above, except it executes a Ex command to obtain completion candidates.
+export def CompleteExCmd(arglead: string, line: string, cursorpos: number,
+        ExCmdFn: func(string): list<any>): list<any>
+    Clear()
+    var argstr = ArgsStr()
+    if argstr != null_string
+        items = ExCmdFn(argstr)
+        var cmdlead = cmd.CmdLead()
+        if !hooks_added->has_key(cmdlead)
+            hooks_added[cmdlead] = 1
+            AddHooks(cmdlead)
+        endif
+    endif
+    return items
+enddef
+
+# Utility function used by above functions to manage shell command execution.
 export def CompletionItems(cmdstr = null_string, shellprefix = null_string,
         async = true, timeout = 2000, max_items = 1000): list<any>
     if cmdstr != null_string
@@ -95,21 +148,14 @@ export def CompletionItems(cmdstr = null_string, shellprefix = null_string,
     return items
 enddef
 
-export def CompleteExCmd(context: string, line: string, cursorpos: number,
-        ExCmdFn: func(string): list<any>): list<any>
-    Clear()
-    var argstr = ArgsStr()
-    if argstr != null_string
-        items = ExCmdFn(argstr)
-        var cmdlead = cmd.CmdLead()
-        if !hooks_added->has_key(cmdlead)
-            hooks_added[cmdlead] = 1
-            AddHooks(cmdlead)
-        endif
-    endif
-    return items
-enddef
-
+# Executes a specified action on a selected item.
+# Arguments:
+# - ActionFn: func(string, string)
+#     A function to be executed on the selected item. This function takes two parameters:
+#     - The selected item from the items list.
+#     - A string representing the exit key (example: <CR>).
+# - arg{1-20}
+#     Placeholders for words typed on the command line.
 # Usage:
 # :<Command> Shell_cmd Shell_cmd_arg1 Shell_cmd_arg2 ...
 # :<Command> <pattern>
@@ -130,6 +176,12 @@ export def DoAction(ActionFn: func(string, string), arg1: string = '',
     endif
 enddef
 
+# Open a given file for editing. File can be opened in a split window or a new
+# tab.
+#  - tgt
+#      - File path or a line from the output of grep command.
+#  - key
+#      - A string representing the exit key (example: <CR>).
 export def DefaultAction(tgt: string, key: string)
     if tgt->filereadable()
         VisitFile(key, tgt)
@@ -138,6 +190,7 @@ export def DefaultAction(tgt: string, key: string)
     endif
 enddef
 
+# Return arguments typed to a command.
 export def ArgsStr(): string
     return cmd.CmdStr()->matchstr('^\s*\S\+\s\+\zs.*$')
 enddef
@@ -213,14 +266,6 @@ export def DoHighlight(pattern: string, group = 'VimSuggestMatch')
         catch # ignore any rogue exceptions.
         endtry
     endif
-enddef
-
-export def Escape4Highlight(s: string): string
-    var pat = s->escape('~.[$^"')
-    if pat[-1] == '\'
-        pat = $'{pat}\'
-    endif
-    return pat
 enddef
 
 export def Clear()

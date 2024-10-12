@@ -1,5 +1,10 @@
 vim9script
 
+# This Vim9 script provides functionality for fuzzy auto-completion. It
+# processes input patterns, starts external commands or jobs to fetch potential
+# matches, and manages item selection and actions. It supports asynchronous
+# operations and handles hooks for various command-line events.
+
 import autoload '../cmd.vim'
 import autoload './job.vim'
 import autoload './exec.vim'
@@ -11,7 +16,15 @@ var cmdname = null_string
 var prevdir = null_string
 var exit_key = null_string
 
-export def Complete(_: string, line: string, cursorpos: number,
+# Custom completion function with fuzzy search for Vim commands.
+# Arguments:
+# - arglead: string
+# - line: string
+# - cursorpos: number
+#     See :h command-completion-custom
+# - GetItems: func(): list<any>
+#     A function that returns a list of items for completion.
+export def Complete(arglead: string, line: string, cursorpos: number,
         GetItems: func(): list<any> = null_function): list<any>
     var cname = cmd.CmdLead()
     if cmdname == null_string || cname !=# cmdname  # When command is overwritten
@@ -39,6 +52,27 @@ export def Complete(_: string, line: string, cursorpos: number,
     return text_items
 enddef
 
+# 'Find files' completion function with fuzzy search. Vim calls this function to
+# obtain completion list.
+# Arguments:
+# - arglead: string
+# - line: string
+# - cursorpos: number
+#     See :h command-completion-custom
+# - FindFn: func(string): string
+#     A function that returns a list of files based on a given directory.
+# - shellprefix: string
+#     An optional prefix to prepend to the 'find' shell command, for example
+#     '/bin/sh -c', useful for expanding recursive globbing wildcards like '**'.
+# - async: bool
+#     A flag indicating whether to perform the find operation asynchronously
+#     using job_start() or synchronously using system(). Defaults to 'true'.
+# - timeout: number
+#     The maximum time (in milliseconds) to wait for the asynchronous
+#     operation before timing out. Defaults to 2000 ms.
+# - max_items: number
+#     The maximum number of items to return from the find operation. Defaults
+#     to 100000.
 export def FindComplete(arglead: string, line: string, cursorpos: number,
         FindFn: func(string): string = null_function, shellprefix = null_string,
         async = true, timeout = 2000, max_items = 100000): list<any>
@@ -86,6 +120,15 @@ export def FindComplete(arglead: string, line: string, cursorpos: number,
     return items
 enddef
 
+# Executes a specified action on a selected item based on type of item selected.
+# Arguments:
+# - arglead: string
+#     Vim calls this function with a single argument, that is typed by the user.
+# - ActionFn: func(any, string)
+#     A function to be executed on the selected item. This function takes two parameters:
+#     - The selected item from the items list (could be of any type).
+#     - A string representing the exit key (example: <CR>).
+#     Defaults to `null_function` if not provided.
 export def DoAction(arglead = null_string, ActionFn: func(any, string) = null_function)
     for str in [candidate, arglead] # After <c-s>, wildmenu can select an item in 'arglead'
         if str != null_string
@@ -100,8 +143,12 @@ export def DoAction(arglead = null_string, ActionFn: func(any, string) = null_fu
     Clear()
 enddef
 
+# Same as DoAction() above, except to be used with 'find' command that can take
+# an optional 'directory' argument.
 # Usage:
-# <Command> {pattern|dir} {pattern} {pattern} {pattern}
+# <Command> {pattern|dir} {pattern1} {pattern2} {pattern3}
+# If you mistype pattern for fuzzy search, no need to erase. Just abandon it by
+# typing a space and type a new pattern.
 export def DoFindAction(arg1 = null_string, arg2 = null_string,
         arg3 = null_string, arg4 = null_string)
     if candidate != null_string
@@ -110,6 +157,8 @@ export def DoFindAction(arg1 = null_string, arg2 = null_string,
     Clear()
 enddef
 
+# Call this function to ensure that command's ('cmdstr' argument) argument is
+# auto-completed after <space>.
 export def OnSpace(cmdstr: string)
     cmd.AddOnSpaceHook(cmdstr)
 enddef
@@ -132,6 +181,7 @@ export def ExtractDir(): string
     return dir->expandcmd()->isdirectory() ? dir : null_string
 enddef
 
+# Return the last word typed on the command-line that is not a directory path.
 export def ExtractPattern(): string
     var parts = cmd.CmdStr()->split('[^\\]\s\+')
     var dir = ExtractDir()
