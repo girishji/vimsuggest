@@ -15,135 +15,6 @@ vim9script
 # script can also be customized to create your own variations. Legacy script users
 # can import using `:import` (see `:h import-legacy`).
 
-### Usage:
-
-# 1. Fuzzy Find Files
-
-#    Command:
-#    `:VSFind [dirpath] [fuzzy_pattern]`
-
-#    This runs the `find` command asynchronously to gather files for fuzzy
-#    searching. The optional first argument is the directory to search within.
-#    Hidden files and directories are excluded by default.
-
-#    Example key mappings:
-#    ```
-#    nnoremap <key> :VSFind<space>
-#    nnoremap <key> :VSFind ~/.vim<space>
-#    nnoremap <key> :VSFind $VIMRUNTIME<space>
-#    ```
-
-#    To customize the `find` command, use `fuzzy.FindComplete()`.
-
-# 2. Fuzzy Search for Buffers, MRU (`v:oldfiles`), Keymaps, Changelists, Marks, and Registers
-
-#    Commands:
-#    ```
-#    :VSBuffer [fuzzy_pattern]
-#    :VSMru [fuzzy_pattern]
-#    :VSKeymap [fuzzy_pattern]
-#    :VSChangelist [fuzzy_pattern]
-#    :VSMark [fuzzy_pattern]
-#    :VSRegister [fuzzy_pattern]
-#    ```
-
-#    - `VSKeymap` opens the file containing the keymap when pressed.
-#    - `VSMark` jumps to a specific mark.
-#    - `VSRegister` pastes the register's content.
-
-#    Example key mappings:
-#    ```
-#    nnoremap <key> :VSBuffer<space>
-#    nnoremap <key> :VSMru<space>
-#    nnoremap <key> :VSKeymap<space>
-#    nnoremap <key> :VSMark<space>
-#    nnoremap <key> :VSRegister<space>
-#    ```
-
-# 3. Live Grep Search
-
-#    Command:
-#    `:VSGrep {pattern} [directory]`
-
-#    Executes a `grep` command live, showing results as you type. `{pattern}` is a
-#    glob pattern, and it’s best to enclose it in quotes to handle special
-#    characters. You can also specify an optional directory.
-
-#    The grep command is taken from `g:vimsuggest_grepprg` or the `:h 'grepprg'`
-#    option. If it contains `$*`, it gets replaced by the command-line arguments.
-
-#    Example key mappings:
-#    ```
-#    g:vimsuggest_grepprg = 'ggrep -REIHins $* --exclude-dir=.git --exclude=".*"'
-#    nnoremap <key> :VSGrep ""<left>
-#    nnoremap <key> :VSGrep "<c-r>=expand('<cword>')<cr>"<left>
-#    ```
-
-#    Note: You can substitute `grep` with `rg` or `ag`. For more advanced needs, see `:VSExec`.
-
-# 4. Live File Search
-
-#    Command:
-#    `:VSFindL {pattern} [directory]`
-
-#    This command runs `find` live, showing results as you type. `{pattern}` is a
-#    glob pattern that should be enclosed in quotes if it contains wildcards. The
-#    `find` command is customized via `g:vimsuggest_findprg`.
-
-#    Example key mappings:
-#    ```
-#    g:vimsuggest_findprg = 'find -EL $* \! \( -regex ".*\.(swp\|git\|zsh_.*)" -prune \) -type f -name $*'
-#    nnoremap <leader>ff :VSFindL "*"<left><left>
-#    ```
-
-# 5. Global In-Buffer Search (`:h :global`)
-
-#    Command:
-#    `:VSGlobal {regex_pattern}`
-
-#    Use this for a powerful in-buffer search with Vim's regex. For example, to
-#    list all functions in a Python file and search quickly:
-#    ```
-#    nnoremap <buffer> <key> :VSGlobal \v(^\|\s)(def\|class).{-}
-#    ```
-#    Or, vim9 script file:
-#    ```
-#    nnoremap <buffer> <key> :VSGlobal \v\c(^<bar>\s)(def<bar>:?com%[mand]<bar>:?hi%[ghlight])!?\s.{-}
-#    ```
-#    You can search specific file types by wrapping the keymaps in autocmds (see
-#    `:h :autocmd`).
-#    Search anything (like `:vimgrep // %`}
-#    ```
-#    nnoremap <key> :VSGlobal<space>
-#    ```
-
-# 6. Search in Included Files (`:h include-search`)
-
-#    Command:
-#    `:VSInclSearch {regex_pattern}`
-
-#    Similar to `VSGlobal`, but searches both the current buffer and included
-#    files. The results are gathered using the `:ilist` command.
-
-#    Example key mappings:
-#    ```
-#    nnoremap <key> :VSInclSearch<space>
-#    ```
-
-# 7. Execute Shell Command
-
-#    Command:
-#    `:VSExec {shell_command}`
-
-#    This command runs any shell command within your `$SHELL` environment,
-#    allowing features like brace expansion and globbing. Errors are ignored.
-
-#    Example key mappings:
-#    ```
-#    nnoremap <key> :VSExec grep -RIHins "" . --exclude-dir={.git,"node_*"} --exclude=".*"<c-left><c-left><c-left><left><left>
-#    nnoremap <key> :VSExec grep -IHins "" **/*<c-left><left><left>
-#    ```
-
 # Additional Notes:
 # 1. Use `<Tab>/<S-Tab>` to navigate through menu items. Pressing `<CR>` visits
 #    the first menu item if none is selected.
@@ -160,20 +31,107 @@ import './exec.vim'
 var enable_hook = []
 
 ## (Fuzzy) Find Files
-
+#
+#    Command:
+#    `:VSFind [dirpath] [fuzzy_pattern]`
+#
+#    This runs the `find` command asynchronously to gather files for fuzzy
+#    searching. The optional first argument is the directory to search within.
+#
+#    'find' command can be specified through g:vimsuggest_fzfindprg variable.
+#    If this variable is not defined, a default command is used (that ignores
+#    hidden files and directories).
+#
+#    Example key mappings:
+#    ```
+#    nnoremap <key> :VSFind<space>
+#    nnoremap <key> :VSFind ~/.vim<space>
+#    nnoremap <key> :VSFind $VIMRUNTIME<space>
+#    ```
 enable_hook->add(() => {
     :command! -nargs=* -complete=customlist,fuzzy.FindComplete VSFind fuzzy.DoFindAction(<f-args>)
 })
 cmd.AddOnSpaceHook('VSFind')
 
-## (Live) Grep and Find
+## Live Grep
+#
+#    Command:
+#    `:VSGrep {pattern} [directory]`
+#
+#    Executes a `grep` command live, showing results as you type. `{pattern}` is a
+#    glob pattern, and it’s best to enclose it in quotes to handle special
+#    characters. You can also specify an optional directory.
+#
+#    The grep command is taken from `g:vimsuggest_grepprg` or the `:h 'grepprg'`
+#    option. If it contains `$*`, it gets replaced by the command-line arguments.
+#
+#    Example key mappings:
+#    ```
+#    g:vimsuggest_grepprg = 'ggrep -REIHins $* --exclude-dir=.git --exclude=".*"'
+#    nnoremap <key> :VSGrep ""<left>
+#    nnoremap <key> :VSGrep "<c-r>=expand('<cword>')<cr>"<left>
+#    ```
+#
+#    Note: You can substitute `grep` with `rg` or `ag`. For more advanced needs, see `:VSExec`.
 enable_hook->add(() => {
     :command! -nargs=+ -complete=customlist,exec.GrepComplete VSGrep exec.DoAction(null_function, <f-args>)
+})
+
+## Live File Search
+#
+#    Command:
+#    `:VSFindL {pattern} [directory]`
+#
+#    This command runs `find` live, showing results as you type. `{pattern}` is a
+#    glob pattern that should be enclosed in quotes if it contains wildcards. The
+#    `find` command is customized via `g:vimsuggest_findprg`.
+#
+#    Example key mappings:
+#    ```
+#    g:vimsuggest_findprg = 'find -EL $* \! \( -regex ".*\.(swp\|git\|zsh_.*)" -prune \) -type f -name $*'
+#    nnoremap <leader>ff :VSFindL "*"<left><left>
+#    ```
+enable_hook->add(() => {
     :command! -nargs=+ -complete=customlist,exec.FindComplete VSFindL exec.DoAction(null_function, <f-args>)
 })
 
-## Global Search (:h :g)
+## Execute Shell Command (ex. grep, find, etc.)
+#
+#    Command:
+#    `:VSExec {shell_command}`
+#
+#    This command runs any shell command within your `$SHELL` environment,
+#    allowing features like brace expansion and globbing. Errors are ignored.
+#
+#    Example key mappings:
+#    ```
+#    nnoremap <key> :VSExec grep -RIHins "" . --exclude-dir={.git,"node_*"} --exclude=".*"<c-left><c-left><c-left><left><left>
+#    nnoremap <key> :VSExec grep -IHins "" **/*<c-left><left><left>
+#    ```
+enable_hook->add(() => {
+    :command! -nargs=* -complete=customlist,exec.Complete VSExec exec.DoAction(null_function, <f-args>)
+})
 
+## Global In-Buffer Search (`:h :global`)
+#
+#    Command:
+#    `:VSGlobal {regex_pattern}`
+#
+#    Use this for a powerful in-buffer search with Vim's regex. For example, to
+#    list all functions in a Python file and search quickly:
+#    ```
+#    nnoremap <buffer> <key> :VSGlobal \v(^\|\s)(def\|class).{-}
+#    ```
+#    Or, to list various artifacts in a vim9 script:
+#    ```
+#    nnoremap <buffer> <key> :VSGlobal \v\c(^<bar>\s)(def<bar>:?com%[mand]<bar>:?hi%[ghlight])!?\s.{-}
+#    ```
+#    You can search specific file types by wrapping the keymaps in autocmds (see
+#    `:h :autocmd`).
+#    Search anything (like `:vimgrep // %`}
+#    ```
+#    nnoremap <key> :VSGlobal<space>
+#    ```
 enable_hook->add(() => {
     :command! -nargs=* -complete=customlist,GlobalComplete VSGlobal exec.DoAction(JumpToLine, <f-args>)
 })
@@ -206,14 +164,18 @@ def JumpToLine(line: string, _: string)
     Jump(lnum)
 enddef
 
-## Execute Shell Command (ex. grep, find, etc.)
-
-enable_hook->add(() => {
-    :command! -nargs=* -complete=customlist,exec.Complete VSExec exec.DoAction(null_function, <f-args>)
-})
-
-## Search for Keywords in the Current Buffer and Included Files (:h :il)
-
+## Search in Included Files (`:h include-search`)
+#
+#    Command:
+#    `:VSInclSearch {regex_pattern}`
+#
+#    Similar to `VSGlobal`, but searches both the current buffer and included
+#    files. The results are gathered using the `:ilist` command.
+#
+#    Example key mappings:
+#    ```
+#    nnoremap <key> :VSInclSearch<space>
+#    ```
 enable_hook->add(() => {
     :command! -nargs=* -complete=customlist,InclSearchComplete VSInclSearch exec.DoAction(JumpToDef, <f-args>)
 })
@@ -245,6 +207,31 @@ def JumpToDef(line: string, _: string)
     var jnum = line->matchstr('\d\+')->str2nr()
     :exe $'ijump {jnum} /{incl_search_pattern}/'
 enddef
+
+## Fuzzy Search for Buffers, MRU (`v:oldfiles`), Keymaps, Changelists, Marks, and Registers
+#
+#    Commands:
+#    ```
+#    :VSBuffer [fuzzy_pattern]
+#    :VSMru [fuzzy_pattern]
+#    :VSKeymap [fuzzy_pattern]
+#    :VSChangelist [fuzzy_pattern]
+#    :VSMark [fuzzy_pattern]
+#    :VSRegister [fuzzy_pattern]
+#    ```
+#
+#    - `VSKeymap` opens the file containing the keymap when pressed.
+#    - `VSMark` jumps to a specific mark.
+#    - `VSRegister` pastes the register's content.
+#
+#    Example key mappings:
+#    ```
+#    nnoremap <key> :VSBuffer<space>
+#    nnoremap <key> :VSMru<space>
+#    nnoremap <key> :VSKeymap<space>
+#    nnoremap <key> :VSMark<space>
+#    nnoremap <key> :VSRegister<space>
+#    ```
 
 ## Fuzzy Search Buffers
 

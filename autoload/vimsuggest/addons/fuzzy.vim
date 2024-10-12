@@ -24,6 +24,9 @@ var exit_key = null_string
 #     See :h command-completion-custom
 # - GetItems: func(): list<any>
 #     A function that returns a list of items for completion.
+# Returns:
+# - A list of completion items. If no valid completions are found, an empty list
+#   is returned.
 export def Complete(arglead: string, line: string, cursorpos: number,
         GetItems: func(): list<any> = null_function): list<any>
     var cname = cmd.CmdLead()
@@ -59,8 +62,6 @@ enddef
 # - line: string
 # - cursorpos: number
 #     See :h command-completion-custom
-# - FindFn: func(string): string
-#     A function that returns a list of files based on a given directory.
 # - shellprefix: string
 #     An optional prefix to prepend to the 'find' shell command, for example
 #     '/bin/sh -c', useful for expanding recursive globbing wildcards like '**'.
@@ -73,24 +74,25 @@ enddef
 # - max_items: number
 #     The maximum number of items to return from the find operation. Defaults
 #     to 100000.
+# Returns:
+# - A list of files.If no valid files are found, an empty list is returned.
 export def FindComplete(arglead: string, line: string, cursorpos: number,
-        FindFn: func(string): string = null_function, shellprefix = null_string,
-        async = true, timeout = 2000, max_items = 100000): list<any>
+        shellprefix = null_string, async = true, timeout = 2000,
+        max_items = 100000): list<any>
     var cname = cmd.CmdLead()
     var regenerate_items = false
     var findcmd = null_string
-    var FindCmdFn = FindFn ?? FindCmd
     var dirpath = ExtractDir()
     if cmdname == null_string || cname !=# cmdname  # When a command is overwritten
         Clear()
         cmdname = cname
         prevdir = dirpath ?? '.'
-        findcmd = FindCmdFn(prevdir)
+        findcmd = FindCmd(prevdir)
         regenerate_items = true
         AddFindHooks(cmdname)
     elseif dirpath != prevdir
         prevdir = dirpath
-        findcmd = FindCmdFn(dirpath ?? '.')
+        findcmd = FindCmd(dirpath ?? '.')
         regenerate_items = true
     endif
     if regenerate_items
@@ -157,13 +159,12 @@ export def DoFindAction(arg1 = null_string, arg2 = null_string,
     Clear()
 enddef
 
-# Call this function to ensure that command's ('cmdstr' argument) argument is
-# auto-completed after <space>.
-export def OnSpace(cmdstr: string)
-    cmd.AddOnSpaceHook(cmdstr)
-enddef
-
 def FindCmd(dir: string): string
+    var findcmd = get(g:, 'vimsuggest_fzfindprg', null_string)
+    if findcmd != null_string
+        var fcmd = $'{findcmd} '->split('$\*')
+        return $'{fcmd[0]} {dir} {fcmd->len() == 2 ? fcmd[1] : null_string}'
+    endif
     if has('win32')
         var dpath = (dir == '.') ? dir : dir->expandcmd()
         return $'powershell -command "gci {dpath} -r -n -File"'

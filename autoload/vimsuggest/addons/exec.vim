@@ -37,11 +37,6 @@ var hooks_added: dict<any>
 # - A list of completion items based on the provided line and arglead. If no valid
 # completions are found, an empty list is returned.
 # Note: Both 'arglead' and 'line' arg contains text up to 'cursorpos' only.
-# Usage:
-# :<Command> Shell_cmd Shell_cmd_arg1 Shell_cmd_arg2 ...
-# :<Command> <pattern>
-# Example:
-# :nnoremap <key> :VSExec find -EL . \! \( -regex ".*\.(swp\|git\|zsh_.*)" -prune \) -type f -name "*"<left><left>
 export def Complete(arglead: string, line: string, cursorpos: number,
         async = true, timeout = 2000, max_items = 1000): list<any>
     Clear()
