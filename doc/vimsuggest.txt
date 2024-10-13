@@ -10,7 +10,7 @@ CONTENTS                                                *vimsuggest-contents*
     3. Installation ........................... |vimsuggest-installation|
     4. Configuration .......................... |vimsuggest-configuration|
     5. Key Bindings ........................... |vimsuggest-key-bindings|
-    6. Usage .................................. |vimsuggest-usage|
+    6. Addons ................................. |vimsuggest-addons|
     7. Other Plugins .......................... |vimsuggest-other-plugins|
     8. Contributing ........................... |vimsuggest-contributing|
 
@@ -152,7 +152,7 @@ When the popup window is open, you can use the following key mappings:
 Note: Keys used in command-line editing (:h cmdline-editing) remain unmodified.
 
 ==============================================================================
-6. Usage                                                 *vimsuggest-usage*
+6. Addons                                                 *vimsuggest-addons*
 
 When the `addons` option is set to `v:true`, the following commands become
 available:

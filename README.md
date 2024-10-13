@@ -191,7 +191,7 @@ Note: Keys used in command-line editing (`:h cmdline-editing`) remain unmodified
 >    augroup END
 >    ```
 
-## Usage
+## Addons
 
 When the `addons` option is set to `v:true`, the following commands become available. You can use these commands directly or map them to your preferred keys.
 
