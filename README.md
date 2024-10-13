@@ -7,9 +7,9 @@ Transform your Vim command-line experience with VimSuggest, the ultimate auto-co
 - **Command Completion**: Never struggle to remember complex commands again.
 - **Context-Aware Search Suggestions**: Find what you need, faster than ever before.
 
-## 🌟 Comprehensive Feature Set
+## 🌟 Additional Features
 
-VimSuggest goes beyond basic auto-completion, offering a suite of advanced features:
+VimSuggest goes beyond basic auto-completion, offering a suite of advanced features by leveraging Vim's native custom completion mechanism (`:h :command-completion-custom`). These features feel like a natural extension of the editor, but they can be easily disabled if desired.
 
 - **Asynchronous Fuzzy File Search** (`:VSFind`): Effortlessly locate files across your entire project with minimal keystrokes.
 - **Real-Time Live Grep** (`:VSGrep`): Instantly find text across your entire codebase using glob or regex patterns.
