@@ -13,7 +13,7 @@ VimSuggest goes beyond basic auto-completion, offering a suite of advanced featu
 
 - **Asynchronous Fuzzy File Search** (`:VSFind`): Instantly locate files across your entire project.
 - **Real-Time Live Grep** (`:VSGrep`): Instantly find text across your entire codebase using glob or regex patterns.
-- **Fuzzy Searching**: Quickly locate buffers (`:VSBuffer`) and search various Vim artifacts.
+- **Fuzzy Search**: Quickly locate buffers (`:VSBuffer`) and search various Vim artifacts.
 - **In-Buffer Search** (`:VSGlobal`): Leverage Vim's powerful `:global` command for lightning-fast buffer searches.
 - **Include File Search** (`:VSInclSearch`): Seamlessly search across included files using Vim's `:ilist` command.
 - **Live File Search** (`:VSFindL`): Asynchronously search for files using glob or regex patterns.
@@ -95,7 +95,6 @@ let g:VimSuggest.search = {
     \ 'async': v:true,        " Use asynchronous searching
     \ 'async_timeout': 3000,  " Async search timeout (ms)
     \ 'async_minlines': 1000, " Min lines to trigger async search
-    \ 'highlight': v:true     " Enable highlighting within the menu
 \ }
 ```
 
@@ -219,7 +218,7 @@ When the `addons` option is set to `v:true`, the following commands become avail
 
    Performance:
 
-   Using the system `find` command significantly outperforms Vim's `:h :find` in performance. On the Vim repository, it takes ~1 second to list all files using `:find \**/*` command, while `:VSFind` takes ~30 milliseconds (30x faster). Most of the gains come from avoiding the shell's recursive glob wildcard.
+   Using the system `find` command significantly outperforms Vim's `:h :find` in performance. On the Vim repository, it takes ~1 second to list all files using `:find **/*` command, while `:VSFind` takes ~30 milliseconds (30x faster). Most of the gains come from avoiding the shell's recursive glob wildcard.
 
 2. **Fuzzy Search Buffers and Other Vim Artifacts**
 
