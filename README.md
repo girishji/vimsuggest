@@ -2,7 +2,7 @@
 
 The ultimate auto-completion plugin that transforms your command-line experience.
 
-## 🚀 Primary Features
+## 🚀 Elevate Your Vim Productivity
 
 - **Command Completion**: Never struggle to remember complex commands again.
 - **Context-Aware Search Suggestions**: Find what you need, faster than ever before.
