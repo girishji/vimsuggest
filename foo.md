@@ -1,23 +1,38 @@
-# VimSuggest: Supercharge Your Vim Command-Line
+# VimSuggest: Revolutionize Your Vim Command-Line Experience
 
-The ultimate auto-completion plugin that transforms your command-line experience.
+Unleash the full potential of your Vim workflow with VimSuggest, the cutting-edge auto-completion plugin that transforms your command-line interactions.
 
-## 🚀 Primary Features
+## 🚀 Skyrocket Your Vim Productivity
 
-- **Command Completion**: Never struggle to remember complex commands again.
-- **Context-Aware Search Suggestions**: Find what you need, faster than ever before.
+- **Intelligent Command Completion**: Say goodbye to forgetting complex commands. VimSuggest anticipates your needs, offering context-aware suggestions that keep you in your flow.
+- **Lightning-Fast Search Capabilities**: Navigate your codebase at the speed of thought with our advanced search features.
 
-## 🌟 Comprehensive Feature Set
+## 🌟 Unparalleled Feature Set
 
-VimSuggest goes beyond basic auto-completion, offering a suite of advanced features:
+VimSuggest isn't just another auto-completion tool—it's a comprehensive suite of productivity-enhancing features:
 
-- **Asynchronous Fuzzy File Search** (`:VSFind`): Instantly locate files across your entire project.
-- **Real-Time Live Grep** (`:VSGrep`): Instantly find text across your entire codebase using glob or regex patterns.
-- **Fuzzy Searching**: Quickly locate buffers (`:VSBuffer`) and search various Vim artifacts.
+- **Asynchronous Fuzzy File Search** (`:VSFind`): Instantly locate files across your entire project structure.
+- **Real-Time Live Grep** (`:VSGrep`): Harness the power of grep with live, as-you-type results using glob or regex patterns.
+- **Fuzzy Searching Suite**: Quickly access buffers (`:VSBuffer`), Most Recently Used files (`:VSMru`), keymaps (`:VSKeymap`), changelists (`:VSChangelist`), marks (`:VSMark`), and registers (`:VSRegister`) with unparalleled ease.
+- **Live File Search** (`:VSFindL`): Asynchronously search for files using flexible glob or regex patterns.
 - **In-Buffer Search** (`:VSGlobal`): Leverage Vim's powerful `:global` command for lightning-fast buffer searches.
 - **Include File Search** (`:VSInclSearch`): Seamlessly search across included files using Vim's `:ilist` command.
-- **Live File Search** (`:VSFindL`): Asynchronously search for files using glob or regex patterns.
-- **Custom Shell Command Execution** (`:VSExec`): Run and interact with shell commands directly within Vim.
+- **Custom Shell Command Execution** (`:VSExec`): Run and interact with shell commands without ever leaving Vim.
+
+## 💡 Why Choose VimSuggest?
+
+- **Seamless Integration**: Designed to feel like a natural extension of Vim, preserving your existing workflow while supercharging your capabilities.
+- **Performance-Driven**: Asynchronous operations ensure that even large codebases are handled with ease, without any lag or interruptions.
+- **Highly Customizable**: Tailor VimSuggest to your exact needs with extensive configuration options.
+- **Intelligent Context Awareness**: Provides relevant suggestions based on your current task and environment.
+
+## 🛠 Easy Setup, Powerful Results
+
+With straightforward installation and intuitive configuration, you'll be up and running in no time. VimSuggest works right out of the box, with sensible defaults that you can easily customize to fit your workflow.
+
+## 🚀 Ready to Transform Your Vim Experience?
+
+Don't let complex commands and tedious searches slow you down. Elevate your Vim proficiency to new heights with VimSuggest. Experience the future of Vim productivity today!
 
 ## Requirements
 
@@ -198,6 +213,7 @@ When the `addons` option is set to `v:true`, the following commands become avail
 
 1. **Fuzzy Find Files**
 
+   Command:
    `:VSFind [dirpath] [fuzzy_pattern]`
 
    This runs the `find` command asynchronously to gather files for fuzzy searching. The optional first argument is the directory to search within.
@@ -210,7 +226,7 @@ When the `addons` option is set to `v:true`, the following commands become avail
    nnoremap <key> :VSFind $VIMRUNTIME<space>
    ```
 
-   The 'find' program can be specified through the `g:vimsuggest_fzfindprg` variable. If this variable is not defined, a default command is used (that ignores hidden files and directories). The placeholder "$*" is allowed to specify where the optional directory argument will be included. If placeholder is not specifed, directory name is included at the end. Environment variables and tilde are expanded for directory names.
+   The 'find' program can be specified through the `g:vimsuggest_fzfindprg` variable. If this variable is not defined, a default command is used (that ignores hidden files and directories). The placeholder "$*" is allowed to specify where the arguments will be included. Environment variables and tilde are expanded for directory names.
 
    ```vim
    let g:vimsuggest_fzfindprg = 'find $* \! \( -path "*/.*" -prune \) -type f -follow'
@@ -219,10 +235,11 @@ When the `addons` option is set to `v:true`, the following commands become avail
 
    Performance:
 
-   Using the system `find` command significantly outperforms Vim's `:h :find` in performance. On the Vim repository, it takes ~1 second to list all files using `:find \**/*` command, while `:VSFind` takes ~30 milliseconds (30x faster). Most of the gains come from avoiding the shell's recursive glob wildcard.
+   Using the system `find` command significantly outperforms Vim's `:h :find` in performance. On the Vim repository, it takes ~1 second to list all files using `:find \**/*`, while `:VSFind` takes ~30 milliseconds. Most of the gains come from avoiding the shell's recursive glob wildcard.
 
 2. **Fuzzy Search Buffers and Other Vim Artifacts**
 
+   Commands:
    ```
    :VSBuffer [fuzzy_pattern]
    :VSMru [fuzzy_pattern]
@@ -235,19 +252,18 @@ When the `addons` option is set to `v:true`, the following commands become avail
    - `VSKeymap` opens the file containing the keymap when pressed.
    - `VSRegister` pastes the register's content.
    - Other commands behave as expected.
-   - `VSMru` lists files from `v:oldfiles`.
 
-   Example key mapping:
-
+   Example key mappings:
    ```vim
    nnoremap <key> :VSBuffer<space>
    ```
 
 3. **Live Grep Search**
 
+   Command:
    `:VSGrep {pattern} [directory]`
 
-   Executes a `grep` command live, showing results as you type. `{pattern}` is given directly to `grep` command, and it's best to enclose it in quotes to handle special characters. You can also specify an optional directory.
+   Executes a `grep` command live, showing results as you type. `{pattern}` is a glob pattern, and it's best to enclose it in quotes to handle special characters. You can also specify an optional directory.
 
    Example key mappings:
 
@@ -256,7 +272,7 @@ When the `addons` option is set to `v:true`, the following commands become avail
    nnoremap <key> :VSGrep "<c-r>=expand('<cword>')<cr>"<left>
    ```
 
-   The grep program is taken from `g:vimsuggest_grepprg` variable or the `:h 'grepprg'` option. If it contains `$*`, it gets replaced by the command-line arguments. Otherwise, arguments are appended to the end of the command.
+   The grep program is taken from `g:vimsuggest_grepprg` or the `:h 'grepprg'` option. If it contains `$*`, it gets replaced by the command-line arguments.
 
    ```vim
    let g:vimsuggest_grepprg = 'grep -REIHins $* --exclude-dir=.git --exclude=".*"'
@@ -266,18 +282,19 @@ When the `addons` option is set to `v:true`, the following commands become avail
 
 4. **Live File Search**
 
+   Command:
    `:VSFindL {pattern} [directory]`
 
-   This command runs `find` live, showing results as you type. `{pattern}` is a glob (or regex) pattern that should be enclosed in quotes if it contains wildcards. The `find` command is customized via `g:vimsuggest_findprg` (similar to `g:vimsuggest_fzfindprg`).
+   This command runs `find` live, showing results as you type. `{pattern}` is a glob pattern that should be enclosed in quotes if it contains wildcards. The `find` command is customized via `g:vimsuggest_findprg` (similar to `g:vimsuggest_fzfindprg`).
 
-   Example key mapping:
-
+   Example key mappings:
    ```vim
    nnoremap <leader>ff :VSFindL "*"<left><left>
    ```
 
 5. **Global In-Buffer Search (`:h :global`)**
 
+   Command:
    `:VSGlobal {regex_pattern}`
 
    Use this for a powerful in-buffer search with Vim's regex. For example, to list all functions in a Python file and search quickly:
@@ -288,12 +305,12 @@ When the `addons` option is set to `v:true`, the following commands become avail
 
 6. **Search in Included Files (`:h include-search`)**
 
+   Command:
    `:VSInclSearch {regex_pattern}`
 
    Similar to `VSGlobal`, but searches for symbols (ignoring comments) in both the current buffer and included files. The results are gathered using the `:ilist` command.
 
-   Example key mapping:
-
+   Example key mappings:
    ```vim
    nnoremap <key> :VSInclSearch<space>
    ```
@@ -306,19 +323,5 @@ When the `addons` option is set to `v:true`, the following commands become avail
    This command runs any shell command using your `$SHELL` environment, allowing features like brace expansion and globbing. Errors are ignored. However, `:VSGrep` and `VSFindL` commands are less clunky.
 
    Example key mappings:
-
    ```vim
-   nnoremap <key> :VSExec grep -RIHins "" . --exclude-dir={.git,"node_*"} --exclude=".*"<c-left><c-left><c-left><left><left>
-   nnoremap <key> :VSExec grep -IHins "" **/*<c-left><left><left>
-   ```
-
-> [!TIP]
-> If these commands aren't sufficient, you can define your own using the examples provided in `autoload/vimsuggest/addons/addons.vim` script. Legacy script users can import using `:import` also (see `:h import-legacy`).
-
-# Other Plugins
-
-For insert-mode auto-completion, try [**Vimcomplete**](https://github.com/girishji/vimcomplete).
-
-# Contributing
-
-Open an issue if you encounter problems. Pull requests are welcomed (but please be aware of feature creep).
+   nnoremap <key> :VSExec grep -RIHins "" . --exclude-dir={.git,"node_*"} --exclude=".*"<c-left><c-left>
