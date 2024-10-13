@@ -71,7 +71,7 @@ let g:VimSuggest.cmd = {
     \ 'exclude': [],          " Regex patterns to exclude from completion
     \ 'onspace': [],          " Commands to complete after space (e.g., 'buffer')
     \ 'alwayson': v:true,     " Auto-open popup (v:false to open with <Tab>)
-    \ 'popupattrs': {
+    \ 'popupattrs': {         " Passed directly to `popup_menu()`
     \   'maxHeight': 12       " Max lines in stacked menu (pum = v:true)
     \ },
     \ 'wildignore': v:true,   " Respect 'wildignore' during file completion
@@ -87,7 +87,7 @@ let g:VimSuggest.search = {
     \ 'pum': v:false,         " Use flat menu (v:true for stacked)
     \ 'fuzzy': v:false,       " Enable fuzzy completion
     \ 'alwayson': v:true,     " Auto-open popup (v:false to open with <Tab>)
-    \ 'popupattrs': {
+    \ 'popupattrs': {         " Passed directly to `popup_menu()`
     \   'maxheight': 12       " Max height for stacked menu
     \ },
     \ 'range': 100,           " Lines to search in each batch
