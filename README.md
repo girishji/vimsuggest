@@ -48,7 +48,7 @@ cd $HOME/.vim/pack/downloads/opt
 git clone https://github.com/girishji/vimsuggest.git
 ```
 
-Then add this line to your `$HOME/.vimrc` file:
+Then add this line to your `.vimrc` file:
 
 ```vim
 packadd vimsuggest
