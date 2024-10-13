@@ -84,7 +84,7 @@ let g:VimSuggest.cmd = {
 ```vim
 let g:VimSuggest.search = {
     \ 'enable': v:true,       " Enable/disable search completion
-    \ 'pum': v:false,         " Use flat menu (v:true for stacked)
+    \ 'pum': v:true,          " Use flat menu (v:true for stacked)
     \ 'fuzzy': v:false,       " Enable fuzzy completion
     \ 'alwayson': v:true,     " Auto-open popup (v:false to open with <Tab>)
     \ 'popupattrs': {         " Passed directly to `popup_menu()`

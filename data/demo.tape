@@ -82,67 +82,67 @@ Sleep 2
 Type "p" Sleep 2 Enter
 Type "gg"
 Sleep 3
-Space Space
-Sleep 2
-Type "sc" Sleep 2s Enter
-Type "gg"
-Sleep 3
-Space Space
-Sleep 2
-Type "f" Sleep 2s Enter
-Type "gg"
-Sleep 3
-Type ":ls" Sleep 2s Enter Sleep 2s Enter
-Sleep 5
+# Space Space
+# Sleep 2
+# Type "sc" Sleep 2s Enter
+# Type "gg"
+# Sleep 3
+# Space Space
+# Sleep 2
+# Type "f" Sleep 2s Enter
+# Type "gg"
+# Sleep 3
+# Type ":ls" Sleep 2s Enter Sleep 2s Enter
+# Sleep 5
 
-Space Backspace
-Sleep 3
-Type "n" Sleep 2s Enter
-
-Type "o* Live grep" Enter Escape Sleep 2s
-Space Type "g"
-Sleep 2
-Type "e" Sleep 1s Type "x" Sleep 1s Type "e" Sleep 1s Type "c" Sleep 1s
-Sleep 2s
-Tab Enter
-Sleep 3s
-
-Space Backspace
-Sleep 3
-Type "n" Sleep 2s Enter
-
-Type "o* Command History" Enter Escape Sleep 2s
-Space Type "fc"
-Sleep 3s
-Escape
-
-Type "o* Help Topics" Enter Escape Sleep 2s
-Space Type "fH"
-Sleep 2
-Type "map"
-Sleep 2s
-Enter
-Sleep 3s
-Type "q"
-
-Type "o* Send Items from Grep to Quickfix List" Enter Escape Sleep 2s
-Space Type "g"
-Sleep 2
-Type "e" Sleep 1s Type "x" Sleep 1s
-Ctrl+q
-Sleep 2
-
-Type "o* Fuzzy Search Quickfix List" Enter Escape Sleep 2s
-Space Type "fq"
-Type "i" Sleep 1s Type "d" Sleep 1s Type "x" Sleep 1s
-Tab
-Sleep 2s
-Enter
-Sleep 4s
-Type ":bd" Sleep 1s
-Enter
-Sleep 2s
-
-Type "o* See README for more examples!" Enter Escape Sleep 2s
+# Space Backspace
+# Sleep 3
+# Type "n" Sleep 2s Enter
+# 
+# Type "o* Live grep" Enter Escape Sleep 2s
+# Space Type "g"
+# Sleep 2
+# Type "e" Sleep 1s Type "x" Sleep 1s Type "e" Sleep 1s Type "c" Sleep 1s
+# Sleep 2s
+# Tab Enter
+# Sleep 3s
+# 
+# Space Backspace
+# Sleep 3
+# Type "n" Sleep 2s Enter
+# 
+# Type "o* Command History" Enter Escape Sleep 2s
+# Space Type "fc"
+# Sleep 3s
+# Escape
+# 
+# Type "o* Help Topics" Enter Escape Sleep 2s
+# Space Type "fH"
+# Sleep 2
+# Type "map"
+# Sleep 2s
+# Enter
+# Sleep 3s
+# Type "q"
+# 
+# Type "o* Send Items from Grep to Quickfix List" Enter Escape Sleep 2s
+# Space Type "g"
+# Sleep 2
+# Type "e" Sleep 1s Type "x" Sleep 1s
+# Ctrl+q
+# Sleep 2
+# 
+# Type "o* Fuzzy Search Quickfix List" Enter Escape Sleep 2s
+# Space Type "fq"
+# Type "i" Sleep 1s Type "d" Sleep 1s Type "x" Sleep 1s
+# Tab
+# Sleep 2s
+# Enter
+# Sleep 4s
+# Type ":bd" Sleep 1s
+# Enter
+# Sleep 2s
+# 
+# Type "o* See README for more examples!" Enter Escape Sleep 2s
 Type ":qa!"
 Sleep 2s

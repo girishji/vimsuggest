@@ -11,7 +11,7 @@ import autoload './popup.vim'
 # Configuration options
 export var options: dict<any> = {
     enable: true,               # Enable/disable the feature globally
-    pum: false,                 # 'false' for flat, 'true' for vertically stacked popup menu
+    pum: true,                  # 'false' for flat, 'true' for vertically stacked popup menu
     fuzzy: false,               # Enable/disable fuzzy completion
     alwayson: true,             # Open popup menu on <tab> if 'false'
     popupattrs: {               # Attributes passed to the popup window
