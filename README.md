@@ -275,7 +275,7 @@ When the `addons` option is set to `v:true`, the following commands become avail
    nnoremap <leader>ff :VSFindL "*"<left><left>
    ```
 
-5. **Global In-Buffer Search (`:h :global`)**
+5. **In-Buffer Search (`:h :global`)**
 
    `:VSGlobal {regex_pattern}`
 
