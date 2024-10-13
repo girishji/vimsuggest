@@ -177,7 +177,6 @@ available:
    placeholder is not specifed, directory name is included at the end.
    Environment variables and tilde are expanded for directory names.
 >
-   let g:vimsuggest_fzfindprg = 'find $* \! \( -path "*/.*" -prune \) -type f -follow'
    let g:vimsuggest_fzfindprg = 'fd --type f'
 <
 2. Fuzzy Search Buffers and Other Vim Artifacts~
@@ -205,7 +204,6 @@ available:
    'grepprg'` option. If it contains `$*`, it gets replaced by the command-line
    arguments. Otherwise, arguments are appended to the end of the command.
 >
-   let g:vimsuggest_grepprg = 'grep -REIHins $* --exclude-dir=.git --exclude=".*"'
    let g:vimsuggest_grepprg = 'rg --vimgrep --smart-case'
    let g:vimsuggest_grepprg = 'ag --vimgrep'
 <
@@ -243,9 +241,8 @@ available:
    allowing features like brace expansion and globbing. Errors are ignored.
    However, `:VSGrep` and `VSFindL` commands are less clunky.
 
-   Example key mappings:
+   Example key mapping:
 >
-   nnoremap <key> :VSExec grep -RIHins "" . --exclude-dir={.git,"node_*"} --exclude=".*"<c-left><c-left><c-left><left><left>
    nnoremap <key> :VSExec grep -IHins "" **/*<c-left><left><left>
 <
 ==============================================================================
