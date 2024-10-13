@@ -11,15 +11,8 @@ vim9script
 # * Include File Search - using `:ilist` (`VSInclSearch`)
 # * Custom Shell Command Execution - (`VSExec`)
 
-# You can use these commands directly or map them to your preferred keys. This
-# script can also be customized to create your own variations. Legacy script users
+# This script can be customized to create your own variations. Legacy script users
 # can import using `:import` (see `:h import-legacy`).
-
-# Additional Notes:
-# 1. Use `<Tab>/<S-Tab>` to navigate through menu items. Pressing `<CR>` visits
-#    the first menu item if none is selected.
-# 2. If these commands aren't sufficient, you can define your own using the
-#    examples provided in this script.
 
 import autoload '../cmd.vim'
 # Debug: Avoid autoloading the following scrits to prevent delaying compilation
