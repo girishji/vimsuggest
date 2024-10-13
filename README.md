@@ -141,7 +141,7 @@ let g:VimSuggest.cmd.popupattrs = {
     \ 'borderhighlight': ['Normal'],
     \ 'highlight': 'Normal',
     \ 'border': [1, 1, 1, 1],
-    \ 'padding': [0, 1, 0, 1]  " Add some padding for better readability
+    \ 'padding': [0, 1, 0, 1]
     \ }
 
 " Exclude specific patterns from completion

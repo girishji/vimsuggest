@@ -112,7 +112,7 @@ Customization Example:~
         \ 'borderhighlight': ['Normal'],
         \ 'highlight': 'Normal',
         \ 'border': [1, 1, 1, 1],
-        \ 'padding': [0, 1, 0, 1]  " Add some padding for better readability
+        \ 'padding': [0, 1, 0, 1]
         \ }
 
     " Exclude specific patterns from completion
@@ -123,7 +123,6 @@ Customization Example:~
 
     " Optional: Customize highlight groups
     highlight VimSuggestMatch ctermfg=Green guifg=#00FF00
-    highlight VimSuggestMatchSel cterm=bold gui=bold ctermfg=Green guifg=#00FF00
     highlight VimSuggestMute ctermfg=Gray guifg=#808080
 
     " Apply the configuration
