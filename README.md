@@ -1,6 +1,6 @@
 # VimSuggest: Supercharge Your Vim Command-Line
 
-The ultimate auto-completion plugin that transforms your command-line experience.
+Transform your Vim command-line experience with VimSuggest, the ultimate auto-completion plugin.
 
 ## 🚀 Elevate Your Vim Productivity
 
@@ -11,7 +11,7 @@ The ultimate auto-completion plugin that transforms your command-line experience
 
 VimSuggest goes beyond basic auto-completion, offering a suite of advanced features:
 
-- **Asynchronous Fuzzy File Search** (`:VSFind`): Instantly locate files across your entire project.
+- **Asynchronous Fuzzy File Search** (`:VSFind`): Effortlessly locate files across your entire project with minimal keystrokes.
 - **Real-Time Live Grep** (`:VSGrep`): Instantly find text across your entire codebase using glob or regex patterns.
 - **Fuzzy Search**: Quickly locate buffers (`:VSBuffer`) and search various Vim artifacts.
 - **In-Buffer Search** (`:VSGlobal`): Leverage Vim's powerful `:global` command for lightning-fast buffer searches.
