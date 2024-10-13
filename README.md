@@ -95,7 +95,7 @@ let g:VimSuggest.search = {
     \ 'async': v:true,        " Use asynchronous searching
     \ 'async_timeout': 3000,  " Async search timeout (ms)
     \ 'async_minlines': 1000, " Min lines to trigger async search
-    \ 'highlight': v:true     " Enable search result highlighting
+    \ 'highlight': v:true     " Enable highlighting within the menu
 \ }
 ```
 
