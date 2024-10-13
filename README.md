@@ -5,7 +5,7 @@ Transform your Vim command-line experience with VimSuggest, the ultimate auto-co
 ## 🚀 Elevate Your Vim Productivity
 
 - **Command Completion**: Never struggle to remember complex commands again.
-- **Context-Aware Search Suggestions**: Find what you need, faster than ever before.
+- **Search Suggestions**: Access relevant search terms with fewer keystrokes, enhancing your navigation.
 
 ## 🌟 Additional Features
 
@@ -193,7 +193,7 @@ Note: Keys used in command-line editing (`:h cmdline-editing`) remain unmodified
 
 ## Usage
 
-When the `addons` option is set to `v:true`, the following commands become available. You can use these commands directly or map them to your preferred keys. These commands leverage native command completion (`:h :command-completion-custom`) and feel like a natural extension of the editor.
+When the `addons` option is set to `v:true`, the following commands become available. You can use these commands directly or map them to your preferred keys.
 
 1. **Fuzzy Find Files**
 
@@ -299,7 +299,6 @@ When the `addons` option is set to `v:true`, the following commands become avail
 
 7. **Execute Shell Command**
 
-   Command:
    `:VSExec {shell_command}`
 
    This command runs any shell command using your `$SHELL` environment, allowing features like brace expansion and globbing. Errors are ignored. However, `:VSGrep` and `VSFindL` commands are less clunky.
