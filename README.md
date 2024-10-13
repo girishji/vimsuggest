@@ -315,10 +315,10 @@ When the `addons` option is set to `v:true`, the following commands become avail
 > [!TIP]
 > If these commands aren't sufficient, you can define your own using the examples provided in `autoload/vimsuggest/addons/addons.vim` script. Legacy script users can import using `:import` also (see `:h import-legacy`).
 
-# Other Plugins
+## Other Plugins
 
 For insert-mode auto-completion, try [**Vimcomplete**](https://github.com/girishji/vimcomplete).
 
-# Contributing
+## Contributing
 
-Open an issue if you encounter problems. Pull requests are welcomed (but please be aware of feature creep).
+Open an issue if you encounter problems. Pull requests are welcomed.
