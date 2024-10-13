@@ -2,7 +2,7 @@
 
 Transform your Vim command-line experience with VimSuggest, the ultimate auto-completion plugin.
 
-## 🚀 Elevate Your Vim Productivity
+## 🚀 Enhance Vim Workflow
 
 - **Command Completion**: Never struggle to remember complex commands again.
 - **Search Suggestions**: Access relevant search terms with fewer keystrokes, enhancing your navigation.
@@ -58,7 +58,7 @@ packadd vimsuggest
 
 ## Configuration Guide
 
-VimSuggest offers extensive customization options for both command completion and search completion. Here's how to tailor VimSuggest to your workflow:
+VimSuggest offers extensive customization options for both command completion and search completion.
 
 ### Command Completion Configuration
 
@@ -194,13 +194,13 @@ Note: Keys used in command-line editing (`:h cmdline-editing`) remain unmodified
 
 ## Addons
 
-When the `addons` option is set to `v:true`, the following commands become available. You can use these commands directly or map them to your preferred keys.
+When the `addons` option is set to `v:true`, the following commands are made available. You can use these commands directly or map them to your preferred keys.
 
 1. **Fuzzy Find Files**
 
    `:VSFind [dirpath] [fuzzy_pattern]`
 
-   This runs the `find` command asynchronously to gather files for fuzzy searching. The optional first argument is the directory to search within.
+   This runs the system's `find` program (or alternatives) asynchronously to gather files for fuzzy searching. The optional first argument is the directory to search within.
 
    Example key mappings:
 
@@ -219,7 +219,7 @@ When the `addons` option is set to `v:true`, the following commands become avail
 
    Performance:
 
-   Using the system's `find` program significantly outperforms Vim's `:find` command. On the Vim repository, it takes ~1 second to list all files using `:find **/*` command, while `:VSFind` takes ~30 milliseconds (30x faster). Most of the gains come from avoiding the shell's recursive glob wildcard.
+   Using the system's `find` program significantly outperforms Vim's `:find` command. On the Vim source repository, it takes ~1 second to list all files using `:find **/*` command, while `:VSFind` takes ~30 milliseconds (30x faster). Most of the gains come from avoiding the shell's recursive glob wildcard.
 
 2. **Fuzzy Search Buffers and Other Vim Artifacts**
 
@@ -268,19 +268,19 @@ When the `addons` option is set to `v:true`, the following commands become avail
 
    `:VSFindL {pattern} [directory]`
 
-   This command runs `find` live, showing results as you type. `{pattern}` is a glob (or regex) pattern that should be enclosed in quotes if it contains wildcards. The `find` command is customized via `g:vimsuggest_findprg` (similar to `g:vimsuggest_fzfindprg`).
+   This command runs system's `find` program live, showing results as you type. `{pattern}` is a glob (or regex) pattern that should be enclosed in quotes if it contains wildcards. The `find` command is customized via `g:vimsuggest_findprg` (similar to `g:vimsuggest_fzfindprg`).
 
    Example key mapping:
 
    ```vim
-   nnoremap <leader>ff :VSFindL "*"<left><left>
+   nnoremap <key> :VSFindL "*"<left><left>
    ```
 
 5. **In-Buffer Search (`:h :global`)**
 
    `:VSGlobal {regex_pattern}`
 
-   Use this for a powerful in-buffer search with Vim's regex. For example, to list all functions in a Python file and search quickly:
+   Use this for a powerful in-buffer search with Vim's regex. For example, to list all functions and classes in a Python file and search quickly:
 
    ```vim
    nnoremap <buffer> <key> :VSGlobal \v(^\|\s)(def\|class).{-}
