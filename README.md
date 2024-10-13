@@ -75,7 +75,7 @@ let g:VimSuggest.cmd = {
     \   'maxHeight': 12       " Max lines in stacked menu (pum = v:true)
     \ },
     \ 'wildignore': v:true,   " Respect 'wildignore' during file completion
-    \ 'addons': v:true        " Enable additional completion addons (`:VSxxx` commands)
+    \ 'addons': v:true        " Enable addons (`:VSxxx` commands)
 \ }
 ```
 
@@ -182,7 +182,7 @@ When the popup window is open, you can use the following key mappings:
 Note: Keys used in command-line editing (`:h cmdline-editing`) remain unmodified.
 
 > [!TIP]
-> 1. If no item is selected, pressing `<Enter>` selects the first menu item (works only when using VSxxx commands).
+> 1. If no item is selected, pressing `<Enter>` selects the first menu item (works only for 'addons' commands).
 > 2. To automatically open the quickfix list after using `<Ctrl-q>`, add the following to your `.vimrc`:
 >    ```vim
 >    augroup vimsuggest-qf-show
@@ -190,6 +190,7 @@ Note: Keys used in command-line editing (`:h cmdline-editing`) remain unmodified
 >        autocmd QuickFixCmdPost clist cwindow
 >    augroup END
 >    ```
+> 3. To perform a multi-word search using the `/` or `?` command, type the first word followed by `<Space>` to trigger auto-completion for the next word. At the end of a line, press `\n` to continue the search on the next line. Note that enabling the fuzzy search option will disable multi-word search functionality.
 
 ## Addons
 
