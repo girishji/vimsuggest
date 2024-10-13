@@ -161,18 +161,18 @@ enddef
 
 def FindCmd(dir: string): string
     var findcmd = get(g:, 'vimsuggest_fzfindprg', null_string)
+    var dpath = dir->expandcmd()
     if findcmd != null_string
         var fcmd = $'{findcmd} '->split('$\*')
-        return $'{fcmd[0]} {dir} {fcmd->len() == 2 ? fcmd[1] : null_string}'
+        return $'{fcmd[0]} {dpath} {fcmd->len() == 2 ? fcmd[1] : null_string}'
     endif
     if has('win32')
-        var dpath = (dir == '.') ? dir : dir->expandcmd()
-        return $'powershell -command "gci {dpath} -r -n -File"'
+        var wdpath = (dir == '.') ? dir : dir->expandcmd()
+        return $'powershell -command "gci {wdpath} -r -n -File"'
     endif
     if dir == '.'
         return 'find . \! \( -path "*/.*" -prune \) -type f -follow'
     else
-        var dpath = dir->expandcmd()
         return $'find {dpath} \! \( -path "{dpath}/.*" -prune \) -type f -follow'
     endif
 enddef

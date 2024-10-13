@@ -173,14 +173,14 @@ When the popup window is open, you can use the following key mappings:
 | `<Ctrl-j>` | Open file selection in a split window |
 | `<Ctrl-v>` | Open file selection in a vertical split |
 | `<Ctrl-t>` | Open file selection in a new tab |
-| `<Ctrl-q>` | Send items to the quickfix list |
-| `<Ctrl-l>` | Send items (files) to the argument list |
-| `<Ctrl-g>` | Copy items to system clipboard (`"+` register) |
+| `<Ctrl-q>` | Send items (grep lines or file paths) to the quickfix list |
+| `<Ctrl-l>` | Send items (file paths) to the argument list |
+| `<Ctrl-g>` | Copy items to system clipboard (`+` register) |
 
 Note: Keys used in command-line editing (`:h cmdline-editing`) remain unmodified.
 
 > [!TIP]
-> 1. If no item is selected, pressing `<Enter>` selects the first menu item.
+> 1. If no item is selected, pressing `<Enter>` selects the first menu item (only when using VSxxx commands).
 > 2. To automatically open the quickfix list after using `<Ctrl-q>`, add the following to your `.vimrc`:
 >    ```vim
 >    augroup vimsuggest-qf-show
@@ -189,39 +189,132 @@ Note: Keys used in command-line editing (`:h cmdline-editing`) remain unmodified
 >    augroup END
 >    ```
 
+# Usage
+
+When `addons` option (see above) is set to `v:true`, the following commands are made available. You can use these commands directly or map them to your preferred keys. These commands leverage native command completion (:h :command-completion-custom) and feel like a natural extension of the editor.
 
 
+1. **Fuzzy Find Files**
+
+Command:
+`:VSFind [dirpath] [fuzzy_pattern]`
+
+This runs the `find` command asynchronously to gather files for fuzzy searching. The optional first argument is the directory to search within.
+
+Example key mappings:
+
+```vim
+nnoremap <key> :VSFind<space>
+nnoremap <key> :VSFind ~/.vim<space>
+nnoremap <key> :VSFind $VIMRUNTIME<space>
+```
+
+'find' program can be specified through g:vimsuggest_fzfindprg variable. If this variable is not defined, a default command is used (that ignores hidden files and directories). The placeholder "$*" is allowed to specify where the arguments will be included.  Environment variables and tilde are expanded for directory names.
+
+```vim
+let g:vimsuggest_fzfindprg = 'find $* \! \( -path "*/.*" -prune \) -type f -follow'
+let g:vimsuggest_fzfindprg = 'fd --type f'
+```
+
+Performance:
+
+Using system `find` command blows away Vim's `:h :find` in performance. On Vim repository it takes ~1 second to list all files using `:find \**/*`, while `:VSFind` takes ~30 milliseconds. Most of the gains comes from avoiding shell's recursive glob wildcard.
+
+2. **Fuzzy Search Buffers and Other Vim Artifacts**
+
+Commands:
+```
+:VSBuffer [fuzzy_pattern]
+:VSMru [fuzzy_pattern]
+:VSKeymap [fuzzy_pattern]
+:VSMark [fuzzy_pattern]
+:VSRegister [fuzzy_pattern]
+:VSChangelist [fuzzy_pattern]
+```
+
+- `VSKeymap` opens the file containing the keymap when pressed.
+- `VSRegister` pastes the register's content.
+- Other commands behave as expected.
+
+Example key mappings:
+```
+nnoremap <key> :VSBuffer<space>
+```
+
+3. **Live Grep Search**
+
+Command:
+`:VSGrep {pattern} [directory]`
+
+Executes a `grep` command live, showing results as you type. `{pattern}` is a glob pattern, and it’s best to enclose it in quotes to handle special characters. You can also specify an optional directory.
+
+Example key mappings:
+
+```
+nnoremap <key> :VSGrep ""<left>
+nnoremap <key> :VSGrep "<c-r>=expand('<cword>')<cr>"<left>
+```
+
+The grep program is taken from `g:vimsuggest_grepprg` or the `:h 'grepprg'` option. If it contains `$*`, it gets replaced by the command-line arguments.
+
+```vim
+let g:vimsuggest_grepprg = 'grep -REIHins $* --exclude-dir=.git --exclude=".*"'
+let g:vimsuggest_grepprg = 'rg --vimgrep --smart-case'
+let g:vimsuggest_grepprg = 'ag --vimgrep'
+```
+
+4. **Live File Search**
+
+   Command:
+   `:VSFindL {pattern} [directory]`
+
+   This command runs `find` live, showing results as you type. `{pattern}` is a glob pattern that should be enclosed in quotes if it contains wildcards. The `find` command is customized via `g:vimsuggest_findprg` (similar to `g:vimsuggest_fzfindprg`).
+
+   Example key mappings:
+   ```
+   nnoremap <leader>ff :VSFindL "*"<left><left>
+   ```
+
+5. **Global In-Buffer Search (`:h :global`)**
+
+   Command:
+   `:VSGlobal {regex_pattern}`
+
+   Use this for a powerful in-buffer search with Vim's regex. For example, to list all functions in a Python file and search quickly:
+
+   ```
+   nnoremap <buffer> <key> :VSGlobal \v(^\|\s)(def\|class).{-}
+   ```
+
+6. **Search in Included Files (`:h include-search`)**
+
+   Command:
+   `:VSInclSearch {regex_pattern}`
+
+   Similar to `VSGlobal`, but searches both the current buffer and included files. The results are gathered using the `:ilist` command. This is useful when looking for a function definition that could be in an included file.
+
+   Example key mappings:
+   ```
+   nnoremap <key> :VSInclSearch<space>
+   ```
+
+7. **Execute Shell Command**
+
+   Command:
+   `:VSExec {shell_command}`
+
+   This command runs any shell command using your `$SHELL` environment, allowing features like brace expansion and globbing. Errors are ignored. However, `:VSGrep` and `VSFindL` commands are less clunky.
+
+   Example key mappings:
+   ```
+   nnoremap <key> :VSExec grep -RIHins "" . --exclude-dir={.git,"node_*"} --exclude=".*"<c-left><c-left><c-left><left><left>
+   nnoremap <key> :VSExec grep -IHins "" **/*<c-left><left><left>
+   ```
+
+> [!TIP]
+> If these commands aren't sufficient, you can define your own using the examples provided in `autoload/vimsuggest/addons/addons.vim` script. Legacy script users can import using `:import` (see `:h import-legacy`).
 
 
-Autocompletion for Vim's command-line.
-<div style="display: none;">
-
-					*backtick-expansion* *`-expansion*
-On Unix and a few other systems you can also use backticks for the file name
-argument, for example: >
-	:next `find . -name ver\\*.c -print`
-	:view `ls -t *.patch  \| head -n1`
-Vim will run the command in backticks using the 'shell' and use the standard
-output as argument for the given Vim command (error messages from the shell
-command will be discarded).
-
-
-					*starstar-wildcard*
-Expanding "**" is possible on Unix, Win32, macOS and a few other systems (but
-it may depend on your 'shell' setting on Unix and macOS. It's known to work
-correctly for zsh; for bash this requires at least bash version >= 4.X).
-This allows searching a directory tree.  This goes up to 100 directories deep.
-Note there are some commands where this works slightly differently, see
-|file-searching|.
-Example: >
-	:n **/*.txt
-
-
-
-#
-#   Note:
-#     <Tab>/<S-Tab> to select the menu item. If no item is selected <CR> visits
-#     the first item in the menu.
 
 let s=reltime()|call getcompletion('find **', 'cmdline')|echo s->reltime()->reltimestr()
 1sec in vim/*
@@ -242,52 +335,8 @@ let s=reltime()|call getcompletion('find **', 'cmdline')|echo s->reltime()->relt
 (video=pattern search, alwayson, border, searching defs, multiword search)
 ❯ video=keymaps
 
-	While the menu is active these keys have special meanings:
-	CTRL-P		- go to the previous entry
-	CTRL-N		- go to the next entry
-	<Left> <Right>	- select previous/next match (like CTRL-P/CTRL-N)
-	<PageUp>	- select a match several entries back
-	<PageDown>	- select a match several entries further
-	<Up>		- in filename/menu name completion: move up into
-			  parent directory or parent menu.
-	<Down>		- in filename/menu name completion: move into a
-			  subdirectory or submenu.
-	<CR>		- in menu completion, when the cursor is just after a
-			  dot: move into a submenu.
-	CTRL-E		- end completion, go back to what was there before
-			  selecting a match.
-	CTRL-Y		- accept the currently selected match and stop
-			  completion.
-
-	If you want <Left> and <Right> to move the cursor instead of selecting
-	a different match, use this: >vim
-		cnoremap <Left> <Space><BS><Left>
-		cnoremap <Right> <Space><BS><Right>
-
 async: folding and highlighting
 multiple highlighting when one pattern has highlighting and next one is searched
-
-during hls
-&redrawtime=2000
-	'redrawtime' specifies the maximum time spent on finding matches.
-
-:{count}fin[d][!] [++opt] [+cmd] {file}
-
-complete(range-command)
-
-  -- The `vim.fn.getcompletion` does not return `*no*cursorline` option.
-      -- cmp-cmdline corrects `no` prefix for option name.
-      local is_option_name_completion = OPTION_NAME_COMPLETION_REGEX:match_str(cmdline) ~= nil
-o
-
-- boost productiviryt
-  if you hate plugin this is the one you want.
-you may dislike popup that covers your buffer, but you have horizontal menu
-not just about saving a tab, but saving many tabs and <bs>
-
-
-</div>
-
 
 
 This script offers a powerful suite of commands for fuzzy searching and shell command execution. Key features include:
@@ -300,217 +349,4 @@ This script offers a powerful suite of commands for fuzzy searching and shell co
 - **Include File Search** using `:ilist` (`VSInclSearch`)
 - **Custom Shell Command Execution** (`VSExec`)
 
-You can use these commands directly or map them to your preferred keys. This script can also be customized to create your own variations. Legacy script users can import using `:import` (see `:h import-legacy`).
-
-### Usage:
-
-1. **Fuzzy Find Files**
-
-   Command:
-   `:VSFind [dirpath] [fuzzy_pattern]`
-
-   This runs the `find` command asynchronously to gather files for fuzzy searching. The optional first argument is the directory to search within. Hidden files and directories are excluded by default.
-
-   Example key mappings:
-   ```
-   nnoremap <key> :VSFind<space>
-   nnoremap <key> :VSFind ~/.vim<space>
-   nnoremap <key> :VSFind $VIMRUNTIME<space>
-   ```
-
-   To customize the `find` command, use `fuzzy.FindComplete()`.
-
-2. **Fuzzy Search for Buffers, MRU (`:h v:oldfiles`), Keymaps, Changelists, Marks, and Registers**
-
-   Commands:
-   ```
-   :VSBuffer [fuzzy_pattern]
-   :VSMru [fuzzy_pattern]
-   :VSKeymap [fuzzy_pattern]
-   :VSChangelist [fuzzy_pattern]
-   :VSMark [fuzzy_pattern]
-   :VSRegister [fuzzy_pattern]
-   ```
-
-   - `VSKeymap` opens the file containing the keymap when pressed.
-   - `VSMark` jumps to a specific mark.
-   - `VSRegister` pastes the register's content.
-
-   Example key mappings:
-   ```
-   nnoremap <key> :VSBuffer<space>
-   nnoremap <key> :VSMru<space>
-   nnoremap <key> :VSKeymap<space>
-   nnoremap <key> :VSMark<space>
-   nnoremap <key> :VSRegister<space>
-   ```
-
-3. **Live Grep Search**
-
-   Command:
-   `:VSGrep {pattern} [directory]`
-
-   Executes a `grep` command live, showing results as you type. `{pattern}` is a glob pattern, and it’s best to enclose it in quotes to handle special characters. You can also specify an optional directory.
-
-   The grep command is taken from `g:vimsuggest_grepprg` or the `:h 'grepprg'` option. If it contains `$*`, it gets replaced by the command-line arguments.
-
-   Example key mappings:
-   ```
-   nnoremap <key> :VSGrep ""<left>
-   nnoremap <key> :VSGrep "<c-r>=expand('<cword>')<cr>"<left>
-   ```
-
-   **Note**: You can substitute `grep` with `rg` or `ag`. For more advanced needs, see `:VSExec`.
-
-4. **Live File Search**
-
-   Command:
-   `:VSFindL {pattern} [directory]`
-
-   This command runs `find` live, showing results as you type. `{pattern}` is a glob pattern that should be enclosed in quotes if it contains wildcards. The `find` command is customized via `g:vimsuggest_findprg`.
-
-   Example key mappings:
-   ```
-   nnoremap <leader>ff :VSFindL "*"<left><left>
-   ```
-
-5. **Global In-Buffer Search (`:h :global`)**
-
-   Command:
-   `:VSGlobal {regex_pattern}`
-
-   Use this for a powerful in-buffer search with Vim's regex. For example, to list all functions in a Python file and search quickly:
-   ```
-   nnoremap <buffer> <key> :VSGlobal \v(^\|\s)(def\|class).{-}
-   ```
-
-   You can also search specific file types by wrapping the keymaps in autocmds (see `:h :autocmd`).
-
-6. **Search in Included Files (`:h include-search`)**
-
-   Command:
-   `:VSInclSearch {regex_pattern}`
-
-   Similar to `VSGlobal`, but searches both the current buffer and included files. The results are gathered using the `:ilist` command.
-
-   Example key mappings:
-   ```
-   nnoremap <key> :VSInclSearch<space>
-   ```
-
-7. **Execute Shell Command**
-
-   Command:
-   `:VSExec {shell_command}`
-
-   This command runs any shell command within your `$SHELL` environment, allowing features like brace expansion and globbing. Errors are ignored.
-
-   Example key mappings:
-   ```
-   nnoremap <key> :VSExec grep -RIHins "" . --exclude-dir={.git,"node_*"} --exclude=".*"<c-left><c-left><c-left><left><left>
-   nnoremap <key> :VSExec grep -IHins "" **/*<c-left><left><left>
-   ```
-
-**Additional Notes**:
-1. Use `<Tab>/<S-Tab>` to navigate through menu items. Pressing `<CR>` visits the first menu item if none is selected.
-2. If these commands aren't sufficient, you can define your own using the examples provided in this script.
-```
-
-## Key Mappings
-
-When menu window is open the following key mappings can be used.
-
-Mapping | Action
---------|-------
-`<PageDown>` | Page down
-`<PageUp>` | Page up
-`<tab>/<C-n>/<Down>/<ScrollWheelDown>` | Next item
-`<S-tab>/<C-p>/<Up>/<ScrollWheelUp>` | Previous item
-`<Esc>/<C-c>` | Close
-`<CR>` | Confirm selection
-`<C-j>` | Go to file selection in a split window
-`<C-v>` | Go to file selection in a vertical split
-`<C-t>` | Go to file selection in a tab
-`<C-q>` | Send all unfiltered items to the quickfix list (`:h quickfix.txt`)
-`<C-Q>` | Send only filtered items to the quickfix list
-`<C-l>` | Send all unfiltered items to the location list (`:h location-list`)
-`<C-L>` | Send only filtered items to the location list
-`<C-k>` | During live grep, toggle between pattern search of results and live grep.
-`<C-o>` | Send filtered files to buffer list, where applicable.
-`<C-g>` | Send filtered files to argument list, where applicable (`:h arglist`)
-
-Prompt window editor key mappings align with Vim's default mappings for command-line editing.
-
-Mapping | Action
---------|-------
-`<Left>` | Cursor one character left
-`<Right>` | Cursor one character right
-`<C-e>/<End>` | Move cursor to the end of line
-`<C-b>/<Home>` | Move cursor to the beginning of line
-`<S-Left>/<C-Left>` | Cursor one WORD left
-`<S-Right>/<C-Right>` | Cursor one WORD right
-`<C-u>` | Delete characters between cursor and beginning of line
-`<C-w>` | Delete word before the cursor
-`<C-Up>/<S-Up>` | Recall history previous
-`<C-Down>/<S-Down>` | Recall history next
-`<C-r><C-w>` | Insert word under cursor (`<cword>`) into prompt
-`<C-r><C-a>` | Insert WORD under cursor (`<cWORD>`) into prompt
-`<C-r><C-l>` | Insert line under cursor into prompt
-`<C-r>` {register} | Insert the contents of a numbered or named register. Between typing CTRL-R and the second character '"' will be displayed to indicate that you are expected to enter the name of a register.
-
-To enable emacs-style editing in the prompt window, set the option `emacsKeys` to `true` as follows:
-
-```vim
-scope#popup#OptionsSet({emacsKeys: true})
-```
-
-or,
-
-```vim
-import autoload 'scope/popup.vim' as sp
-sp.OptionsSet({emacsKeys: true})
-```
-
-When emacs-style editing is enabled, following keybinding take effect:
-
-Mapping | Action
---------|-------
-`<C-b>/<Left>` | Cursor one character left
-`<C-f>/<Right>` | Cursor one character right
-`<C-e>/<End>` | Move cursor to the end of line
-`<C-a>/<Home>` | Move cursor to the beginning of line
-`<A-b>/<S-Left>/<C-Left>` | Cursor one WORD left
-`<A-f>/<S-Right>/<C-Right>` | Cursor one WORD right
-
-# Requirements
-
-- Vim version 9.1 or higher
-
-# Configuration
-
-The appearance of the popup window can be customized using `borderchars`,
-`borderhighlight`, `highlight`, `scrollbarhighlight`, `thumbhighlight`, `maxheight`, `maxwidth`, and
-other `:h popup_create-arguments`. To wrap long lines set `wrap` to `true`
-(default is `false`). To configure these settings, use
-`scope#popup#OptionsSet()`.
-
-For example, to set the border of the popup window to the `Comment` highlight group:
-
-```vim
-scope#popup#OptionsSet({borderhighlight: ['Comment']})
-```
-
-or,
-
-```vim
-import autoload 'scope/popup.vim' as sp
-sp.OptionsSet({borderhighlight: ['Comment']})
-```
-
-Following highlight groups modify the content of popup window:
-
-- `ScopeMenuMatch`: Modifies characters searched so far. Default: Linked to `Special`.
-- `ScopeMenuVirtualText`: Virtual text in the Grep window. Default: Linked to `Comment`.
-- `ScopeMenuSubtle`: Line number, file name, and path. Default: Linked to `Comment`.
-- `ScopeMenuCurrent`: Special item indicating current status (used only when relevant). Default: Linked to `Statement`.
 
