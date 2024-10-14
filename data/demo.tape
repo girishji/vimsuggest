@@ -60,28 +60,39 @@
 
 Output demo.gif
 
-Set Margin 10
-Set MarginFill "#674EFF"
-Set BorderRadius 10
-Set Padding 10
+Set Margin 6
+Set MarginFill "#ffffff"
+Set BorderRadius 3
+Set Padding 2
 
-Set TypingSpeed 200ms
+# Set TypingSpeed 200ms
 Set FontSize 16
-Set Width 1000
-Set Height 650
+Set Width 800
+Set Height 500
 Set Shell "zsh"
 
 Hide
 Type "vi -n" Sleep 2s Enter
 Show
 
-Type "iAGENDA" Enter 2 Escape Sleep 1s
-Type "i* Open files and switch buffers" Enter Escape Sleep 2s
-Space Space
-Sleep 2
-Type "p" Sleep 2 Enter
-Type "gg"
-Sleep 3
+Type "iSEARCH SUGGESTIONS" Enter Sleep 1
+Type "  * Single Word" Enter Sleep 1
+Type "  * Multi Word" Enter Sleep 1
+Type "  * Regex Pattern" Enter Sleep 1
+Type "  * Search Across Line Boundary" Enter Sleep 1
+Type "  * Customize: Fuzzy Search" Enter Sleep 1
+Type "  * Customize: Flat Menu" Enter Sleep 1
+
+
+
+
+# Type "iAGENDA" Enter 2 Escape Sleep 1s
+# Type "i* Open files and switch buffers" Enter Escape Sleep 2s
+# Space Space
+# Sleep 2
+# Type "p" Sleep 2 Enter
+# Type "gg"
+# Sleep 3
 # Space Space
 # Sleep 2
 # Type "sc" Sleep 2s Enter

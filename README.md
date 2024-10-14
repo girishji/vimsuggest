@@ -1,6 +1,6 @@
 # VimSuggest: Supercharge Your Vim Command-Line
 
-Transform your Vim command-line experience with VimSuggest, the ultimate auto-completion plugin.
+The ultimate auto-completion plugin for Vim command-line.
 
 ## 🚀 Enhance Vim Workflow
 
@@ -99,7 +99,7 @@ let g:VimSuggest.search = {
 ```
 
 > [!IMPORTANT]
-> 1. Searching large files will not cause any lag. By default, searching is asynchronous. Even though no external jobs are used, a timer is used during searching which pauses at regular intervals to check if there are pending keys on the type-ahead buffer.
+> 1. Searching large files will not cause any lag. By default, searching is concurrent. Even though no external jobs are used, a timer pauses the task at regular intervals to check if there are pending keys on the typehead.
 > 2. When searching across line boundaries (`\n`), search highlighting will be turned off.
 
 ### Applying Configuration
