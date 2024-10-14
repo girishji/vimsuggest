@@ -92,6 +92,7 @@ export class PopupMenu
             endif
             this._winid->popup_settext(this._Printify())
             this._winid->popup_setoptions({cursorline: false})
+            win_execute(this._winid, "normal! gg")
         else
             this._HMenu(0, 'left')
             try

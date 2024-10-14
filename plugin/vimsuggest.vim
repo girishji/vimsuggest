@@ -22,20 +22,14 @@ def! g:VimSuggestSetOptions(opts: dict<any>)
     Reset()
 enddef
 
-def VimSuggestgestEnable(flag: bool)
+def VimSuggestEnable(flag: bool)
     search.options.enable = flag
     cmd.options.enable = flag
     Reset()
 enddef
+
 command! VimSuggestEnable  VimSuggestEnable(true)
 command! VimSuggestDisable VimSuggestEnable(false)
-
-if empty(prop_type_get('VimSuggestMatch'))
-    :highlight default link VimSuggestMatch PmenuMatch
-    prop_type_add('VimSuggestMatch', {highlight: "VimSuggestMatch", override: false})
-endif
-:highlight default link VimSuggestMatchSel PmenuMatchSel
-:highlight default link VimSuggestMute NonText
 
 def Reset()
     search.Teardown()
@@ -45,5 +39,12 @@ def Reset()
 enddef
 
 autocmd VimEnter * Reset()
+
+if empty(prop_type_get('VimSuggestMatch'))
+    :highlight default link VimSuggestMatch PmenuMatch
+    prop_type_add('VimSuggestMatch', {highlight: "VimSuggestMatch", override: false})
+endif
+:highlight default link VimSuggestMatchSel PmenuMatchSel
+:highlight default link VimSuggestMute NonText
 
 # vim: tabstop=8 shiftwidth=4 softtabstop=4 expandtab
