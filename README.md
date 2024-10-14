@@ -63,8 +63,8 @@ VimSuggest offers extensive customization options for both command completion an
 ### Command Completion Configuration
 
 ```vim
-let g:VimSuggest = {}
-let g:VimSuggest.cmd = {
+let s:vim_suggest = {}
+let s:vim_suggest.cmd = {
     \ 'enable': v:true,       " Enable/disable command completion
     \ 'pum': v:true,          " Use stacked popup menu (v:false for flat)
     \ 'fuzzy': v:false,       " Enable fuzzy completion matching
@@ -82,7 +82,7 @@ let g:VimSuggest.cmd = {
 ### Search Completion Configuration
 
 ```vim
-let g:VimSuggest.search = {
+let s:vim_suggest.search = {
     \ 'enable': v:true,       " Enable/disable search completion
     \ 'pum': v:true,          " Use flat menu (v:true for stacked)
     \ 'fuzzy': v:false,       " Enable fuzzy completion
@@ -107,7 +107,7 @@ let g:VimSuggest.search = {
 To apply your configuration:
 
 ```vim
-call g:VimSuggestSetOptions(g:VimSuggest)
+call g:VimSuggestSetOptions(s:vim_suggest)
 ```
 
 ### Global Enable/Disable
@@ -130,13 +130,8 @@ VimSuggest uses custom highlight groups:
 ### Customization Examples
 
 ```vim
-" Customize VimSuggest's appearance and behavior
-
-let g:VimSuggest = get(g:, 'VimSuggest', {})
-let g:VimSuggest.cmd = get(g:VimSuggest, 'cmd', {})
-
 " Customize popup window appearance
-let g:VimSuggest.cmd.popupattrs = {
+let s:vim_suggest.cmd.popupattrs = {
     \ 'borderchars': ['─', '│', '─', '│', '┌', '┐', '┘', '└'],
     \ 'borderhighlight': ['Normal'],
     \ 'highlight': 'Normal',
@@ -145,7 +140,7 @@ let g:VimSuggest.cmd.popupattrs = {
     \ }
 
 " Exclude specific patterns from completion
-let g:VimSuggest.cmd.exclude = [
+let s:vim_suggest.cmd.exclude = [
     \ '^\s*\d*\s*b\%[uffer]!\?\s\+',  " Exclude :[N]b[uffer][!]
     \ '^\s*\d*\s*sb\%[uffer]!\?\s\+'  " Also exclude :[N]sb[uffer][!]
     \ ]
@@ -156,7 +151,7 @@ highlight VimSuggestMatchSel cterm=bold gui=bold ctermfg=Green guifg=#00FF00
 highlight VimSuggestMute ctermfg=Gray guifg=#808080
 
 " Apply the configuration
-call g:VimSuggestSetOptions(g:VimSuggest)
+call g:VimSuggestSetOptions(s:vim_suggest)
 ```
 
 ## Key Bindings
