@@ -130,16 +130,20 @@ enable_hook->add(() => {
 })
 def GlobalComplete(arglead: string, cmdline: string, cursorpos: number): list<any>
     var lines = exec.CompleteExCmd(arglead, cmdline, cursorpos, (args) => {
+        # Note: String match ('=~') operator can be used instead of 'g://'
         var saved_incsearch = &incsearch
         set noincsearch
+        var saved_number = &number
+        set number
         var saved_cursor = getcurpos()
         try
             return execute($'g/{args}')->split("\n")
         finally
             if saved_incsearch
                 set incsearch
-            else
-                set noincsearch
+            endif
+            if !saved_number
+                set nonumber
             endif
             setpos('.', saved_cursor)
         endtry
