@@ -7,12 +7,6 @@ The ultimate auto-completion plugin for Vim command-line.
 - **Command Completion**: Never struggle to remember complex commands again.
 - **Search Suggestions**: Access relevant search terms with fewer keystrokes, enhancing your navigation.
 
----------
-
-![Demo](https://gist.githubusercontent.com/girishji/40e35cd669626212a9691140de4bd6e7/raw/8666edb02e36ec72ee9ec50a39009a41a4e4755a/vimsuggest-demo.gif)
-
----------
-
 ## 🌟 Additional Features
 
 VimSuggest goes beyond basic auto-completion, offering a suite of advanced features by leveraging Vim's native custom completion mechanism (`:h :command-completion-custom`). These features feel like a natural extension of the editor, but they can be easily disabled if desired.
@@ -24,6 +18,12 @@ VimSuggest goes beyond basic auto-completion, offering a suite of advanced featu
 - **Include File Search** (`:VSInclSearch`): Seamlessly search across included files using Vim's `:ilist` command.
 - **Live File Search** (`:VSFindL`): Asynchronously search for files using glob or regex patterns.
 - **Custom Shell Command Execution** (`:VSExec`): Run and interact with shell commands directly within Vim.
+
+---------
+
+![Demo](https://gist.githubusercontent.com/girishji/40e35cd669626212a9691140de4bd6e7/raw/8666edb02e36ec72ee9ec50a39009a41a4e4755a/vimsuggest-demo.gif)
+
+---------
 
 ## Requirements
 
