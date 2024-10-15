@@ -76,14 +76,24 @@ Type "vi -n" Sleep 2s Enter
 Show
 
 Type "iSEARCH SUGGESTIONS" Enter Sleep 1
-Type "  * Single Word" Enter Sleep 1
-Type "  * Multi Word" Enter Sleep 1
-Type "  * Regex Pattern" Enter Sleep 1
-Type "  * Search Across Line Boundary" Enter Sleep 1
-Type "  * Customize: Fuzzy Search" Enter Sleep 1
-Type "  * Customize: Flat Menu" Enter Sleep 1
-
-
+Type "  * Single word, multi word, regex pattern search, and" Enter
+Type "        search across line boundary" Enter Sleep 1
+Type "  * Fuzzy search" Enter Sleep 1
+Type "  * Customize: Flat menu" Enter Sleep 1
+Enter
+Type "COMMAND AUTO-COMPLETION" Enter Sleep 1
+Type "  * Basic examples (:h, :tag, etc.)" Enter Sleep 1
+Type "  * Find files and buffers" Enter Sleep 1
+Type "  * Customize: Add border to menu" Enter Sleep 1
+Enter
+Type "ADDONS" Enter Sleep 1
+Type "  * Fuzzy find files (in Vim source)" Enter Sleep 1
+Type "  * Fuzzy find buffers" Enter Sleep 1
+Type "  * Live grep" Enter Sleep 1
+Type "  * Search for keywords in buffer" Enter Sleep 1
+Type "  * Many more, see README" Enter Sleep 1
+Enter
+Escape
 
 
 # Type "iAGENDA" Enter 2 Escape Sleep 1s

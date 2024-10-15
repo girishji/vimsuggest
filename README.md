@@ -75,7 +75,8 @@ let s:vim_suggest.cmd = {
     \   'maxHeight': 12       " Max lines in stacked menu (pum = v:true)
     \ },
     \ 'wildignore': v:true,   " Respect 'wildignore' during file completion
-    \ 'addons': v:true        " Enable addons (`:VSxxx` commands)
+    \ 'addons': v:true,       " Enable addons (`:VSxxx` commands)
+    \ 'ctrl_np': false,       " <C-n/p> selects menu when 'true'; otherwise, recalls history
 \ }
 ```
 
@@ -95,6 +96,8 @@ let s:vim_suggest.search = {
     \ 'async': v:true,        " Use asynchronous searching
     \ 'async_timeout': 3000,  " Async search timeout (ms)
     \ 'async_minlines': 1000, " Min lines to trigger async search
+    \ 'highlight': true,      " 'false' to disable menu highlighting (for performance)
+    \ 'ctrl_np': false,       " <C-n/p> selects menu when 'true'; otherwise, recalls history
 \ }
 ```
 

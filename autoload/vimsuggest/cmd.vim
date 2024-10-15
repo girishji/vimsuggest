@@ -19,6 +19,7 @@ export var options: dict<any> = {
     },
     wildignore: true,     # Exclude wildignore patterns during file completion
     addons: true,         # Enable additional completion addons (like fuzzy file finder)
+    ctrl_np: false,       # 'true' to select menu using <C-n/p>, 'false' for history recall
 }
 
 class State
@@ -218,39 +219,39 @@ enddef
 def FilterFn(winid: number, key: string): bool
     # Note: <C-n/p> send <up/down> arrow codes (:h :t_ku).
     #   Do not map these since they are used to cycle through history.
-    if key ==? "\<Tab>"
+    if key == "\<Tab>" || (key == "\<C-n>" && options.ctrl_np)
         state.pmenu.SelectItem('j', SelectItemPost) # Next item
-    elseif key ==? "\<S-Tab>"
+    elseif key == "\<S-Tab>" || (key == "\<C-p>" && options.ctrl_np)
         state.pmenu.SelectItem('k', SelectItemPost) # Prev item
-    elseif key ==? "\<PageUp>"
+    elseif key == "\<PageUp>"
         state.pmenu.PageUp()
-    elseif key ==? "\<PageDown>"
+    elseif key == "\<PageDown>"
         state.pmenu.PageDown()
-    elseif key ==? "\<C-s>"  # Dismiss auto-completion
+    elseif key == "\<C-s>"  # Dismiss auto-completion
         state.pmenu.Hide()
         :redraw
         state.Clear()
         CmdlineAbortHook()
         state = null_object
-    elseif key ==? "\<C-q>" # Add to quickfix list
+    elseif key == "\<C-q>" # Add to quickfix list
         SendToQickfixList()
         state.pmenu.Close(-1)
-    elseif key ==? "\<C-r>"  # Add to arglist
+    elseif key == "\<C-r>"  # Add to arglist
         execute($'argadd {state.items[0]->join(" ")}')
         state.pmenu.Close(-1)
-    elseif key ==? "\<C-g>"  # Add to system clipboard ("+ register)
+    elseif key == "\<C-g>"  # Add to system clipboard ("+ register)
         @+ = state.items[0]->join("\n")
         state.pmenu.Close(-1)
-    elseif key ==? "\<C-j>" || key ==? "\<C-v>" || key ==? "\<C-t>"
+    elseif key == "\<C-j>" || key == "\<C-v>" || key == "\<C-t>"
         state.exit_key = key
         feedkeys("\<cr>", 'n')
-    elseif key ==? "\<CR>"
+    elseif key == "\<CR>"
         # Note: When <cr> simply opens the message window (ex :filt Menu hi), popup
         # lingers unless it is explicitly hidden.
         state.pmenu.Hide()
         :redraw
         return false # Let Vim process these keys further
-    elseif key ==? "\<ESC>"
+    elseif key == "\<ESC>"
         CmdlineAbortHook()
         return false
     else

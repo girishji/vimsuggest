@@ -10,19 +10,20 @@ import autoload './popup.vim'
 
 # Configuration options
 export var options: dict<any> = {
-    enable: true,               # Enable/disable the feature globally
-    pum: true,                  # 'false' for flat, 'true' for vertically stacked popup menu
-    fuzzy: false,               # Enable/disable fuzzy completion
-    alwayson: true,             # Open popup menu on <tab> if 'false'
-    popupattrs: {               # Attributes passed to the popup window
-        maxheight: 12,          # Maximum height for the stacked menu (when pum=true)
+    enable: true,         # Enable/disable the feature globally
+    pum: true,            # 'false' for flat, 'true' for vertically stacked popup menu
+    fuzzy: false,         # Enable/disable fuzzy completion
+    alwayson: true,       # Open popup menu on <tab> if 'false'
+    popupattrs: {         # Attributes passed to the popup window
+        maxheight: 12,    # Maximum height for the stacked menu (when pum=true)
     },
-    range: 100,                 # Number of lines to search in each batch
-    timeout: 200,               # Timeout for non-async searches (milliseconds)
-    async: true,                # Use async for searching
-    async_timeout: 3000,        # Async timeout in milliseconds
-    async_minlines: 1000,       # Minimum lines to enable async search
-    highlight: true,            # Enable search highlighting
+    range: 100,           # Number of lines to search in each batch
+    timeout: 200,         # Timeout for non-async searches (milliseconds)
+    async: true,          # Use async for searching
+    async_timeout: 3000,  # Async timeout in milliseconds
+    async_minlines: 1000, # Minimum lines to enable async search
+    highlight: true,      # Disable menu highlighting (for performance)
+    ctrl_np: false,       # 'true' to select menu items using <C-n/p>, 'false' for history recall
 }
 
 # Represents the state of the current search
@@ -188,9 +189,9 @@ enddef
 
 def FilterFn(winid: number, key: string): bool
     # Note: Do not include arrow keys since they are used for history lookup.
-    if key == "\<Tab>" || key == "\<C-n>"
+    if key == "\<Tab>" || (key == "\<C-n>" && options.ctrl_np)
         state.pmenu.SelectItem('j', SelectItemPost) # Next item
-    elseif key == "\<S-Tab>" || key == "\<C-p>"
+    elseif key == "\<S-Tab>" || (key == "\<C-p>" && options.ctrl_np)
         state.pmenu.SelectItem('k', SelectItemPost) # Prev item
     elseif key == "\<PageUp>"
         state.pmenu.PageUp()
