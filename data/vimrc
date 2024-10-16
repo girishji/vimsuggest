@@ -23,3 +23,5 @@ set hidden
 
 set background=dark
 colorscheme quiet
+hi Normal ctermfg=255 ctermbg=16
+hi Comment cterm=bold ctermfg=243
