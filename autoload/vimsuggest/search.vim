@@ -517,7 +517,7 @@ def SearchWorker(attr: dict<any>, MatchFn: func(dict<any>): list<any>, timer: nu
             attr.index >= attr.batches->len()
         return
     endif
-    if attr.index == 0
+    if attr.index == 0 && &incsearch
         IncSearchHighlight(attr.firstmatch, context)
     endif
     var batch = attr.batches[attr.index]

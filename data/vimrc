@@ -17,9 +17,13 @@ plug#begin("~/.local/share/vim-plug/")
 Plug '~/git/vimsuggest'
 plug#end()
 
-highlight link VimSuggestMatch Constant
 g:vimsuggest_findprg = 'find -EL $* \! \( -regex ".*\.(swp\|git)" -prune \) -type f -name $*'
 g:vimsuggest_grepprg = 'ggrep -REIHins $* --exclude-dir=.git --exclude=".*"'
 
-set background=light
-colorscheme lunaperche
+set laststatus=2
+
+set background=dark
+colorscheme default
+highlight PmenuMatch ctermfg=9
+highlight PmenuMatchSel ctermfg=9
+highlight! link Search StatuslineTerm

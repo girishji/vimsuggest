@@ -10,9 +10,9 @@ vim9script
 
 export class PopupMenu
     var _winid: number
-    var _bgWinId: number
+    var _winid_bg: number
     var _pum: bool
-    var _selMatchId: number = 0
+    var _matchid_sel: number = 0
     var _items: list<list<any>> = [[]]
     var _index: number = -1 # index to items array
     var _hmenu = {text: '', ibegin: 0, iend: 0, selHiId: 0}
@@ -39,8 +39,8 @@ export class PopupMenu
             endif
             this._winid = popup_menu([], attr->extend(attributes))
         endif
-        if !this._pum && this._bgWinId->popup_getoptions() == {}
-            this._bgWinId = popup_create(' ',
+        if !this._pum && this._winid_bg->popup_getoptions() == {}
+            this._winid_bg = popup_create(' ',
                 {line: &lines - &cmdheight, col: 1, minwidth: winwidth(0), hidden: true})
         endif
     enddef
@@ -80,7 +80,7 @@ export class PopupMenu
     def _ClearMatches()
         this._winid->clearmatches()
         this._hmenu.selHiId = 0
-        this._selMatchId = 0
+        this._matchid_sel = 0
     enddef
 
     def SetText(items: list<any>, moveto = 0)
@@ -101,7 +101,7 @@ export class PopupMenu
             endtry
         endif
         this._index = -1
-        this._selMatchId = 0
+        this._matchid_sel = 0
     enddef
 
     def _HMenu(startidx: number, position: string)
@@ -165,7 +165,7 @@ export class PopupMenu
                 if items->len() > 1
                     var pos = items[1][this._index]->mapnew((_, v) => [this._index + 1, v + 1, mlen])
                     if !pos->empty()
-                        this._selMatchId = matchaddpos('VimSuggestMatchSel', pos, 13, -1, {window: this._winid})
+                        this._matchid_sel = matchaddpos('VimSuggestMatchSel', pos, 13, -1, {window: this._winid})
                     endif
                 endif
             endif
@@ -211,14 +211,14 @@ export class PopupMenu
                 var mlen = items[2][this._index]
                 var pos = items[1][this._index]->mapnew((_, v) => [1, v + offset, mlen])
                 if !pos->empty()
-                    this._selMatchId = matchaddpos('VimSuggestMatchSel', pos, 13, -1, {window: this._winid})
+                    this._matchid_sel = matchaddpos('VimSuggestMatchSel', pos, 13, -1, {window: this._winid})
                 endif
             endif
         enddef
 
-        if this._selMatchId > 0
-            matchdelete(this._selMatchId, this._winid)
-            this._selMatchId = 0
+        if this._matchid_sel > 0
+            matchdelete(this._matchid_sel, this._winid)
+            this._matchid_sel = 0
         endif
 
         this._pum ? SelectVert() : SelectHoriz()
@@ -236,15 +236,15 @@ export class PopupMenu
         if this._winid->popup_getoptions() != {} # popup exists
             this._winid->popup_close(result)
         endif
-        if !this._pum && this._bgWinId->popup_getoptions() != {}
-            this._bgWinId->popup_close(result)
+        if !this._pum && this._winid_bg->popup_getoptions() != {}
+            this._winid_bg->popup_close(result)
         endif
     enddef
 
     def Show()
         this._winid->popup_show()
         if !this._pum
-            this._bgWinId->popup_show()
+            this._winid_bg->popup_show()
         endif
     enddef
 
@@ -252,7 +252,7 @@ export class PopupMenu
         if !this.Hidden()
             this._winid->popup_hide()
             if !this._pum
-                this._bgWinId->popup_hide()
+                this._winid_bg->popup_hide()
             endif
         endif
     enddef

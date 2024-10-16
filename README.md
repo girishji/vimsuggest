@@ -119,6 +119,13 @@ To apply your configuration:
 call g:VimSuggestSetOptions(s:vim_suggest)
 ```
 
+If you are using [vim-plug](https://github.com/junegunn/vim-plug) you may have to do:
+
+```vim
+autocmd VimEnter * call g:VimSuggestSetOptions(s:vim_suggest)
+```
+
+
 ### Global Enable/Disable
 
 Enable or disable VimSuggest globally:
@@ -145,7 +152,6 @@ let s:vim_suggest.cmd.popupattrs = {
     \ 'borderhighlight': ['Normal'],
     \ 'highlight': 'Normal',
     \ 'border': [1, 1, 1, 1],
-    \ 'padding': [0, 1, 0, 1]
     \ }
 
 " Exclude specific patterns from completion
