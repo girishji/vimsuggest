@@ -6,8 +6,6 @@ if empty(glob('~/.vim/autoload/plug.vim'))
                 \ https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
 endif
 
-set hidden
-
 # Run PlugInstall if there are missing plugins
 autocmd VimEnter * if len(filter(values(g:plugs), '!isdirectory(v:val.dir)')) > 0
             \| PlugInstall --sync | source $MYVIMRC
@@ -21,8 +19,7 @@ g:vimsuggest_findprg = 'find -EL $* \! \( -regex ".*\.(swp\|git)" -prune \) -typ
 g:vimsuggest_grepprg = 'ggrep -REIHins $* --exclude-dir=.git --exclude=".*"'
 
 set laststatus=2
+set hidden
 
 set background=dark
 colorscheme quiet
-hi Normal ctermfg=255 ctermbg=16
-hi Comment cterm=bold ctermfg=246

@@ -55,9 +55,6 @@
 #   Hide                            Hide the subsequent commands from the output
 #   Show                            Show the subsequent commands in the output
 
-# Disable autocompletion plugins
-# colorscheme dracula
-
 Output demo.gif
 
 Set Margin 6
@@ -83,11 +80,13 @@ Type `:cd /tmp/vim  " Change to Vim source directory` Sleep 2s Enter
 
 # Search autocompletion
 
-Type ":e AGENDA" Enter Sleep 1
+Hide
+Type ":e AGENDA" Enter
 Type "i"
+Show
 Type "SEARCH ('/' AND '?') AUTO-COMPLETION" Enter Sleep 1
-# Type "  * Single word, multi word, regex pattern search, and" Enter
-# Type "        search across line boundary" Enter Sleep 1
+Type "  * Single word, multi word, regex pattern search, and" Enter
+Type "        search across line boundary" Enter Sleep 1
 Escape
 Type ":e ./LI" Sleep 1 Tab Sleep 2 Enter Sleep 2
 Hide
@@ -99,26 +98,30 @@ Hide
 Type ":nohls" Enter
 Type "gg"
 Show
-# Type@200ms "/res.* e" Sleep 3 Tab Sleep 2 Enter Sleep 2
-# Hide
-# Type ":nohls" Enter
-# Type "gg"
-# Show
-# Type@200ms "/cl.*n\n\s*t" Sleep 3 Tab Sleep 2 Enter Sleep 2
-# Hide
-# Type ":nohls" Enter
-# Type "gg"
-# Show
+Type@200ms "/res.* e" Sleep 3 Tab Sleep 2 Enter Sleep 2
+Hide
+Type ":nohls" Enter
+Type "gg"
+Show
+Type@200ms "/cl.*n\n\s*t" Sleep 3 Tab Sleep 2 Enter Sleep 2
+Hide
+Type ":nohls" Enter
+Type "gg"
+Show
 
-# Type ":b " Tab Enter Type "i"
-# Type "  * Fuzzy search" Enter Sleep 1
-# Escape
-# Type ":b #" Enter
-# Type ":call g:VimS" Sleep 1 Tab Type "#{search: #{fuzzy: v:true}})" Sleep 2 Enter
-# Type "/ar" Sleep 2 Tab Sleep 1 Tab Sleep 2 Enter Sleep 2
-# Type "gg"
-
+Hide
 Type ":b " Tab Enter Type "i"
+Show
+Type "  * Fuzzy search" Enter Sleep 1
+Escape
+Type ":b #" Enter
+Type ":call g:VimS" Sleep 1 Tab Type "#{search: #{fuzzy: v:true}})" Sleep 2 Enter
+Type "/ar" Sleep 2 Tab Sleep 1 Tab Sleep 2 Enter Sleep 2
+Type "gg"
+
+Hide
+Type ":b " Tab Enter Type "i"
+Show
 Type "  * Customize: Flat menu" Enter Sleep 1
 Escape
 Type ":call g:VimS" Tab Type "#{search: #{pum: v:false}})" Sleep 2 Enter
@@ -128,81 +131,87 @@ Type "gg"
 
 # Command autocompletion
 
-# Type ":b " Tab Enter Type "i"
-# Enter
-# Type "COMMAND (':') AUTO-COMPLETION" Enter Sleep 1
-# Type "  * Basic examples (:h, :tag, etc.)" Enter Sleep 1
-# Escape
-# Type ":h :co" Sleep 2 Tab Sleep 1 Tab Sleep 1 Tab Sleep 1 Enter Sleep 2
-# Type ":bd" Sleep 1 Enter
-# Type ":tag " Sleep 2 Type "dat" Sleep 2 Tab Sleep 1 Tab Sleep 1 Tab Sleep 1 Enter Sleep 2
-# Type ":bd" Sleep 1 Enter
+Hide
+Type ":b " Tab Enter Type "i"
+Show
+Enter
+Type "COMMAND (':') AUTO-COMPLETION" Enter Sleep 1
+Type "  * Basic examples (:h, :tag, etc.)" Enter Sleep 1
+Escape
+Type ":h :co" Sleep 2 Tab Sleep 1 Tab Sleep 1 Tab Sleep 1 Enter Sleep 2
+Type ":bd" Sleep 1 Enter
+Type ":tag " Sleep 2 Type "dat" Sleep 2 Tab Sleep 1 Tab Sleep 1 Tab Sleep 1 Enter Sleep 2
+Type ":bd" Sleep 1 Enter
 
-# Type "i"
-# Type "  * Customize: Add border to menu" Enter Sleep 1
-# Escape
+Type "i"
+Type "  * Customize: Add border to menu" Enter Sleep 1
+Escape
 Type ":call g:VimS" Tab Type `#{cmd: #{popupattrs: #{border: [1, 1, 1, 1], highlight: 'Normal'}}})`
 Sleep 1 Enter
 Hide
-Type ":hi VimSuggestMatch ctermfg=214 ctermbg=16" Enter
-Type ":hi VimSuggestMatchSel ctermfg=160 ctermbg=253" Enter
+Type ":hi VimSuggestMatch ctermfg=213 ctermbg=16" Enter
+Type ":hi VimSuggestMatchSel ctermfg=200 ctermbg=253" Enter
 Show
 
-# Type "i"
-# Enter
-# Type "ADDONS" Enter Sleep 1
-# Type "  * Fuzzy find files and buffers" Enter Sleep 1
-# Escape
+Type "i"
+Enter
+Type "ADDONS" Enter Sleep 1
+Type "  * Fuzzy find files and buffers" Enter Sleep 1
+Escape
 Type ":VSFind " Sleep 2 Type "optio" Sleep 3 Enter Sleep 2
 Type ":VSFind " Sleep 2 Type "text" Sleep 2 Tab Sleep 1 Tab Sleep 1 Enter Sleep 2
 Type ":VSBuffer " Sleep 1 Type "age" Sleep 1 Enter Sleep 1
 
-# Type "i"
-# Type "  * Find files using glob (or regex) pattern" Enter Sleep 1
-# Escape
-# # Hide
-# # Type@1ms `:let g:vimsuggest_findprg = 'find -EL $* \! \( -regex ".*\.(swp\|git)" -prune \) -type f -name $*'` Enter
-# # Show
-# Type ":VSFindL *cpp" Sleep 2 Tab Sleep 1 Tab Sleep 1 Enter Sleep 2
-# Type ":VSBuffer " Sleep 1 Type "age" Sleep 1 Enter Sleep 1
+Type "i"
+Type "  * Find files using glob (or regex) pattern" Enter Sleep 1
+Escape
+Type ":VSFindL *cpp" Sleep 2 Tab Sleep 1 Tab Sleep 1 Enter Sleep 2
+Hide
+Type ":VSBuffer age" Enter
+Show
 
-# Type "i"
-# Type "  * Add selected files to Arglist, Quickfix list, and copy-paste" Enter Sleep 1
-# Escape
-# Type ":VSFindL *.c" Sleep 2
-# Ctrl+r
-# Type ":ar" Sleep 2 Enter Sleep 2
-# Type ":VSFindL *.vim" Sleep 2
-# Ctrl+q
-# Type ":copen" Sleep 2 Enter Sleep 2
-# Type ":ccl" Sleep 2 Enter Sleep 2
-# Type ":VSFindL *.c" Sleep 2
-# Ctrl+g
-# Type ":enew" Sleep 1 Enter Sleep 2
-# Type `"+p` Sleep 2
-# Type ":VSBuffer " Sleep 1 Type "age" Sleep 1 Enter Sleep 1
+Type "i"
+Type "  * Add selected files to Arglist, Quickfix list, and paste items to buffer" Enter Sleep 1
+Escape
+Type ":VSFindL *.c" Sleep 2
+Ctrl+r
+Type ":ar" Sleep 2 Enter Sleep 2
+Type ":VSFindL *.vim" Sleep 2
+Ctrl+q
+Type ":copen" Sleep 2 Enter Sleep 2
+Type ":ccl" Sleep 2 Enter Sleep 2
+Type ":VSFindL *.c" Sleep 2
+Ctrl+g
+Type ":enew" Sleep 1 Enter Sleep 2
+Type `"+p` Sleep 2
+Hide
+Type ":VSBuffer age" Enter
+Show
 
-# Type "i"
-# Type "  * Live grep" Enter Sleep 1
-# Escape
-# # Hide
-# # Type@1ms `:let g:vimsuggest_grepprg = 'ggrep -REIHins $* --exclude-dir=.git --exclude=".*"'` Enter
-# # Show
-# Type `:nnoremap <space>g :VSGrep ""<left>` Sleep 1 Enter
-# Space Type "g" Sleep 1 Type "getline" Tab Sleep 1 Tab Sleep 1 Tab Sleep 1 Enter Sleep 2
-# Type ":VSBuffer " Sleep 1 Type "age" Sleep 1 Enter Sleep 1
+Type "i"
+Type "  * Live grep" Enter Sleep 1
+Escape
+Type `:nnoremap <space>g :VSGrep ""<left>` Sleep 1 Enter
+Space Type "g" Sleep 1 Type "getline" Tab Sleep 1 Tab Sleep 1 Tab Sleep 1 Enter Sleep 2
+Hide
+Type ":VSBuffer age" Enter
+Show
 
-# Type "i"
-# Type "  * Search function definitions in a vim script using :global" Enter Sleep 1
-# Escape
-# Type ":VSFind " Sleep 1 Type "javascvim" Sleep 2 Enter
-# Type ":nnoremap <space>d :VSGlobal \v\c(^<bar>\s)fu%[nction]!?\s.{-}" Sleep 1 Enter
-# Space Type "d" Sleep 3 Type "Sy" Sleep 3 Enter Sleep 3
-# Type ":VSBuffer " Sleep 1 Type "age" Sleep 1 Enter Sleep 1
+Type "i"
+Type "  * Search function definitions in a vim script using :global" Enter Sleep 1
+Escape
+Hide
+Type ":VSFind " Type "javascvim" Enter
+Show
+Type ":nnoremap <space>d :VSGlobal \v\c(^<bar>\s)fu%[nction]!?\s.{-}" Sleep 1 Enter
+Space Type "d" Sleep 3 Type "Sy" Sleep 3 Enter Sleep 3
+Hide
+Type ":VSBuffer age" Enter
+Show
 
-# Type "i"
-# Type "  * There's more, see README.md!" Enter Sleep 1
-# Enter
+Type "i"
+Type "  * There's more, see README.md!" Enter Sleep 1
+Enter
 Escape
 
 Type ":qa!"

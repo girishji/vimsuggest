@@ -21,7 +21,7 @@ VimSuggest goes beyond basic auto-completion, offering a suite of advanced featu
 
 ---------
 
-![Demo](https://gist.githubusercontent.com/girishji/40e35cd669626212a9691140de4bd6e7/raw/8666edb02e36ec72ee9ec50a39009a41a4e4755a/vimsuggest-demo.gif)
+![Demo](https://gist.githubusercontent.com/girishji/40e35cd669626212a9691140de4bd6e7/raw/49e76c8701052c1e274d2a3baed22f10e0255536/vimsuggest-demo.gif)
 
 ---------
 
