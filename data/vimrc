@@ -23,7 +23,6 @@ g:vimsuggest_grepprg = 'ggrep -REIHins $* --exclude-dir=.git --exclude=".*"'
 set laststatus=2
 
 set background=dark
-colorscheme default
-highlight PmenuMatch ctermfg=9
-highlight PmenuMatchSel ctermfg=9
-highlight! link Search StatuslineTerm
+colorscheme quiet
+hi Normal ctermfg=255 ctermbg=16
+hi Comment cterm=bold ctermfg=246

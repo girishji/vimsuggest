@@ -70,6 +70,10 @@ Set FontSize 14
 Set Width 800
 Set Height 500
 Set Shell "zsh"
+# https://github.com/charmbracelet/vhs/blob/main/themes.json
+Set Theme "Builtin Tango Dark"
+# Set Theme "Builtin Dark"
+# Set Theme "Builtin Light"
 
 Hide
 Type "vi -Nn -u ./data/vimrc" Enter
@@ -82,8 +86,8 @@ Type `:cd /tmp/vim  " Change to Vim source directory` Sleep 2s Enter
 Type ":e AGENDA" Enter Sleep 1
 Type "i"
 Type "SEARCH ('/' AND '?') AUTO-COMPLETION" Enter Sleep 1
-Type "  * Single word, multi word, regex pattern search, and" Enter
-Type "        search across line boundary" Enter Sleep 1
+# Type "  * Single word, multi word, regex pattern search, and" Enter
+# Type "        search across line boundary" Enter Sleep 1
 Escape
 Type ":e ./LI" Sleep 1 Tab Sleep 2 Enter Sleep 2
 Hide
@@ -139,6 +143,10 @@ Type "gg"
 # Escape
 Type ":call g:VimS" Tab Type `#{cmd: #{popupattrs: #{border: [1, 1, 1, 1], highlight: 'Normal'}}})`
 Sleep 1 Enter
+Hide
+Type ":hi VimSuggestMatch ctermfg=214 ctermbg=16" Enter
+Type ":hi VimSuggestMatchSel ctermfg=160 ctermbg=253" Enter
+Show
 
 # Type "i"
 # Enter

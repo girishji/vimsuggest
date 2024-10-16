@@ -132,6 +132,7 @@ enddef
 def Complete()
     var context = Context()
     if context == '' || context =~ '^\s\+$'
+        :redraw
         return
     endif
     # Note:
@@ -170,6 +171,8 @@ def Complete()
     endif
     if state.items[0]->len() > 0
         ShowPopupMenu()
+    else
+        :redraw  # To hide the popup menu
     endif
 enddef
 
@@ -526,6 +529,9 @@ def SearchWorker(attr: dict<any>, MatchFn: func(dict<any>): list<any>, timer: nu
         state.candidates = MakeUnique(state.candidates + matches)
         state.items = Itemify(state.candidates)
         ShowPopupMenu()
+    endif
+    if attr.index == attr.batches->len() && state.candidates->len() == 0
+        :redraw  # Hide the popup menu
     endif
     attr.index += 1
     timer_start(0, function(SearchWorker, [attr, MatchFn]))
