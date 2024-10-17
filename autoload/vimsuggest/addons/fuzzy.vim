@@ -62,9 +62,10 @@ enddef
 # - line: string
 # - cursorpos: number
 #     See :h command-completion-custom
-# - shellprefix: string
-#     An optional prefix to prepend to the 'find' shell command, for example
-#     '/bin/sh -c', useful for expanding recursive globbing wildcards like '**'.
+# - shellprg: string
+#     When provided, execute the command through shell. Example, "/bin/sh -c".
+#     If 'g:vimsuggest_shell' is 'true', shell program in 'shell' option is used.
+#     Shell is useful for expanding recursive globbing wildcards like '**'.
 # - async: bool
 #     A flag indicating whether to perform the find operation asynchronously
 #     using job_start() or synchronously using system(). Defaults to 'true'.
@@ -77,7 +78,7 @@ enddef
 # Returns:
 # - A list of files.If no valid files are found, an empty list is returned.
 export def FindComplete(arglead: string, line: string, cursorpos: number,
-        shellprefix = null_string, async = true, timeout = 2000,
+        shellprg = null_string, async = true, timeout = 2000,
         max_items = 100000): list<any>
     var cname = cmd.CmdLead()
     var regenerate_items = false
@@ -96,16 +97,20 @@ export def FindComplete(arglead: string, line: string, cursorpos: number,
         regenerate_items = true
     endif
     if regenerate_items
+        var shellpre = shellprg
+        if shellpre == null_string && get(g:, 'vimsuggest_shell', false)
+            shellpre = (&shell != "" && &shellcmdflag != "") ? $'{&shell} {&shellcmdflag}' : ''
+        endif
         if async
             def ProcessItems(fpaths: list<any>)
                 items = fpaths
                 cmd.SetPopupMenu(items)
             enddef
-            var cmdany = shellprefix == null_string ? findcmd : shellprefix->split() + [findcmd]
+            var cmdany = shellpre == null_string ? findcmd : shellpre->split() + [findcmd]
             job.Start(cmdany, ProcessItems, timeout, max_items)
         else
             try
-                items = systemlist($'{shellprefix} {findcmd}')
+                items = systemlist($'{shellpre} {findcmd}')
             catch  # '\' and '"' cause E282
             endtry
             if items->empty()
@@ -161,11 +166,11 @@ enddef
 
 def FindCmd(dir: string): string
     var findcmd = get(g:, 'vimsuggest_fzfindprg', null_string)
-    var dpath = dir->expandcmd()
     if findcmd != null_string
         var fcmd = $'{findcmd} '->split('$\*')
-        return $'{fcmd[0]} {dpath} {fcmd->len() == 2 ? fcmd[1] : null_string}'
+        return $'{fcmd[0]} {dir} {fcmd->len() == 2 ? fcmd[1] : null_string}'
     endif
+    var dpath = dir->expandcmd()
     if has('win32')
         var wdpath = (dir == '.') ? dir : dir->expandcmd()
         return $'powershell -command "gci {wdpath} -r -n -File"'

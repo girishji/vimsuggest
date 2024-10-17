@@ -244,5 +244,9 @@ available:
 >
    nnoremap <key> :VSExec grep -IHins "" **/*<c-left><left><left>
 <
+NOTE: External programs are executed directly if `g:vimsuggest_shell` is
+`v:false`. Otherwise, they are executed through shell as specified in `shell`
+option (`:h 'shell'`).
+
 ==============================================================================
  vim:tw=78:ts=8:ft=help:norl:

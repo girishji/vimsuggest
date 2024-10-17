@@ -226,7 +226,15 @@ When the `addons` option is set to `v:true`, the following commands are made ava
 
    ```vim
    let g:vimsuggest_fzfindprg = 'find $* \! \( -path "*/.*" -prune \) -type f -follow'
-   let g:vimsuggest_fzfindprg = 'fd --type f'
+   let g:vimsuggest_fzfindprg = 'fd --type f .'
+   ```
+
+   (Optional) To execute the program through a shell:
+
+   ```vim
+   let g:vimsuggest_shell = true
+   set shell=/bin/sh
+   set shellcmdflag=-c
    ```
 
    Performance:
@@ -287,6 +295,7 @@ When the `addons` option is set to `v:true`, the following commands are made ava
    ```vim
    nnoremap <key> :VSFindL "*"<left><left>
    let g:vimsuggest_findprg = 'find -EL $* \! \( -regex ".*\.(swp\|git)" -prune \) -type f -name $*'
+   let g:vimsuggest_findprg = 'fd --type f'
    ```
 
 5. **In-Buffer Search (`:h :global`)**
@@ -321,8 +330,17 @@ When the `addons` option is set to `v:true`, the following commands are made ava
 
    ```vim
    nnoremap <key> :VSExec grep -RIHins "" . --exclude-dir={.git,"node_*"} --exclude=".*"<c-left><c-left><c-left><left><left>
+   " Easier to type but low performance:
    nnoremap <key> :VSExec grep -IHins "" **/*<c-left><left><left>
    ```
+
+> [!IMPORTANT]
+> External programs are executed directly if `g:vimsuggest_shell` is `v:false`. Otherwise, they are executed through shell as specified in `shell` option (`:h 'shell'`). Using shell allows for expansion of `~`, `$VAR`, `**` (if your shell supports), etc.
+> ```vim
+> let g:vimsuggest_shell = v:true
+> set shell=/bin/zsh
+> set shellcmdflag=-c
+> ```
 
 > [!TIP]
 > If these commands aren't sufficient, you can define your own using the examples provided in `autoload/vimsuggest/addons/addons.vim` script. Legacy script users can import using `:import` also (see `:h import-legacy`).

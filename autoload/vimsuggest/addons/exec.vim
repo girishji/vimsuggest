@@ -15,15 +15,17 @@ var exit_key: string
 var hooks_added: dict<any>
 
 # Generates a list of completion items based on the current command line.
-# Command line should contain a shell command like 'find', 'grep' or 'ls -1'.
-# Commands are executed in user's $SHELL.
+# Command line should contain a shell program like 'find', 'grep' or 'ls -1'.
+# External program is executed in shell command stored in `shell` option if
+# `g:vimsuggest_shell` is set. Otherwise, executed directly.
 # Arguments:
 # - arglead: string
 # - line: string
 # - cursorpos: number
 #     See :h command-completion-custom
-# - shellprefix: string
+# - shellprg: string
 #     When provided, execute the command through shell. Example, "/bin/sh -c".
+#     If 'g:vimsuggest_shell' is 'true', shell program in 'shell' option is used.
 # - async: bool
 #     A boolean flag indicating whether the completion should be executed asynchronously.
 #     When set to true, it allows for non-blocking execution, enabling the user interface
@@ -40,23 +42,24 @@ var hooks_added: dict<any>
 # completions are found, an empty list is returned.
 # Note: Both 'arglead' and 'line' arg contains text up to 'cursorpos' only.
 export def Complete(arglead: string, line: string, cursorpos: number,
-        shellprefix = null_string, async = true, timeout = 2000,
+        shellprg = null_string, async = true, timeout = 2000,
         max_items = 1000): list<any>
     Clear()
-    var parts = cmd.CmdStr()->split()
-    if parts->len() > 1
-        # Note: 'expandcmd' expands '~/path', but removes '\'. Use it minimally.
-        var cstr = parts[1 : ]->mapnew((_, v) => v =~ '[~$]' ? expandcmd(v) : v)->join(' ')
-        return CompletionItems(cstr, shellprefix, async, timeout, max_items)
-    endif
-    return []
+    # Note: Set g:vimsuggest_shell to 'true' and let shell handle '~'.
+    # var parts = cmd.CmdStr()->split()
+    # if parts->len() > 1
+    #     # Note: 'expandcmd' expands '~/path', but removes '\'. Use it minimally.
+    #     var cstr = parts[1 : ]->mapnew((_, v) => v =~ '[~$]' ? expandcmd(v) : v)->join(' ')
+    #     return CompletionItems(cstr, shellprg, async, timeout, max_items)
+    # endif
+    var cmdstr = cmd.CmdStr()->matchstr('\S\+\s\+\zs.*')
+    return cmdstr != null_string ?
+        CompletionItems(cmdstr, shellprg, async, timeout, max_items) : []
 enddef
 
 # Same as Complete() above, except 'grep' shell command is obtained from
-# g:vimsuggest_grepprg variable or 'grepprg' option. 'shellprefix' can be
-# '/bin/sh -c'. When not provided, shell command is executed directly without
-# shell environment and recursive glob expansion.
-export def GrepComplete(A: string, L: string, C: number, shellprefix = null_string,
+# g:vimsuggest_grepprg variable or 'grepprg' option.
+export def GrepComplete(A: string, L: string, C: number, shellprg = null_string,
         async = true, timeout = 2000, max_items = 1000): list<any>
     Clear()
     var cmdstr = get(g:, 'vimsuggest_grepprg', &grepprg)
@@ -65,7 +68,7 @@ export def GrepComplete(A: string, L: string, C: number, shellprefix = null_stri
     if cmdstr != null_string && arglead != null_string
         var parts = cmdstr->split('$\*')
         var cstr = $'{parts[0]} {argstr}{parts->len() == 2 ? $" {parts[1]}" : ""}'
-        var itemss = CompletionItems(cstr, shellprefix, async, timeout, max_items)
+        var itemss = CompletionItems(cstr, shellprg, async, timeout, max_items)
         cmd.AddHighlightHook(cmd.CmdLead(), (_: string, itms: list<any>): list<any> => {
             DoHighlight($'\c{arglead}')
             DoHighlight('^.*:\d\+:', 'VimSuggestMute')
@@ -78,7 +81,7 @@ enddef
 
 # Same as GrepComplete() above except 'find' shell command is obtained from
 # g:vimsuggest_findprg variable.
-export def FindComplete(A: string, L: string, C: number, shellprefix = null_string,
+export def FindComplete(A: string, L: string, C: number, shellprg = null_string,
         async = true, timeout = 3000, max_items = 100000): list<any>
     Clear()
     var findcmd = get(g:, 'vimsuggest_findprg', null_string)
@@ -87,16 +90,17 @@ export def FindComplete(A: string, L: string, C: number, shellprefix = null_stri
     var cstr = null_string
     if findcmd != null_string && argpat->Strip() != null_string
         var argdir = argstr->slice(argpat->len())
-        if argdir =~ '^\s*[~$]'
-            argdir = argdir->expandcmd()
-        endif
+        # NOTE: Set g:vimsuggest_shell to 'true' and let shell handle '~'.
+        # if argdir =~ '^\s*[~$]'
+        #     argdir = argdir->expandcmd()
+        # endif
         var fcmd = $'{findcmd} '->split('$\*')
         if fcmd->len() == 3
             cstr = $'{fcmd[0]} {argdir ?? "."} {fcmd[1]} {argpat} {fcmd[2]}'
         else
             cstr = $'{fcmd[0]} {argpat} {argdir} {fcmd->len() == 2 ? fcmd[1] : null_string}'
         endif
-        var itemss = CompletionItems(cstr, shellprefix, async, timeout, max_items)
+        var itemss = CompletionItems(cstr, shellprg, async, timeout, max_items)
         cmd.AddHighlightHook(cmd.CmdLead(), (_: string, itms: list<any>): list<any> => {
             DoHighlight(argpat->Strip())
             return [itms]
@@ -123,11 +127,15 @@ export def CompleteExCmd(arglead: string, line: string, cursorpos: number,
 enddef
 
 # Utility function used by above functions to manage shell command execution.
-export def CompletionItems(cmdstr = null_string, shellprefix = null_string,
+export def CompletionItems(cmdstr = null_string, shellprg = null_string,
         async = true, timeout = 2000, max_items = 1000): list<any>
     if cmdstr != null_string
+        var shellpre = shellprg
+        if shellpre == null_string && get(g:, 'vimsuggest_shell', false)
+            shellpre = (&shell != "" && &shellcmdflag != "") ? $'{&shell} {&shellcmdflag}' : ''
+        endif
         if async
-            var cmdany = shellprefix == null_string ? cmdstr : shellprefix->split() + [cmdstr]
+            var cmdany = shellpre == null_string ? cmdstr : shellpre->split() + [cmdstr]
             def ProcessItems(itms: list<any>)
                 cmd.SetPopupMenu(itms)
                 items = itms
@@ -135,7 +143,7 @@ export def CompletionItems(cmdstr = null_string, shellprefix = null_string,
             job.Start(cmdany, ProcessItems, timeout, max_items)
         else
             try
-                items = systemlist($'{shellprefix} {cmdstr}')
+                items = systemlist($'{shellpre} {cmdstr}')
             catch  # '\' and '"' cause E282
             endtry
         endif
