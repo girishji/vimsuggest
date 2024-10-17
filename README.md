@@ -19,6 +19,8 @@ VimSuggest goes beyond basic auto-completion, offering a suite of advanced featu
 - **Live File Search** (`:VSFindL`): Asynchronously search for files using glob or regex patterns.
 - **Custom Shell Command Execution** (`:VSExec`): Run and interact with shell commands directly within Vim.
 
+Auto-completion can also be disabled by default and only triggered when the `<Tab>` key is pressed, which more closely aligns with Vim's default behavior.
+
 ---------
 
 ![Demo](https://gist.githubusercontent.com/girishji/40e35cd669626212a9691140de4bd6e7/raw/f931e4198209452a7626bc2a6f2118dd27dac1dd/vimsuggest-demo.gif)
