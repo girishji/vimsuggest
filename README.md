@@ -341,6 +341,7 @@ When the `addons` option is set to `v:true`, the following commands are made ava
 > set shell=/bin/zsh
 > set shellcmdflag=-c
 > ```
+> See also `:h expandcmd()`
 
 > [!TIP]
 > If these commands aren't sufficient, you can define your own using the examples provided in `autoload/vimsuggest/addons/addons.vim` script. Legacy script users can import using `:import` also (see `:h import-legacy`).
