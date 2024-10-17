@@ -22,6 +22,8 @@ var hooks_added: dict<any>
 # - line: string
 # - cursorpos: number
 #     See :h command-completion-custom
+# - shellprefix: string
+#     When provided, execute the command through shell. Example, "/bin/sh -c".
 # - async: bool
 #     A boolean flag indicating whether the completion should be executed asynchronously.
 #     When set to true, it allows for non-blocking execution, enabling the user interface
@@ -38,13 +40,13 @@ var hooks_added: dict<any>
 # completions are found, an empty list is returned.
 # Note: Both 'arglead' and 'line' arg contains text up to 'cursorpos' only.
 export def Complete(arglead: string, line: string, cursorpos: number,
-        async = true, timeout = 2000, max_items = 1000): list<any>
+        shellprefix = null_string, async = true, timeout = 2000,
+        max_items = 1000): list<any>
     Clear()
     var parts = cmd.CmdStr()->split()
     if parts->len() > 1
         # Note: 'expandcmd' expands '~/path', but removes '\'. Use it minimally.
         var cstr = parts[1 : ]->mapnew((_, v) => v =~ '[~$]' ? expandcmd(v) : v)->join(' ')
-        var shellprefix = expand("$SHELL") != null_string ? $'{expand("$SHELL")} -c' : ''
         return CompletionItems(cstr, shellprefix, async, timeout, max_items)
     endif
     return []
@@ -85,11 +87,14 @@ export def FindComplete(A: string, L: string, C: number, shellprefix = null_stri
     var cstr = null_string
     if findcmd != null_string && argpat->Strip() != null_string
         var argdir = argstr->slice(argpat->len())
+        if argdir =~ '^\s*[~$]'
+            argdir = argdir->expandcmd()
+        endif
         var fcmd = $'{findcmd} '->split('$\*')
         if fcmd->len() == 3
             cstr = $'{fcmd[0]} {argdir ?? "."} {fcmd[1]} {argpat} {fcmd[2]}'
         else
-            cstr = $'{fcmd[0]} {argstr} {fcmd->len() == 2 ? fcmd[1] : null_string}'
+            cstr = $'{fcmd[0]} {argpat} {argdir} {fcmd->len() == 2 ? fcmd[1] : null_string}'
         endif
         var itemss = CompletionItems(cstr, shellprefix, async, timeout, max_items)
         cmd.AddHighlightHook(cmd.CmdLead(), (_: string, itms: list<any>): list<any> => {

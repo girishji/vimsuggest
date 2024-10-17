@@ -282,17 +282,18 @@ When the `addons` option is set to `v:true`, the following commands are made ava
 
    This command runs system's `find` program live, showing results as you type. `{pattern}` is a glob (or regex) pattern that should be enclosed in quotes if it contains wildcards. The `find` command is customized via `g:vimsuggest_findprg` (similar to `g:vimsuggest_fzfindprg`).
 
-   Example key mapping:
+   Example key mapping and configuring 'find' program:
 
    ```vim
    nnoremap <key> :VSFindL "*"<left><left>
+   let g:vimsuggest_findprg = 'find -EL $* \! \( -regex ".*\.(swp\|git)" -prune \) -type f -name $*'
    ```
 
 5. **In-Buffer Search (`:h :global`)**
 
    `:VSGlobal {regex_pattern}`
 
-   Use this for a powerful in-buffer search with Vim's regex. For example, to list all functions and classes in a Python file and search quickly:
+   Use this for a powerful in-buffer search with Vim's regex. For example, to list all functions and classes in a Python file and jump quickly:
 
    ```vim
    nnoremap <buffer> <key> :VSGlobal \v(^\|\s)(def\|class).{-}

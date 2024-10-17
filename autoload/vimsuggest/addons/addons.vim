@@ -66,9 +66,21 @@ cmd.AddOnSpaceHook('VSFind')
 #    ```
 #
 #    Note: You can substitute `grep` with `rg` or `ag`. For more advanced needs, see `:VSExec`.
+#
+#    `VSGrepS` is same as `VSGrep` except the 'grep' program is executed
+#    through a shell. Note that this will start two processes, the shell and the
+#    'grep' command it executes. If you don't want this use the "exec" shell command.
+#    The advantage of using a shell is that `~` (homedir) and `$` (env variable)
+#    get expanded, and /dev/null can be used to redirect stderr.
+#
 enable_hook->add(() => {
     :command! -nargs=+ -complete=customlist,exec.GrepComplete VSGrep exec.DoAction(null_function, <f-args>)
+    :command! -nargs=+ -complete=customlist,GrepCompleteShell VSGrepS exec.DoAction(null_function, <f-args>)
 })
+def GrepCompleteShell(A: string, L: string, C: number): list<any>
+    var shellprefix = expand("$SHELL") != null_string ? $'{expand("$SHELL")} -c' : '/bin/sh -c'
+    return exec.GrepComplete(A, L, C, shellprefix)
+enddef
 
 ## Live File Search
 #
@@ -84,9 +96,17 @@ enable_hook->add(() => {
 #    g:vimsuggest_findprg = 'find -EL $* \! \( -regex ".*\.(swp\|git\|zsh_.*)" -prune \) -type f -name $*'
 #    nnoremap <leader>ff :VSFindL "*"<left><left>
 #    ```
+#
+#    `VSFindLS` is same as `VSFindL` except the 'find' program is executed
+#    through a shell. See note under `:VSGrep`.
 enable_hook->add(() => {
     :command! -nargs=+ -complete=customlist,exec.FindComplete VSFindL exec.DoAction(null_function, <f-args>)
+    :command! -nargs=+ -complete=customlist,FindCompleteShell VSFindLS exec.DoAction(null_function, <f-args>)
 })
+def FindCompleteShell(A: string, L: string, C: number): list<any>
+    var shellprefix = expand("$SHELL") != null_string ? $'{expand("$SHELL")} -c' : '/bin/sh -c'
+    return exec.FindComplete(A, L, C, shellprefix)
+enddef
 
 ## Execute Shell Command (ex. grep, find, etc.)
 #
@@ -101,9 +121,17 @@ enable_hook->add(() => {
 #    nnoremap <key> :VSExec grep -RIHins "" . --exclude-dir={.git,"node_*"} --exclude=".*"<c-left><c-left><c-left><left><left>
 #    nnoremap <key> :VSExec grep -IHins "" **/*<c-left><left><left>
 #    ```
+#
+#    `VSExecS` is same as `VSExec` except the program is executed through a
+#    shell. See note in `:VSGrep`
 enable_hook->add(() => {
     :command! -nargs=* -complete=customlist,exec.Complete VSExec exec.DoAction(null_function, <f-args>)
+    :command! -nargs=* -complete=customlist,exec.CompleteShell VSExecS exec.DoAction(null_function, <f-args>)
 })
+def CompleteShell(A: string, L: string, C: number): list<any>
+    var shellprefix = expand("$SHELL") != null_string ? $'{expand("$SHELL")} -c' : '/bin/sh -c'
+    return exec.Complete(A, L, C, shellprefix)
+enddef
 
 ## Global In-Buffer Search (`:h :global`)
 #
@@ -397,9 +425,9 @@ export def Enable()
 enddef
 
 export def Disable()
-    for c in ['VSFind', 'VSGrep', 'VSFindL', 'VSExec', 'VSGlobal',
-            'VSInclSearch', 'VSBuffer', 'VSMru', 'VSKeymap', 'VSMark',
-            'VSRegister', 'VSChangelist']
+    for c in ['VSFind', 'VSGrep', 'VSGrepS', 'VSFindL', 'VSFindLS', 'VSExec',
+            'VSExecS', 'VSGlobal', 'VSInclSearch', 'VSBuffer', 'VSMru',
+            'VSKeymap', 'VSMark', 'VSRegister', 'VSChangelist']
         if exists($":{c}") == 2
             :exec $'delcommand {c}'
         endif
