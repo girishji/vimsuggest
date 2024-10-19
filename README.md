@@ -79,9 +79,7 @@ let s:vim_suggest.cmd = {
     \ 'exclude': [],
     \ 'onspace': [],
     \ 'alwayson': v:true,
-    \ 'popupattrs': {
-    \   'maxheight': 12
-    \ },
+    \ 'popupattrs': {},
     \ 'wildignore': v:true,
     \ 'addons': v:true,
     \ 'ctrl_np': v:false,
@@ -96,8 +94,7 @@ let s:vim_suggest.cmd = {
 | exclude | [] | Regex patterns to exclude from completion |
 | onspace | [] | Commands to complete after space (e.g., 'buffer') |
 | alwayson | v:true | Auto-open popup (v:false to open with <Tab>) |
-| popupattrs | {maxheight: 12}| Arguments passed to popup_create() (`:h popup_create-arguments`) |
-| popupattrs.maxheight | 12 | Max lines in stacked menu (pum = v:true) |
+| popupattrs | {} | Arguments passed to popup_create() (`:h popup_create-arguments`) |
 | wildignore | v:true | Respect 'wildignore' during file completion |
 | addons | v:true | Enable addons (`:VSxxx` commands) |
 | ctrl_np | v:false | <C-n/p> selects menu when 'true'; otherwise, recalls history |
@@ -129,8 +126,7 @@ let s:vim_suggest.search = {
 | pum | v:true | Use flat menu (v:true for stacked) |
 | fuzzy | v:false | Enable fuzzy completion |
 | alwayson | v:true | Auto-open popup (v:false to open with <Tab>) |
-| popupattrs | {maxheight: 12}| Arguments passed to popup_create() (`:h popup_create-arguments`) |
-| popupattrs.maxheight | 12 | Max height for stacked menu |
+| popupattrs | {'maxheight': 12} | Arguments passed to popup_create() (`:h popup_create-arguments`) |
 | range | 100 | Lines to search in each batch |
 | timeout | 200 | Non-async search timeout (ms) |
 | async | v:true | Use asynchronous searching |

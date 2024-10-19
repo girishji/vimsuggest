@@ -14,9 +14,7 @@ export var options: dict<any> = {
     exclude: [],          # List of (regex) patterns to exclude from completion
     onspace: [],          # Complete after the space after the command (e.g., ':find ', ':buffer ', etc.)
     alwayson: true,       # If 'false', press <tab> to open the popup menu manually
-    popupattrs: {         # Attributes for configuring the popup window
-        maxHeight: 12,    # Maximum number of lines for stacked menu (only if pum=true)
-    },
+    popupattrs: {},       # Attributes for configuring the popup window
     wildignore: true,     # Exclude wildignore patterns during file completion
     addons: true,         # Enable additional completion addons (like fuzzy file finder)
     ctrl_np: false,       # 'true' to select menu using <C-n/p>, 'false' for history recall

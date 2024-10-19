@@ -37,7 +37,8 @@ export class PopupMenu
             else
                 attr->extend({ scrollbar: 0, padding: [0, 0, 0, 0] })
             endif
-            this._winid = popup_menu([], attr->extend(attributes))
+            attr->extend(attributes)
+            this._winid = popup_menu([], attr)
         endif
         if !this._pum && this._winid_bg->popup_getoptions() == {}
             this._winid_bg = popup_create(' ',

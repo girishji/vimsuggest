@@ -58,9 +58,7 @@ Command Completion Configuration:~
         \ 'exclude': [],
         \ 'onspace': [],
         \ 'alwayson': v:true,
-        \ 'popupattrs': {
-        \   'maxheight': 12
-        \ },
+        \ 'popupattrs': {},
         \ 'wildignore': v:true,
         \ 'addons': v:true,
         \ 'ctrl_np': v:false,
@@ -86,10 +84,8 @@ s:vim_suggest.cmd is a dictionary containing the following options:
     'alwayson'  Auto-open popup (v:false to open with <Tab>)
                 Default: v:true
 
-    'popupattrs'
-        'maxheight'
-                Max lines in stacked menu (pum = v:true)
-                Default: 12
+    'popupattrs' Arguments passed to popup_create()
+                Default: {}
 
     'wildignore' Respect 'wildignore' during file completion
                 Default: v:true
@@ -133,10 +129,8 @@ s:vim_suggest.search is a dictionary containing the following options:
     'alwayson'  Auto-open popup (v:false to open with <Tab>)
                 Default: v:true
 
-    'popupattrs'
-        'maxheight'
-                Max height for stacked menu
-                Default: 12
+    'popupattrs' Arguments passed to popup_create()
+                Default: {'maxheight': 12}
 
     'range'     Lines to search in each batch
                 Default: 100
