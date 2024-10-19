@@ -240,7 +240,7 @@ def FilterFn(winid: number, key: string): bool
         execute($'argadd {state.items[0]->join(" ")}')
         state.pmenu.Close(-1)
     elseif key == "\<C-g>"  # Add to system clipboard ("+ register)
-        @+ = state.items[0]->join("\n")
+        setreg('+', state.items[0]->join("\n"))
         state.pmenu.Close(-1)
     elseif key == "\<C-j>" || key == "\<C-v>" || key == "\<C-t>"
         state.exit_key = key
