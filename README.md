@@ -73,41 +73,71 @@ VimSuggest offers extensive customization options for both command completion an
 ```vim
 let s:vim_suggest = {}
 let s:vim_suggest.cmd = {
-    \ 'enable': v:true,       " Enable/disable command completion
-    \ 'pum': v:true,          " Use stacked popup menu (v:false for flat)
-    \ 'fuzzy': v:false,       " Enable fuzzy completion matching
-    \ 'exclude': [],          " Regex patterns to exclude from completion
-    \ 'onspace': [],          " Commands to complete after space (e.g., 'buffer')
-    \ 'alwayson': v:true,     " Auto-open popup (v:false to open with <Tab>)
-    \ 'popupattrs': {         " Passed directly to `popup_menu()`
-    \   'maxHeight': 12       " Max lines in stacked menu (pum = v:true)
+    \ 'enable': v:true,
+    \ 'pum': v:true,
+    \ 'fuzzy': v:false,
+    \ 'exclude': [],
+    \ 'onspace': [],
+    \ 'alwayson': v:true,
+    \ 'popupattrs': {
+    \   'maxheight': 12
     \ },
-    \ 'wildignore': v:true,   " Respect 'wildignore' during file completion
-    \ 'addons': v:true,       " Enable addons (`:VSxxx` commands)
-    \ 'ctrl_np': false,       " <C-n/p> selects menu when 'true'; otherwise, recalls history
+    \ 'wildignore': v:true,
+    \ 'addons': v:true,
+    \ 'ctrl_np': v:false,
 \ }
 ```
+
+| Variable Name | Default Value | Comment |
+|---------------|---------------|---------|
+| enable | v:true | Enable/disable command completion |
+| pum | v:true | Use stacked popup menu (v:false for flat) |
+| fuzzy | v:false | Enable fuzzy completion matching |
+| exclude | [] | Regex patterns to exclude from completion |
+| onspace | [] | Commands to complete after space (e.g., 'buffer') |
+| alwayson | v:true | Auto-open popup (v:false to open with <Tab>) |
+| popupattrs | {maxheight: 12}| Arguments passed to popup_create() (`:h popup_create-arguments`) |
+| popupattrs.maxheight | 12 | Max lines in stacked menu (pum = v:true) |
+| wildignore | v:true | Respect 'wildignore' during file completion |
+| addons | v:true | Enable addons (`:VSxxx` commands) |
+| ctrl_np | v:false | <C-n/p> selects menu when 'true'; otherwise, recalls history |
 
 ### Search Completion Configuration
 
 ```vim
 let s:vim_suggest.search = {
-    \ 'enable': v:true,       " Enable/disable search completion
-    \ 'pum': v:true,          " Use flat menu (v:true for stacked)
-    \ 'fuzzy': v:false,       " Enable fuzzy completion
-    \ 'alwayson': v:true,     " Auto-open popup (v:false to open with <Tab>)
-    \ 'popupattrs': {         " Passed directly to `popup_menu()`
-    \   'maxheight': 12       " Max height for stacked menu
+    \ 'enable': v:true,
+    \ 'pum': v:true,
+    \ 'fuzzy': v:false,
+    \ 'alwayson': v:true,
+    \ 'popupattrs': {
+    \   'maxheight': 12
     \ },
-    \ 'range': 100,           " Lines to search in each batch
-    \ 'timeout': 200,         " Non-async search timeout (ms)
-    \ 'async': v:true,        " Use asynchronous searching
-    \ 'async_timeout': 3000,  " Async search timeout (ms)
-    \ 'async_minlines': 1000, " Min lines to trigger async search
-    \ 'highlight': true,      " 'false' to disable menu highlighting (for performance)
-    \ 'ctrl_np': false,       " <C-n/p> selects menu when 'true'; otherwise, recalls history
+    \ 'range': 100,
+    \ 'timeout': 200,
+    \ 'async': v:true,
+    \ 'async_timeout': 3000,
+    \ 'async_minlines': 1000,
+    \ 'highlight': v:true,
+    \ 'ctrl_np': v:false,
 \ }
 ```
+
+| Variable Name | Default Value | Comment |
+|---------------|---------------|---------|
+| enable | v:true | Enable/disable search completion |
+| pum | v:true | Use flat menu (v:true for stacked) |
+| fuzzy | v:false | Enable fuzzy completion |
+| alwayson | v:true | Auto-open popup (v:false to open with <Tab>) |
+| popupattrs | {maxheight: 12}| Arguments passed to popup_create() (`:h popup_create-arguments`) |
+| popupattrs.maxheight | 12 | Max height for stacked menu |
+| range | 100 | Lines to search in each batch |
+| timeout | 200 | Non-async search timeout (ms) |
+| async | v:true | Use asynchronous searching |
+| async_timeout | 3000 | Async search timeout (ms) |
+| async_minlines | 1000 | Min lines to trigger async search |
+| highlight | v:true | 'false' to disable menu highlighting (for performance) |
+| ctrl_np | v:false | <C-n/p> selects menu when 'true'; otherwise, recalls history |
 
 > [!IMPORTANT]
 > 1. Searching large files will not cause any lag. By default, searching is concurrent. Even though no external jobs are used, a timer pauses the task at regular intervals to check if there are pending keys on the typehead.
@@ -157,9 +187,10 @@ let s:vim_suggest.cmd.popupattrs = {
     \ }
 
 " Exclude specific patterns from completion
+"   To exclude :[N]b[uffer][!] and :[N]sb[uffer][!] do:
 let s:vim_suggest.cmd.exclude = [
-    \ '^\s*\d*\s*b\%[uffer]!\?\s\+',  " Exclude :[N]b[uffer][!]
-    \ '^\s*\d*\s*sb\%[uffer]!\?\s\+'  " Also exclude :[N]sb[uffer][!]
+    \ '^\s*\d*\s*b\%[uffer]!\?\s\+',
+    \ '^\s*\d*\s*sb\%[uffer]!\?\s\+'
     \ ]
 
 " Optional: Customize highlight groups
