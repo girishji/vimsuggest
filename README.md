@@ -50,13 +50,25 @@ call plug#end()
 
 ### Using Vim's built-in package manager
 
+#### Linux
+
 ```bash
-mkdir -p $HOME/.vim/pack/downloads/opt
-cd $HOME/.vim/pack/downloads/opt
-git clone https://github.com/girishji/vimsuggest.git
+git clone https://github.com/girishji/vimsuggest.git $HOME/.vim/pack/downloads/opt/vimsuggest
 ```
 
-Then add this line to your `.vimrc` file:
+Then add this line to your _vimrc_ file:
+
+```vim
+packadd vimsuggest
+```
+
+#### Windows
+
+```bash
+git clone https://github.com/girishji/vimsuggest.git %USERPROFILE%\vimfiles\pack\downloads\opt\vimsuggest
+```
+
+Then add this line to your _vimrc_ file:
 
 ```vim
 packadd vimsuggest
@@ -266,7 +278,7 @@ When the `addons` option is set to `v:true`, the following commands are made ava
 
    Performance:
 
-   Using the system's `find` program significantly outperforms Vim's `:find` command. On the Vim source repository, it takes ~1 second to list all files using `:find **/*` command, while `:VSFind` takes ~30 milliseconds (30x faster). Most of the gains come from avoiding the shell's recursive glob wildcard.
+   Using the system's `find` program significantly outperforms Vim's `:find` command. On the Vim source repository, it takes ~1 second to list all files using `:find **/*` command, while `:VSFind` takes ~30 milliseconds (30x faster). Most of the gains come from avoiding the shell's recursive glob wildcard [[Related](https://github.com/vim/vim/issues/15791)].
 
 2. **Fuzzy Search Buffers and Other Vim Artifacts**
 
@@ -356,6 +368,7 @@ When the `addons` option is set to `v:true`, the following commands are made ava
    Example key mappings:
 
    ```vim
+   nnoremap <key> :VSExec fd --type f<space>
    nnoremap <key> :VSExec grep -RIHins "" . --exclude-dir={.git,"node_*"} --exclude=".*"<c-left><c-left><c-left><left><left>
    " Easier to type but low performance:
    nnoremap <key> :VSExec grep -IHins "" **/*<c-left><left><left>

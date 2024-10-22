@@ -6,6 +6,7 @@ vim9script
 
 import autoload './popup.vim'
 import autoload './addons/addons.vim'
+import autoload './aux.vim'
 
 export var options: dict<any> = {
     enable: true,         # Enable/disable the completion functionality
@@ -156,6 +157,9 @@ def DoComplete(oldcontext: string, timer: number)
         endif
     catch # Catch (for ex.) -> E1245: Cannot expand <sfile> in a Vim9 function
     endtry
+    if completions->len() == 0  # Check :s// and :g/ completion
+        completions = aux.GetCompletionSG(context)
+    endif
     if completions->len() == 0 || (completions->len() == 1 && context->strridx(completions[0]) != -1)
         # No completions found, or this completion is already inserted.
         :redraw
@@ -185,9 +189,14 @@ export def SetPopupMenu(items: list<any>)
     endif
 enddef
 
-# When ':h :range' is present, insertion of completion text should happen at the
-# end of range.
+# When ':range' is present, insertion of completion text should happen at the
+# end of range. Similary, :s// and :g//.
 def InsertionPoint(replacement: string): number
+    if aux.insertion_point != -1
+        var temp = aux.insertion_point
+        aux.insertion_point = -1
+        return temp
+    endif
     var context = Context()
     var pos = max([' ', '&', '$']->mapnew((_, v) => context->strridx(v))) + 1
     # '&' and '$' completes Vim options and env variables respectively.
@@ -208,18 +217,28 @@ export def SelectItemPost(index: number, dir: string)
     var cmdname = CmdLead()
     if !state.select_item_hook->has_key(cmdname) ||
             !state.select_item_hook[cmdname](state.items[0][index], dir)
-        var context = Context()
         var replacement = state.items[0][index]
-        setcmdline(context->slice(0, state.insertion_point) .. replacement)
+        var cmdline = getcmdline()
+        setcmdline(cmdline->slice(0, state.insertion_point) ..
+            replacement .. cmdline->slice(getcmdpos() - 1))
+        var newpos = state.insertion_point + replacement->len()
+        # XXX: setcmdpos() does not work here, vim put cursor at the end (vim bug?)
+        # setcmdpos(newpos + 1)
+        # workaround:
+        if getcmdpos() != newpos + 1
+            feedkeys("\<home>", 'n')
+            for _ in range(state.insertion_point + replacement->len())
+                feedkeys("\<right>", 'n')
+            endfor
+        endif
     endif
 enddef
 
 def FilterFn(winid: number, key: string): bool
-    # Note: <C-n/p> send <up/down> arrow codes (:h :t_ku).
-    #   Do not map these since they are used to cycle through history.
-    if key == "\<Tab>" || (key == "\<C-n>" && options.ctrl_np)
+    # <C-n> sends :h t_kb (down arrow) and <C-p> sends t_ku (up arrow)
+    if key == "\<Tab>" || ((key == "\<C-n>" || key == "\<Down>") && options.ctrl_np)
         state.pmenu.SelectItem('j', SelectItemPost) # Next item
-    elseif key == "\<S-Tab>" || (key == "\<C-p>" && options.ctrl_np)
+    elseif key == "\<S-Tab>" || ((key == "\<C-p>" || key == "\<Up>") && options.ctrl_np)
         state.pmenu.SelectItem('k', SelectItemPost) # Prev item
     elseif key == "\<PageUp>"
         state.pmenu.PageUp()
@@ -306,7 +325,7 @@ def Context(): string
 enddef
 
 export def CmdStr(s: string = null_string): string
-    return (s ?? getcmdline())->substitute('\(^\|\s*\)vim9\%[cmd]!\?\s*', '', '')
+    return (s ?? getcmdline())->substitute('^\s*vim9\%[cmd]!\?\s*', '', '')
 enddef
 
 export def CmdLead(): string

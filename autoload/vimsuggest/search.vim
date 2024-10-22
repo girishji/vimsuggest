@@ -191,10 +191,9 @@ def SelectItemPost(index: number, dir: string)
 enddef
 
 def FilterFn(winid: number, key: string): bool
-    # Note: Do not include arrow keys since they are used for history lookup.
-    if key == "\<Tab>" || (key == "\<C-n>" && options.ctrl_np)
+    if key == "\<Tab>" || ((key == "\<C-n>" || key == "\<Down>") && options.ctrl_np)
         state.pmenu.SelectItem('j', SelectItemPost) # Next item
-    elseif key == "\<S-Tab>" || (key == "\<C-p>" && options.ctrl_np)
+    elseif key == "\<S-Tab>" || ((key == "\<C-p>" || key == "\<Up>") && options.ctrl_np)
         state.pmenu.SelectItem('k', SelectItemPost) # Prev item
     elseif key == "\<PageUp>"
         state.pmenu.PageUp()

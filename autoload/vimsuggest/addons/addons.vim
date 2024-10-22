@@ -67,12 +67,6 @@ cmd.AddOnSpaceHook('VSFind')
 #
 #    Note: You can substitute `grep` with `rg` or `ag`. For more advanced needs, see `:VSExec`.
 #
-#    `VSGrepS` is same as `VSGrep` except the 'grep' program is executed
-#    through a shell. Note that this will start two processes, the shell and the
-#    'grep' command it executes. If you don't want this use the "exec" shell command.
-#    The advantage of using a shell is that `~` (homedir) and `$` (env variable)
-#    get expanded, and /dev/null can be used to redirect stderr.
-#
 enable_hook->add(() => {
     :command! -nargs=+ -complete=customlist,exec.GrepComplete VSGrep exec.DoAction(null_function, <f-args>)
 })
@@ -91,9 +85,6 @@ enable_hook->add(() => {
 #    g:vimsuggest_findprg = 'find -EL $* \! \( -regex ".*\.(swp\|git\|zsh_.*)" -prune \) -type f -name $*'
 #    nnoremap <leader>ff :VSFindL "*"<left><left>
 #    ```
-#
-#    `VSFindLS` is same as `VSFindL` except the 'find' program is executed
-#    through a shell. See note under `:VSGrep`.
 enable_hook->add(() => {
     :command! -nargs=+ -complete=customlist,exec.FindComplete VSFindL exec.DoAction(null_function, <f-args>)
 })
@@ -111,9 +102,6 @@ enable_hook->add(() => {
 #    nnoremap <key> :VSExec grep -RIHins "" . --exclude-dir={.git,"node_*"} --exclude=".*"<c-left><c-left><c-left><left><left>
 #    nnoremap <key> :VSExec grep -IHins "" **/*<c-left><left><left>
 #    ```
-#
-#    `VSExecS` is same as `VSExec` except the program is executed through a
-#    shell. See note in `:VSGrep`
 enable_hook->add(() => {
     :command! -nargs=* -complete=customlist,exec.Complete VSExec exec.DoAction(null_function, <f-args>)
 })
