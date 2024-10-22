@@ -87,7 +87,7 @@ def GetRange(str: string): list<number>
                 endif
                 c = c->matchstr('^\s*[+-]\zs.*')
                 var n: string
-                if c =~ '^\s*[+-]'
+                if c =~ '^\s*[+-]' || c =~ '^\s*$'
                     n = '1'
                 else
                     n = c->matchstr('^\s*\zs\d\+')
@@ -120,13 +120,13 @@ def GetRange(str: string): list<number>
     var startl = -1
     var endl = -1
     # see :h 10.3, /foo/+2,xxx or ?foo?-3, not supporting /foo//bar/
-    var m = matchstrlist([str], '\v\/(%(\\.|[^/])+)\/(.{-})%([,;]|\ze$)', {submatches: true})
+    var m = matchstrlist([str], '\v^\s*\/(%(\\.|[^/])+)\/(.{-})%([,;]|\ze$)', {submatches: true})
     if m->len() > 0
         startl = LnumFromPat(m[0].submatches[0], m[0].submatches[1], true)
         startl = max([1, startl])
         rangeto = str->slice(len(m[0].text))
     else
-        m = matchstrlist([str], '\v\?(%(\\.|[^?])+)\?(.{-})%([,;]|\ze$)', {submatches: true})
+        m = matchstrlist([str], '\v^\s*\?(%(\\.|[^?])+)\?(.{-})%([,;]|\ze$)', {submatches: true})
         if m->len() > 0
             startl = LnumFromPat(m[0].submatches[0], m[0].submatches[1], false)
             startl = max([1, startl])
@@ -142,12 +142,12 @@ def GetRange(str: string): list<number>
         endif
     endif
     if rangeto != null_string
-        m = matchstrlist([str], '\v\/(%(\\.|[^/])+)%(\/\s*(.*))?\s*$', {submatches: true})
+        m = matchstrlist([rangeto], '\v^\s*\/(%(\\.|[^/])+)%(\/\s*(.*))?\s*$', {submatches: true})
         if m->len() > 0
             endl = LnumFromPat(m[0].submatches[0], m[0].submatches[1], true)
             endl = (endl <= 0) ? line('$') : endl
         else
-            m = matchstrlist([str], '\v\?(%(\\.|[^?])+)%(\?\s*(.*))?\s*$', {submatches: true})
+            m = matchstrlist([rangeto], '\v^\s*\?(%(\\.|[^?])+)%(\?\s*(.*))?\s*$', {submatches: true})
             if m->len() > 0
                 endl = LnumFromPat(m[0].submatches[0], m[0].submatches[1], false)
                 endl = (endl <= 0) ? line('$') : endl
@@ -161,10 +161,15 @@ def GetRange(str: string): list<number>
         elseif rng =~# '^\s*\$'
             return Increment(line('$'), rng->matchstr('^\s*\$\zs.*'))
         else
-            m = matchstrlist([rng], '\v(''\S)\s*(.*)', {submatches: true})
+            m = matchstrlist([rng], '\v^\s*(\d+)\s*(.*)', {submatches: true})
+            if m->len() > 0
+                return Increment(str2nr(m[0].submatches[0]), m[0].submatches[1])
+            endif
+            m = matchstrlist([rng], '\v^\s*(''\S)\s*(.*)', {submatches: true})
             if m->len() > 0
                 return Increment(getpos(m[0].submatches[0])[1], m[0].submatches[1])
-            elseif rng =~ '^[+-]'
+            endif
+            if rng =~ '^\s*[+-]'
                 return Increment(line('.'), rng)
             endif
         endif
@@ -181,11 +186,14 @@ def GetRange(str: string): list<number>
     if endl == -1 && rangeto != null_string
         endl = GetLineNum(rangeto)
     endif
-    if endl == -1 && startl > 0
+    if endl <= 0 && startl > 0
         endl = startl
     endif
-    if startl == -1
-        [startl, endl] = [1, line('$')]
+    if startl <= 0
+        startl = 1
+    endif
+    if endl <= 0
+        endl = line('$')
     endif
     if endl < startl
         [startl, endl] = [endl, startl]
@@ -196,7 +204,26 @@ def GetRange(str: string): list<number>
     return [startl, endl]
 enddef
 
-# :call g:vimsuggest#aux#Test()
-export def Test()
-    echo 'Test()'
+# :call g:vimsuggest#aux#TestRange() while editing ../../LICENSE.
+export def TestRange()
+    :normal gg
+    assert_equal([1, line('$')], GetRange('%'))
+    assert_equal([line('.'), line('.')], GetRange('.'))
+    assert_equal([line('$'), line('$')], GetRange('$'))
+    assert_equal([4, 5], GetRange('4,5'))
+    assert_equal([4, 5], GetRange(' 4 , 5 '))
+    assert_equal([6, 9], GetRange('4+2+4-1 , 5 +'))
+    assert_equal([line('.') + 2, line('$') - 4], GetRange('.+2;$-4'))
+    assert_equal([line('.') + 2, line('.') + 2], GetRange('+2'))
+    assert_equal([line('.') + 2, line('.') + 2], GetRange('.+2'))
+    assert_equal([line('.'), line('.') + 2], GetRange('.,+2'))
+    assert_equal([line('.') + 2, line('.') + 2], GetRange(';+2'))
+    assert_equal([line('.') + 2, line('.') + 2], GetRange('+2,'))
+    assert_equal([1, 12], GetRange('.,/\Cpermission '))
+    assert_equal([1, 13], GetRange('.,/\Cpermission/+1'))
+    assert_equal([12, 15], GetRange('/\Cpermission/;/\CPROVIDED/'))
+    :normal G
+    assert_equal([11, 11], GetRange('?\Cpermission?-1'))
+    assert_equal([14, line('$') - 1], GetRange('?\Cpermission?+2,$-1'))
+    foreach(v:errors, 'echom "Fail:" v:val')
 enddef
