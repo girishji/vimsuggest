@@ -136,8 +136,9 @@ def DoComplete(oldcontext: string, timer: number)
     endif
     var cmdstr = context->CmdStr()
     var cmdlead = CmdLead()
-    if cmdstr->match($'\%({options.exclude->join("\\|")}\)') == -1
-        state.exclude->index(context[-1]) != -1 ||
+    if (options.exclude->len() > 0 &&
+            cmdstr->match($'\%({options.exclude->join("\\|")}\)') != -1) ||
+            state.exclude->index(context[-1]) != -1 ||
             (options.alwayson && context =~ '\s$' &&
             !(cmdstr =~ '^\s*\S\+\s\+$' && options.onspace->index(cmdlead) != -1) &&
             !State.onspace_hook->has_key(cmdlead))

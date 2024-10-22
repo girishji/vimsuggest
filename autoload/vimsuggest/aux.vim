@@ -219,6 +219,9 @@ export def TestRange()
     assert_equal([line('.'), line('.') + 2], GetRange('.,+2'))
     assert_equal([line('.') + 2, line('.') + 2], GetRange(';+2'))
     assert_equal([line('.') + 2, line('.') + 2], GetRange('+2,'))
+    :normal v3j<esc>u
+    assert_equal([1, 4], GetRange("'<,'>"))
+    :normal gg
     assert_equal([1, 12], GetRange('.,/\Cpermission '))
     assert_equal([1, 13], GetRange('.,/\Cpermission/+1'))
     assert_equal([12, 15], GetRange('/\Cpermission/;/\CPROVIDED/'))
