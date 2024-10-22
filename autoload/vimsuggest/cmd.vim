@@ -151,7 +151,7 @@ def DoComplete(oldcontext: string, timer: number)
     try
         if options.wildignore && cmdstr =~# '^\s*\(e\%[dit]!\?\|fin\%[d]!\?\)\s'
             # 'file_in_path' respects wildignore, 'cmdline' does not.
-            # :VSCmd edit ... should not be here.
+            # :VSxxx edit ... should not be here.
             completions = cmdstr->matchstr('^\S\+\s\+\zs.*')->getcompletion('file_in_path')
         else
             completions = context->getcompletion('cmdline')

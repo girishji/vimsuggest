@@ -2,12 +2,13 @@ vim9script
 
 export var insertion_point = -1
 
+var slead = 's\%[ubstitute]!\?'
+var glead = 'g\%[lobal]!\?'
+var sep = '[^"\!|a-zA-Z0-9]'
+
 # Completion candidates for :s// and :g//
 export def GetCompletionSG(ctx: string): list<any>
     insertion_point = -1
-    var slead = 's\%[ubstitute]!\?'
-    var glead = 'g\%[lobal]!\?'
-    var sep = '[^"\!|a-zA-Z0-9]'
     var pat = null_string
     var range = null_string
     var m = matchstrlist([ctx], $'^\(.\{{-}}\)\({glead}\)\({sep}\)\(.*\)$', {submatches: true})
@@ -167,10 +168,44 @@ def GetRange(str: string): list<number>
             endif
             m = matchstrlist([rng], '\v^\s*(''\S)\s*(.*)', {submatches: true})
             if m->len() > 0
-                return Increment(getpos(m[0].submatches[0])[1], m[0].submatches[1])
+                var [bufnum, lnum] = getpos(m[0].submatches[0])[0 : 1]
+                if bufnum == 0 || bufnum == bufnr()
+                    return Increment(lnum, m[0].submatches[1])
+                endif
             endif
             if rng =~ '^\s*[+-]'
                 return Increment(line('.'), rng)
+            endif
+            m = matchstrlist([rng], '\v^\s*(\\/)\s*(.*)', {submatches: true})
+            if m->len() > 0
+                return LnumFromPat(getreg("/"), m[0].submatches[1], v:searchforward) + 1
+            endif
+            m = matchstrlist([rng], '\v^\s*(\\\?)\s*(.*)', {submatches: true})
+            if m->len() > 0
+                return LnumFromPat(getreg("/"), m[0].submatches[1], v:searchforward) - 1
+            endif
+            m = matchstrlist([rng], '\v^\s*(\\\&)\s*(.*)', {submatches: true})
+            if m->len() > 0
+                var hidx = -1
+                var hcmd = histget(':', -1)
+                var pat = null_string
+                while hidx > -300 && hcmd != null_string
+                    var mt = matchstrlist([hcmd], $'^\(.\{{-}}\)\({slead}\)\({sep}\)\(.*\)$', {submatches: true})
+                    if mt != []  # :s//
+                        var sepchar = mt[0].submatches[2]
+                        pat = mt[0].submatches[3]
+                        var sepidx = pat->stridx(sepchar)
+                        if sepidx != -1
+                            pat = pat->slice(0, sepidx)
+                        endif
+                        break
+                    endif
+                    hidx -= 1
+                    hcmd = histget(':', hidx)
+                endwhile
+                if pat != null_string
+                    return LnumFromPat(pat, m[0].submatches[1], true) + 1
+                endif
             endif
         endif
         return -1
@@ -225,6 +260,13 @@ export def TestRange()
     assert_equal([1, 12], GetRange('.,/\Cpermission '))
     assert_equal([1, 13], GetRange('.,/\Cpermission/+1'))
     assert_equal([12, 15], GetRange('/\Cpermission/;/\CPROVIDED/'))
+    setreg("/", "hereby")
+    assert_equal([6, 6], GetRange('\/'))
+    assert_equal([8, 8], GetRange('\/+2'))
+    assert_equal([3, 3], GetRange('\?-1'))
+    :s/Lic/Lic
+    :normal u
+    assert_equal([4, 4], GetRange('\&+2'))
     :normal G
     assert_equal([11, 11], GetRange('?\Cpermission?-1'))
     assert_equal([14, line('$') - 1], GetRange('?\Cpermission?+2,$-1'))
