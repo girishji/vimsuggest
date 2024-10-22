@@ -278,7 +278,7 @@ When the `addons` option is set to `v:true`, the following commands are made ava
 
    Performance:
 
-   Using the system's `find` program significantly outperforms Vim's `:find` command. On the Vim source repository, it takes ~1 second to list all files using `:find **/*` command, while `:VSFind` takes ~30 milliseconds (30x faster). Most of the gains come from avoiding the shell's recursive glob wildcard [[Related](https://github.com/vim/vim/issues/15791)].
+   Using the system's `find` program significantly outperforms Vim's `:find` command. On the Vim source repository, it takes ~1 second to list all files using `:find **/*` command, while `:VSFind` takes ~30 milliseconds (30x faster). Shell's recursive glob wildcard can be [slow](https://github.com/vim/vim/issues/15791).
 
 2. **Fuzzy Search Buffers and Other Vim Artifacts**
 
