@@ -31,6 +31,7 @@ class State
     public var items: list<list<any>>
     public var insertion_point: number
     public var exit_key: string = null_string # Key pressed before closing the menu
+    public var char_removed: bool
     # Following callbacks are used by addons.
     public static var onspace_hook = {}  # Complete after space anywhere (unlike options.onspace)
     public var highlight_hook = {}
@@ -119,6 +120,10 @@ def TabComplete()
 enddef
 
 def Complete()
+    if state.char_removed
+        state.char_removed = false
+        return
+    endif
     var context = Context()
     if context == '' || context =~ '^\s\+$'
         :redraw  # Needed to hide popup after <bs> and cmdline is empty
@@ -173,6 +178,18 @@ def DoComplete(oldcontext: string, timer: number)
     endtry
     if completions->len() == 0  # Check :s// and :g/ completion
         completions = aux.GetCompletionSG(context)
+        if completions->len() > 0 && &hlsearch && &incsearch
+            # Restore 'hls' and 'incsearch' hightlight (removed when popup_show() redraws).
+            var charpos = getcmdpos() - 2
+            var cmdline = getcmdline()
+            setcmdline(cmdline->slice(0, charpos) .. cmdline->slice(charpos + 1))
+            if getcmdpos() != charpos + 1
+                feedkeys("\<home>", 'n')
+                foreach(range(charpos), (_, _) => feedkeys("\<right>", 'n'))
+            endif
+            state.char_removed = true
+            feedkeys(context[-1], 'n')
+        endif
     endif
     if completions->len() == 0 || (completions->len() == 1 && context->strridx(completions[0]) != -1)
         # No completions found, or this completion is already inserted.
@@ -283,12 +300,16 @@ def FilterFn(winid: number, key: string): bool
         CmdlineAbortHook()
         return false
     else
+        if state.char_removed
+            state.char_removed = false
+            return false
+        endif
         state.pmenu.Hide()
         # Note: Redrawing after Hide() causes the popup to disappear after
         # <left>/<right> arrow keys are pressed. Arrow key events are not
         # captured by this function. Calling Hide() without triggering a redraw
         # ensures that EnableCmdline works properly, allowing the command line
-        # to handle the keys first, and decide it popup needs to be updated.
+        # to handle the keys first, and decide if popup needs to be updated.
         # This approach is safer as it avoids the need to manage various
         # control characters and the up/down arrow keys used for history recall.
         EnableCmdline()

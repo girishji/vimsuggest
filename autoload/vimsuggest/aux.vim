@@ -11,8 +11,10 @@ export def GetCompletionSG(ctx: string): list<any>
     insertion_point = -1
     var pat = null_string
     var range = null_string
+    var isglobal = false
     var m = matchstrlist([ctx], $'^\(.\{{-}}\)\({glead}\)\({sep}\)\(.*\)$', {submatches: true})
     if m != []  # :g// :g//s//
+        isglobal = true
         range = m[0].submatches[0]
         var sepchar = m[0].submatches[2]
         pat = m[0].submatches[3]
@@ -32,6 +34,7 @@ export def GetCompletionSG(ctx: string): list<any>
         endif
     endif
     if pat == null_string
+        isglobal = false
         m = matchstrlist([ctx], $'^\(.\{{-}}\)\({slead}\)\({sep}\)\(.*\)$', {submatches: true})
         if m != []  # :s//
             range = m[0].submatches[0]
@@ -45,15 +48,9 @@ export def GetCompletionSG(ctx: string): list<any>
     endif
     pat = pat->substitute('^\\%V', '', '')
     if pat != null_string
-        var startl: number
-        var endl: number
-        if range == null_string
-            [startl, endl] = [line('.'), line('.')]
-        else
-            [startl, endl] = GetRange(range)
-            if startl <= 0
-                return []
-            endif
+        var [startl, endl] = GetRange(range, isglobal)
+        if startl <= 0
+            return []
         endif
         pat = (pat =~ '\(\\s\| \)' ? '\(\)' : '\(\w*\)') .. $'\({pat}\)\(\w*\)'
         try
@@ -75,7 +72,7 @@ export def GetCompletionSG(ctx: string): list<any>
     return []
 enddef
 
-def GetRange(range_str: string): list<number>
+def GetRange(rstr: string, isglobal: bool = false): list<number>
 
     def Increment(linenum: number, val: string): number
         var lnum = linenum
@@ -116,9 +113,9 @@ def GetRange(range_str: string): list<number>
         return Increment(lnum, incr)
     enddef
 
-    var str = range_str->substitute('\%(:\+\s*\|:*\)$', '', '')  # Can have :1,$:s// (:h cmdline-lines)
+    var str = rstr->substitute('\%(:\+\s*\|:*\)$', '', '')  # Can have :1,$:s// (:h cmdline-lines)
     if str == null_string
-        return [line('.'), line('.')]
+        return [line('.'), (isglobal ? line('$') : line('.'))]
     endif
     var rangefrom = null_string
     var rangeto = null_string
@@ -260,6 +257,7 @@ export def TestRange()
     assert_equal([line('.') + 2, line('.') + 2], GetRange(';+2'))
     assert_equal([line('.') + 2, line('.') + 2], GetRange('+2,'))
     assert_equal([line('.'), line('.')], GetRange(':::'))
+    assert_equal([line('.'), line('$')], GetRange(':', true))
     assert_equal([line('.') + 2, line('.') + 3], GetRange('.+2,.+3 :: '))
     :normal v3j<esc>u
     assert_equal([1, 4], GetRange("'<,'>"))
@@ -272,8 +270,7 @@ export def TestRange()
     assert_equal([8, 8], GetRange('\/+2'))
     assert_equal([3, 3], GetRange('\?-1'))
     :normal gg
-    :s/Lic/Lic
-    :normal u
+    histadd(':', 's/Lic/Lic')
     assert_equal([4, 4], GetRange('\&+2'))
     :normal G
     assert_equal([11, 11], GetRange('?\Cpermission?-1'))
