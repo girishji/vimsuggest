@@ -26,8 +26,7 @@ class State
     var saved_wildmenu: bool
     var saved_ttimeout: bool
     var saved_ttimeoutlen: number
-    # Do not complete after the following characters. No worthwhile completions
-    # are shown by getcompletion()
+    # Following characters often do not provide meaningful completions.
     var exclude = ['~', '!', '%', '(', ')', '+', '-', '=', '<', '>', '?', ',']
     public var items: list<list<any>>
     public var insertion_point: number
@@ -105,8 +104,9 @@ enddef
 
 def TabComplete()
     var lastcharpos = getcmdpos() - 2
-    if getcmdline()[lastcharpos] ==? "\<tab>"
-        setcmdline(getcmdline()->slice(0, lastcharpos))
+    var cmdline = getcmdline()
+    if cmdline[lastcharpos] ==? "\<tab>"
+        setcmdline(cmdline->slice(0, lastcharpos) .. cmdline->slice(lastcharpos + 1))
         Complete()
     endif
 enddef
@@ -138,13 +138,19 @@ def DoComplete(oldcontext: string, timer: number)
     var cmdlead = CmdLead()
     if (options.exclude->len() > 0 &&
             cmdstr->match($'\%({options.exclude->join("\\|")}\)') != -1) ||
-            state.exclude->index(context[-1]) != -1 ||
             (options.alwayson && context =~ '\s$' &&
             !(cmdstr =~ '^\s*\S\+\s\+$' && options.onspace->index(cmdlead) != -1) &&
             !State.onspace_hook->has_key(cmdlead))
         # Note: Use 'context' (line until cursor) instead of getcmdline() to
         # check ending space.
         :redraw # popup_hide() already called in FilterFn, redraw to hide the popup
+        return
+    endif
+    var unfiltered = ['h\%[elp]!\?', 'ta\%[g]!\?', 'e\%[dit]!\?', 'fin\%[d]!\?', 'b\%[uffer]!\?',
+        'let', 'call']
+    if cmdstr !~# $'^\s*\({unfiltered->join("\\|")}\)\s' &&
+            state.exclude->index(context[-1]) != -1
+        :redraw
         return
     endif
     var completions: list<any> = []
@@ -282,7 +288,7 @@ def FilterFn(winid: number, key: string): bool
         # This approach is safer as it avoids the need to manage various
         # control characters and the up/down arrow keys used for history recall.
         EnableCmdline()
-        return false # Let Vim handle process this and handle search highlighting
+        return false # Let Vim process this further
     endif
     return true
 enddef
