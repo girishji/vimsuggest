@@ -62,6 +62,9 @@ enddef
 # - line: string
 # - cursorpos: number
 #     See :h command-completion-custom
+# - findcmdstr: string
+#     When provided, execute the command instead of one stored in
+#     g:vimsuggest_fzfindprg.
 # - shellprg: string
 #     When provided, execute the command through shell. Example, "/bin/sh -c".
 #     If 'g:vimsuggest_shell' is 'true', shell program in 'shell' option is used.
@@ -78,22 +81,26 @@ enddef
 # Returns:
 # - A list of files.If no valid files are found, an empty list is returned.
 export def FindComplete(arglead: string, line: string, cursorpos: number,
-        shellprg = null_string, async = true, timeout = 2000,
-        max_items = 100000): list<any>
+        findcmdstr = null_string, shellprg = null_string, async = true,
+        timeout = 2000, max_items = 100000): list<any>
     var cname = cmd.CmdLead()
     var regenerate_items = false
-    var findcmd = null_string
     var dirpath = ExtractDir()
+    var findcmd = findcmdstr
     if cmdname == null_string || cname !=# cmdname  # When a command is overwritten
         Clear()
         cmdname = cname
         prevdir = dirpath ?? '.'
-        findcmd = FindCmd(prevdir)
+        if findcmd == null_string
+            findcmd = FindCmd(prevdir)
+        endif
         regenerate_items = true
         AddFindHooks(cmdname)
     elseif dirpath != prevdir
         prevdir = dirpath
-        findcmd = FindCmd(dirpath ?? '.')
+        if findcmd == null_string
+            findcmd = FindCmd(dirpath ?? '.')
+        endif
         regenerate_items = true
     endif
     if regenerate_items
@@ -156,10 +163,15 @@ enddef
 # <Command> {pattern|dir} {pattern1} {pattern2} {pattern3}
 # If you mistype pattern for fuzzy search, no need to erase. Just abandon it by
 # typing a space and type a new pattern.
-export def DoFindAction(arg1 = null_string, arg2 = null_string,
-        arg3 = null_string, arg4 = null_string)
+# ActionFn is called with selected item.
+export def DoFindAction(ActionFn: func(string, string), arg1 = null_string,
+        arg2 = null_string, arg3 = null_string, arg4 = null_string)
     if candidate != null_string
-        exec.VisitFile(exit_key, candidate)
+        if ActionFn != null_function
+            ActionFn(exit_key, candidate)
+        else
+            exec.VisitFile(exit_key, candidate)
+        endif
     endif
     Clear()
 enddef

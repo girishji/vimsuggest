@@ -42,9 +42,28 @@ var enable_hook = []
 #    nnoremap <key> :VSFind $VIMRUNTIME<space>
 #    ```
 enable_hook->add(() => {
-    :command! -nargs=* -complete=customlist,fuzzy.FindComplete VSFind fuzzy.DoFindAction(<f-args>)
+    :command! -nargs=* -complete=customlist,fuzzy.FindComplete VSFind fuzzy.DoFindAction(null_function, <f-args>)
 })
 cmd.AddOnSpaceHook('VSFind')
+
+enable_hook->add(() => {
+    :command! -nargs=* -complete=customlist,GitFindComplete VSGitFind fuzzy.DoFindAction(GitFindAction, <f-args>)
+})
+cmd.AddOnSpaceHook('VSGitFind')
+def GitFindComplete(A: string, L: string, C: number): list<any>
+    system('git rev-parse --is-inside-work-tree')
+    return fuzzy.FindComplete(A, L, C, v:shell_error == 0 ?
+        'git ls-tree --full-tree -r --name-only HEAD' : null_string)
+enddef
+def GitFindAction(key: string, fpath: string)
+    var gitdir = system('git rev-parse --show-toplevel')
+    if v:shell_error == 0
+        gitdir = gitdir->substitute('\%x00', '', '')  # remove ^@ null char
+        exec.VisitFile(key, $"{gitdir}{has('win32') ? '\' : '/'}{fpath}")
+    else
+        exec.VisitFile(key, fpath)
+    endif
+enddef
 
 ## Live Grep
 #

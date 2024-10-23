@@ -258,6 +258,7 @@ available:
    :VSMark [fuzzy_pattern]
    :VSRegister [fuzzy_pattern]
    :VSChangelist [fuzzy_pattern]
+   :VSGitFind [fuzzy_pattern]
 <
 3. Live Grep Search~
    :VSGrep {pattern} [directory]

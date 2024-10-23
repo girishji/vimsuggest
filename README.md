@@ -284,6 +284,7 @@ When the `addons` option is set to `v:true`, the following commands are made ava
 
    ```
    :VSBuffer [fuzzy_pattern]
+   :VSGitFind [fuzzy_pattern]
    :VSMru [fuzzy_pattern]
    :VSKeymap [fuzzy_pattern]
    :VSMark [fuzzy_pattern]
@@ -291,10 +292,24 @@ When the `addons` option is set to `v:true`, the following commands are made ava
    :VSChangelist [fuzzy_pattern]
    ```
 
-   - `VSKeymap` opens the file containing the keymap when pressed.
-   - `VSRegister` pastes the register's content.
-   - Other commands behave as expected.
-   - `VSMru` lists files from `v:oldfiles`.
+   - `VSBuffer`: Search and switch between currently open buffers
+      - Displays matching buffers as you type
+   - `VSGitFind`: Smart file search with Git awareness
+      - In Git repositories: Searches tracked files only
+      - Outside Git: Falls back to regular file search (like `VSFind`)
+      - Respects .gitignore rules in Git repos
+   - `VSMru`: Access recently used files
+      - Lists files from Vim's `v:oldfiles` history
+      - Example: Quickly return to files you edited yesterday
+   - `VSKeymap`: Navigate to keymap definitions
+      - Opens the source file containing the definition of keymap
+   - `VSMark`: Quick mark navigation
+      - Jump to any mark location in your files
+   - `VSRegister`: Register content access
+      - Paste the content of register
+   - `VSChangelist`: Navigate through changes
+      - Jump to any point in the file's change history
+      - See `:help changelist` for details
 
    Example key mapping:
 
