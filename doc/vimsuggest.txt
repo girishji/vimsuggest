@@ -275,7 +275,7 @@ available:
    'grepprg'` option. If it contains `$*`, it gets replaced by the command-line
    arguments. Otherwise, arguments are appended to the end of the command.
 >
-   let g:vimsuggest_grepprg = 'rg --vimgrep --smart-case'
+   let g:vimsuggest_grepprg = 'rg --vimgrep --smart-case $* .'
    let g:vimsuggest_grepprg = 'ag --vimgrep'
 <
 4. Live File Search~

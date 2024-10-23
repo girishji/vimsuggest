@@ -319,7 +319,7 @@ When the `addons` option is set to `v:true`, the following commands are made ava
 
    ```vim
    let g:vimsuggest_grepprg = 'grep -REIHins $* --exclude-dir=.git --exclude=".*"'
-   let g:vimsuggest_grepprg = 'rg --vimgrep --smart-case'
+   let g:vimsuggest_grepprg = 'rg --vimgrep --smart-case $* .'
    let g:vimsuggest_grepprg = 'ag --vimgrep'
    ```
 
@@ -334,7 +334,10 @@ When the `addons` option is set to `v:true`, the following commands are made ava
    ```vim
    nnoremap <key> :VSFindL "*"<left><left>
    let g:vimsuggest_findprg = 'find -EL $* \! \( -regex ".*\.(swp\|git)" -prune \) -type f -name $*'
+   " Using fd:
+   nnoremap <key> :VSFindL<space>
    let g:vimsuggest_findprg = 'fd --type f'
+   let g:vimsuggest_findprg = 'fd --type f --glob'
    ```
 
 5. **In-Buffer Search (`:h :global`)**
