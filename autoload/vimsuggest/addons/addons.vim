@@ -46,6 +46,20 @@ enable_hook->add(() => {
 })
 cmd.AddOnSpaceHook('VSFind')
 
+## (Fuzzy) Find Git Files
+#
+#    Command:
+#    `:VSGitFind [fuzzy_pattern]`
+#
+#    This runs the `git ls-tree` or `find` command asynchronously to gather
+#    files for fuzzy searching. If searching in a Git repository, it searches
+#    tracked files in the whole tree. Outside Git, it falls back to regular file
+#    search (like `VSFind`).
+#
+#    Example key mappings:
+#    ```
+#    nnoremap <key> :VSGitFind<space>
+#    ```
 enable_hook->add(() => {
     :command! -nargs=* -complete=customlist,GitFindComplete VSGitFind fuzzy.DoFindAction(GitFindAction, <f-args>)
 })

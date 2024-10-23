@@ -295,9 +295,8 @@ When the `addons` option is set to `v:true`, the following commands are made ava
    - `VSBuffer`: Search and switch between currently open buffers
       - Displays matching buffers as you type
    - `VSGitFind`: Smart file search with Git awareness
-      - In Git repositories: Searches tracked files only
+      - In Git repositories: Searches tracked files
       - Outside Git: Falls back to regular file search (like `VSFind`)
-      - Respects .gitignore rules in Git repos
    - `VSMru`: Access recently used files
       - Lists files from Vim's `v:oldfiles` history
       - Example: Quickly return to files you edited yesterday
