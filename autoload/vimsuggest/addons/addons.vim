@@ -58,7 +58,7 @@ enddef
 def GitFindAction(key: string, fpath: string)
     var gitdir = system('git rev-parse --show-toplevel')
     if v:shell_error == 0
-        gitdir = gitdir->substitute('\%x00', '', '')  # remove ^@ null char
+        gitdir = gitdir->substitute('\%x00', '', '')  # remove ^@ (null char)
         exec.VisitFile(key, $"{gitdir}{has('win32') ? '\' : '/'}{fpath}")
     else
         exec.VisitFile(key, fpath)
