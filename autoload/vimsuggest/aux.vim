@@ -75,7 +75,7 @@ export def GetCompletionSG(ctx: string): list<any>
     return []
 enddef
 
-def GetRange(str: string): list<number>
+def GetRange(range_str: string): list<number>
 
     def Increment(linenum: number, val: string): number
         var lnum = linenum
@@ -116,6 +116,10 @@ def GetRange(str: string): list<number>
         return Increment(lnum, incr)
     enddef
 
+    var str = range_str->substitute('\%(:\+\s*\|:*\)$', '', '')  # Can have :1,$:s// (:h cmdline-lines)
+    if str == null_string
+        return [line('.'), line('.')]
+    endif
     var rangefrom = null_string
     var rangeto = null_string
     var startl = -1
@@ -242,8 +246,9 @@ enddef
 # :call g:vimsuggest#aux#TestRange() while editing ../../LICENSE.
 export def TestRange()
     :normal gg
-    assert_equal([1, line('$')], GetRange('%'))
+    assert_equal([line('.'), line('.')], GetRange(''))
     assert_equal([line('.'), line('.')], GetRange('.'))
+    assert_equal([1, line('$')], GetRange('%'))
     assert_equal([line('$'), line('$')], GetRange('$'))
     assert_equal([4, 5], GetRange('4,5'))
     assert_equal([4, 5], GetRange(' 4 , 5 '))
@@ -254,6 +259,8 @@ export def TestRange()
     assert_equal([line('.'), line('.') + 2], GetRange('.,+2'))
     assert_equal([line('.') + 2, line('.') + 2], GetRange(';+2'))
     assert_equal([line('.') + 2, line('.') + 2], GetRange('+2,'))
+    assert_equal([line('.'), line('.')], GetRange(':::'))
+    assert_equal([line('.') + 2, line('.') + 3], GetRange('.+2,.+3 :: '))
     :normal v3j<esc>u
     assert_equal([1, 4], GetRange("'<,'>"))
     :normal gg
@@ -264,6 +271,7 @@ export def TestRange()
     assert_equal([6, 6], GetRange('\/'))
     assert_equal([8, 8], GetRange('\/+2'))
     assert_equal([3, 3], GetRange('\?-1'))
+    :normal gg
     :s/Lic/Lic
     :normal u
     assert_equal([4, 4], GetRange('\&+2'))
