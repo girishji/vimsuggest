@@ -123,9 +123,19 @@ enddef
 
 def TabComplete()
     var lastcharpos = getcmdpos() - 2
-    if getcmdline()[lastcharpos] ==? "\<tab>"
-        setcmdline(getcmdline()->slice(0, lastcharpos))
-        Complete()
+    var cmdline = getcmdline()
+    if cmdline[lastcharpos] ==? "\<tab>"
+        setcmdline(cmdline->slice(0, lastcharpos) .. cmdline->slice(lastcharpos + 1))
+        # XXX setcmdpos() does not work here
+        if getcmdpos() != lastcharpos + 1
+            feedkeys("\<home>", 'n')
+            foreach(range(lastcharpos), (_, _) => feedkeys("\<right>", 'n'))
+            timer_start(0, (_) => Complete())
+        else
+            Complete()
+        endif
+    else
+        :redraw
     endif
 enddef
 
@@ -187,7 +197,15 @@ def ShowPopupMenu()
 enddef
 
 def SelectItemPost(index: number, dir: string)
-    setcmdline(state.items[0][index]->escape('~/'))
+    var replacement = state.items[0][index]->escape('~/')
+    var cmdline = getcmdline()
+    setcmdline(replacement .. cmdline->slice(getcmdpos() - 1))
+    var newpos = replacement->len()
+    # XXX: setcmdpos() does not work here, vim put cursor at the end.
+    if getcmdpos() != newpos + 1
+        feedkeys("\<home>", 'n')
+        foreach(range(newpos), (_, _) => feedkeys("\<right>", 'n'))
+    endif
 enddef
 
 def FilterFn(winid: number, key: string): bool

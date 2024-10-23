@@ -23,7 +23,7 @@ export var options: dict<any> = {
 
 class State
     var pmenu: popup.PopupMenu = null_object
-    var saved_wildmenu: bool
+    var saved_wildchar: number
     var saved_ttimeout: bool
     var saved_ttimeoutlen: number
     # Following characters often do not provide meaningful completions.
@@ -31,7 +31,7 @@ class State
     public var items: list<list<any>>
     public var insertion_point: number
     public var exit_key: string = null_string # Key pressed before closing the menu
-    # Following are the callbacks used by addons.
+    # Following callbacks are used by addons.
     public static var onspace_hook = {}  # Complete after space anywhere (unlike options.onspace)
     public var highlight_hook = {}
     public var select_item_hook = {}
@@ -43,15 +43,13 @@ class State
         this.saved_ttimeout = &ttimeout  # Needs to be set, otherwise <esc> delays when closing menu 
         this.saved_ttimeoutlen = &ttimeoutlen
         :set ttimeout ttimeoutlen=100
-        this.saved_wildmenu = &wildmenu
-        :set nowildmenu
+        this.saved_wildchar = &wildchar
+        :set wildchar=<C-z>
         this.pmenu = popup.PopupMenu.new(FilterFn, CallbackFn, options.popupattrs, options.pum)
     enddef
 
     def Clear()
-        if this.saved_wildmenu
-            :set wildmenu
-        endif
+        :exec $'set wildchar={this.saved_wildchar}'
         if this.saved_ttimeout
             :set ttimeout
             &ttimeoutlen = this.saved_ttimeoutlen
@@ -107,7 +105,16 @@ def TabComplete()
     var cmdline = getcmdline()
     if cmdline[lastcharpos] ==? "\<tab>"
         setcmdline(cmdline->slice(0, lastcharpos) .. cmdline->slice(lastcharpos + 1))
-        Complete()
+        # XXX setcmdpos() does not work here
+        if getcmdpos() != lastcharpos + 1
+            feedkeys("\<home>", 'n')
+            foreach(range(lastcharpos), (_, _) => feedkeys("\<right>", 'n'))
+            timer_start(0, (_) => Complete())
+        else
+            Complete()
+        endif
+    else
+        :redraw
     endif
 enddef
 
@@ -229,14 +236,11 @@ export def SelectItemPost(index: number, dir: string)
         setcmdline(cmdline->slice(0, state.insertion_point) ..
             replacement .. cmdline->slice(getcmdpos() - 1))
         var newpos = state.insertion_point + replacement->len()
-        # XXX: setcmdpos() does not work here, vim put cursor at the end (vim bug?)
-        # setcmdpos(newpos + 1)
+        # XXX: setcmdpos() does not work here, vim put cursor at the end.
         # workaround:
         if getcmdpos() != newpos + 1
             feedkeys("\<home>", 'n')
-            for _ in range(state.insertion_point + replacement->len())
-                feedkeys("\<right>", 'n')
-            endfor
+            foreach(range(newpos), (_, _) => feedkeys("\<right>", 'n'))
         endif
     endif
 enddef
