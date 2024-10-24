@@ -111,7 +111,7 @@ let s:vim_suggest.cmd = {
 | wildignore | `v:true` | Respect 'wildignore' during file completion |
 | addons | `v:true` | Enable addons (`:VSxxx` commands) |
 | ctrl_np | `v:false` | <C-n/p> selects menu when 'true'; otherwise, recalls history |
-| reverse | `v:false` | Reverse-sorted menu, with the most relevant item at the bottom |
+| reverse | `v:false` | Reverse-sorted menu, with the most relevant item at the bottom (when `pum=v:true`) |
 
 ### Search Completion Configuration
 
@@ -148,6 +148,7 @@ let s:vim_suggest.search = {
 | async_minlines | `1000` | Min lines to trigger async search |
 | highlight | `v:true` | 'false' to disable menu highlighting (for performance) |
 | ctrl_np | `v:false` | <C-n/p> selects menu when 'true'; otherwise, recalls history |
+| reverse | `v:false` | Reverse-sorted menu, with the most relevant item at the bottom (when `pum=v:true`) |
 
 > [!IMPORTANT]
 > 1. Searching large files will not cause any lag. By default, searching is concurrent. Even though no external jobs are used, a timer pauses the task at regular intervals to check if there are pending keys on the typehead.

@@ -24,6 +24,7 @@ export var options: dict<any> = {
     async_minlines: 1000, # Minimum lines to enable async search
     highlight: true,      # Disable menu highlighting (for performance)
     ctrl_np: false,       # 'true' to select menu items using <C-n/p>, 'false' for history recall
+    reverse: false,       # Upside-down menu
 }
 
 # Represents the state of the current search
@@ -40,7 +41,8 @@ class State
     var curpos: list<any>
 
     def new()
-        this.pmenu = popup.PopupMenu.new(FilterFn, CallbackFn, options.popupattrs, options.pum)
+        this.pmenu = popup.PopupMenu.new(FilterFn, CallbackFn, options.popupattrs,
+            options.pum, options.reverse)
         this.async = line('$') < options.async_minlines ? false : options.async
         if this.async
             this.curpos = getcurpos()

@@ -98,6 +98,7 @@ s:vim_suggest.cmd is a dictionary containing the following options:
                 Default: v:false
 
     'reverse'   Reverse-sorted menu, with the most relevant item at the bottom
+                Only when 'pum' is 'true'
                 Default: v:false
 
 Search Completion Configuration:~
@@ -117,6 +118,7 @@ Search Completion Configuration:~
          \ 'async_minlines': 1000,
          \ 'highlight': v:true,
          \ 'ctrl_np': v:false,
+         \ 'reverse': v:false,
      \ }
 
 s:vim_suggest.search is a dictionary containing the following options:
@@ -157,6 +159,10 @@ s:vim_suggest.search is a dictionary containing the following options:
                 Default: v:true
 
     'ctrl_np'   <C-n/p> selects menu when 'true'; otherwise, recalls history
+                Default: v:false
+
+    'reverse'   Reverse-sorted menu, with the most relevant item at the bottom
+                Only when 'pum' is 'true'
                 Default: v:false
 
 Apply Configuration:~
