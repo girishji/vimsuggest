@@ -242,7 +242,7 @@ Note: Keys used in command-line editing (`:h cmdline-editing`) remain unmodified
 >    augroup END
 >    ```
 > 3. To perform a multi-word search using the `/` or `?` command, type the first word followed by `<Space>` to trigger auto-completion for the next word. At the end of a line, press `\n` to continue the search on the next line. Note that enabling the fuzzy search option will disable multi-word search functionality.
-> 4. When completing files during `:edit` command, `<Tab>` selects subsequent items in the menu. In order to step into a directory press `/`, and it will populate items from that directory.
+> 4. When completing files during `:edit` command, `<Tab>` selects subsequent items in the menu. In order to step into a directory select the directory and press `/`; it will populate items from that directory.
 
 ## Addons
 
