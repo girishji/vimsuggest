@@ -62,7 +62,7 @@ Command Completion Configuration:~
         \ 'wildignore': v:true,
         \ 'addons': v:true,
         \ 'ctrl_np': v:false,
-        \ 'reversed': v:false,
+        \ 'reverse': v:false,
     \ }
 <
 s:vim_suggest.cmd is a dictionary containing the following options:
@@ -97,7 +97,7 @@ s:vim_suggest.cmd is a dictionary containing the following options:
     'ctrl_np'   <C-n/p> selects menu when 'true'; otherwise, recalls history
                 Default: v:false
 
-    'reversed'  Upside down menu (most relevant item is at the bottom)
+    'reverse'   Reverse-sorted menu, with the most relevant item at the bottom
                 Default: v:false
 
 Search Completion Configuration:~

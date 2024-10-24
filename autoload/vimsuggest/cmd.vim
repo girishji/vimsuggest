@@ -20,7 +20,7 @@ export var options: dict<any> = {
     wildignore: true,     # Exclude wildignore patterns during file completion
     addons: true,         # Enable additional completion addons (like fuzzy file finder)
     ctrl_np: false,       # 'true' to select menu using <C-n/p>, 'false' for history recall
-    reversed: false,      # Upside-down menu
+    reverse: false,       # Upside-down menu
 }
 
 class State
@@ -49,7 +49,7 @@ class State
         this.saved_wildchar = &wildchar
         :set wildchar=<C-z>
         this.pmenu = popup.PopupMenu.new(FilterFn, CallbackFn, options.popupattrs,
-            options.pum, options.reversed)
+            options.pum, options.reverse)
     enddef
 
     def Clear()

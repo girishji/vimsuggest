@@ -95,7 +95,7 @@ let s:vim_suggest.cmd = {
     \ 'wildignore': v:true,
     \ 'addons': v:true,
     \ 'ctrl_np': v:false,
-    \ 'reversed': v:false,
+    \ 'reverse': v:false,
 \ }
 ```
 
@@ -111,7 +111,7 @@ let s:vim_suggest.cmd = {
 | wildignore | `v:true` | Respect 'wildignore' during file completion |
 | addons | `v:true` | Enable addons (`:VSxxx` commands) |
 | ctrl_np | `v:false` | <C-n/p> selects menu when 'true'; otherwise, recalls history |
-| reversed | `v:false` | Upside down menu (most relevant item is at the bottom) |
+| reverse | `v:false` | Reverse-sorted menu, with the most relevant item at the bottom |
 
 ### Search Completion Configuration
 
