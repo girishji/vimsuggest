@@ -13,7 +13,8 @@ export var options: dict<any> = {
     pum: true,            # 'true' for stacked popup menu, 'false' for flat
     fuzzy: false,         # Enable fuzzy completion matching
     exclude: [],          # List of (regex) patterns to exclude from completion
-    onspace: [],          # Complete after the space after the command (e.g., ':find ', ':buffer ', etc.)
+    onspace: ['colo\%[rscheme]', 'b\%[uffer]'],
+                          # Complete after the space after the command
     alwayson: true,       # If 'false', press <tab> to open the popup menu manually
     popupattrs: {},       # Attributes for configuring the popup window
     wildignore: true,     # Exclude wildignore patterns during file completion
@@ -148,10 +149,12 @@ def DoComplete(oldcontext: string, timer: number)
     endif
     var cmdstr = context->CmdStr()
     var cmdlead = CmdLead()
-    if (options.exclude->len() > 0 &&
-            cmdstr->match($'\%({options.exclude->join("\\|")}\)') != -1) ||
-            (options.alwayson && context =~ '\s$' &&
-            !(cmdstr =~ '^\s*\S\+\s\+$' && options.onspace->index(cmdlead) != -1) &&
+    var excl_pattern_present =
+        options.exclude->reduce((a, v) => a || (cmdstr->match(v) != -1), false)
+    var onspace_pattern_present = cmdstr =~ '^\s*\S\+\s\+$' &&
+        options.onspace->reduce((a, v) => a || (cmdlead->match(v) != -1), false)
+    if excl_pattern_present ||
+            (options.alwayson && context =~ '\s$' && !onspace_pattern_present &&
             !State.onspace_hook->has_key(cmdlead))
         # Note: Use 'context' (line until cursor) instead of getcmdline() to
         # check ending space.

@@ -89,7 +89,7 @@ let s:vim_suggest.cmd = {
     \ 'pum': v:true,
     \ 'fuzzy': v:false,
     \ 'exclude': [],
-    \ 'onspace': [],
+    \ 'onspace': ['b\%[uffer]','colo\%[rscheme]'],
     \ 'alwayson': v:true,
     \ 'popupattrs': {},
     \ 'wildignore': v:true,
@@ -104,7 +104,7 @@ let s:vim_suggest.cmd = {
 | pum | v:true | Use stacked popup menu (v:false for flat) |
 | fuzzy | v:false | Enable fuzzy completion matching |
 | exclude | [] | Regex patterns to exclude from completion |
-| onspace | [] | Commands to complete after space (e.g., 'buffer') |
+| onspace | ['b\%[uffer]','colo\%[rscheme]'] | Commands (regex) to complete after typing space |
 | alwayson | v:true | Auto-open popup (v:false to open with <Tab>) |
 | popupattrs | {} | Arguments passed to popup_create() (`:h popup_create-arguments`) |
 | wildignore | v:true | Respect 'wildignore' during file completion |
