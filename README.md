@@ -195,6 +195,7 @@ let s:vim_suggest.cmd.popupattrs = {
     \ 'borderhighlight': ['Normal'],
     \ 'highlight': 'Normal',
     \ 'border': [1, 1, 1, 1],
+    \ 'maxheight': 20,
     \ }
 
 " Exclude specific patterns from completion
@@ -204,13 +205,13 @@ let s:vim_suggest.cmd.exclude = [
     \ '^\s*\d*\s*sb\%[uffer]!\?\s\+'
     \ ]
 
-" Optional: Customize highlight groups
+" Apply the configuration
+call g:VimSuggestSetOptions(s:vim_suggest)
+
+" Customize highlight groups
 highlight VimSuggestMatch ctermfg=Green guifg=#00FF00
 highlight VimSuggestMatchSel cterm=bold gui=bold ctermfg=Green guifg=#00FF00
 highlight VimSuggestMute ctermfg=Gray guifg=#808080
-
-" Apply the configuration
-call g:VimSuggestSetOptions(s:vim_suggest)
 ```
 
 ## Key Bindings
