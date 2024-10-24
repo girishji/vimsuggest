@@ -230,6 +230,10 @@ enddef
 
 def AddFindHooks(name: string)
     AddHooks(name)
+    cmd.AddSelectItemHook(name, (_, _) => {
+        job.Stop()  # Otherwise menu updates make <tab> not advance
+        return true  # Do not update cmdline with selected item
+    })
     cmd.AddHighlightHook(name, (_: string, _: list<any>): list<any> => {
         var pat = ExtractPattern()
         return pat != null_string && !matches[0]->empty() ?

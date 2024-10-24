@@ -258,7 +258,8 @@ def AddHooks(name: string)
         exit_key = key
     })
     cmd.AddSelectItemHook(name, (_, _) => {
-        return true # Do not update cmdline with selected item
+        job.Stop()  # Otherwise menu updates make <tab> not advance
+        return true  # Do not update cmdline with selected item
     })
     cmd.AddHighlightHook(name, (arglead: string, itms: list<any>): list<any> => {
         DoHighlight(arglead)

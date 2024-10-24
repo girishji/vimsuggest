@@ -26,7 +26,7 @@ var enable_hook = []
 ## (Fuzzy) Find Files
 #
 #    Command:
-#    `:VSFind [dirpath] [fuzzy_pattern]`
+#    `:VSFind [dir] [fuzzy_pattern]`
 #
 #    This runs the `find` command asynchronously to gather files for fuzzy
 #    searching. The optional first argument is the directory to search within.
@@ -49,12 +49,12 @@ cmd.AddOnSpaceHook('VSFind')
 ## (Fuzzy) Find Git Files
 #
 #    Command:
-#    `:VSGitFind [fuzzy_pattern]`
+#    `:VSGitFind [dir] [fuzzy_pattern]`
 #
 #    This runs the `git ls-tree` or `find` command asynchronously to gather
 #    files for fuzzy searching. If searching in a Git repository, it searches
-#    tracked files in the whole tree. Outside Git, it falls back to regular file
-#    search (like `VSFind`).
+#    tracked files in the whole tree. Outside Git, or if 'dir' is specified, it
+#    falls back to regular file search (like `VSFind`).
 #
 #    Example key mappings:
 #    ```
@@ -65,9 +65,13 @@ enable_hook->add(() => {
 })
 cmd.AddOnSpaceHook('VSGitFind')
 def GitFindComplete(A: string, L: string, C: number): list<any>
-    system('git rev-parse --is-inside-work-tree')
-    return fuzzy.FindComplete(A, L, C, v:shell_error == 0 ?
-        'git ls-tree --full-tree -r --name-only HEAD' : null_string)
+    if fuzzy.ExtractDir() != null_string
+        return fuzzy.FindComplete(A, L, C)
+    else
+        system('git rev-parse --is-inside-work-tree')
+        return fuzzy.FindComplete(A, L, C, v:shell_error == 0 ?
+            'git ls-tree --full-tree -r --name-only HEAD' : null_string)
+    endif
 enddef
 def GitFindAction(key: string, fpath: string)
     var gitdir = system('git rev-parse --show-toplevel')

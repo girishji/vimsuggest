@@ -272,8 +272,16 @@ def FilterFn(winid: number, key: string): bool
     elseif key == "\<S-Tab>" || ((key == "\<C-p>" || key == "\<Up>") && options.ctrl_np)
         state.pmenu.SelectItem('k', SelectItemPost) # Prev item
     elseif key == "\<PageUp>"
+        var cmdname = CmdLead()
+        if state.select_item_hook->has_key(cmdname)  # stop async job, if any
+            state.select_item_hook[cmdname](null_string, null_string)
+        endif
         state.pmenu.PageUp()
     elseif key == "\<PageDown>"
+        var cmdname = CmdLead()
+        if state.select_item_hook->has_key(cmdname)  # stop async job, if any
+            state.select_item_hook[cmdname](null_string, null_string)
+        endif
         state.pmenu.PageDown()
     elseif key == "\<C-s>"  # Dismiss auto-completion
         state.pmenu.Hide()
