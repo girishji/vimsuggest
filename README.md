@@ -100,16 +100,16 @@ let s:vim_suggest.cmd = {
 
 | Variable Name | Default Value | Comment |
 |---------------|---------------|---------|
-| enable | v:true | Enable/disable command completion |
-| pum | v:true | Use stacked popup menu (v:false for flat) |
-| fuzzy | v:false | Enable fuzzy completion matching |
-| exclude | [] | Regex patterns to exclude from completion |
+| enable | `v:true` | Enable/disable command completion |
+| pum | `v:true` | `v:true` for stacked menu, `v:false` for flat menu |
+| fuzzy | `v:false` | Enable fuzzy completion matching |
+| exclude | `[]` | Regex patterns to exclude from completion |
 | onspace | `['b\%[uffer]','colo\%[rscheme]']` | Commands (regex) to complete after typing space |
-| alwayson | v:true | Auto-open popup (v:false to open with <Tab>) |
-| popupattrs | {} | Arguments passed to popup_create() (`:h popup_create-arguments`) |
-| wildignore | v:true | Respect 'wildignore' during file completion |
-| addons | v:true | Enable addons (`:VSxxx` commands) |
-| ctrl_np | v:false | <C-n/p> selects menu when 'true'; otherwise, recalls history |
+| alwayson | `v:true` | Auto-open popup (v:false to open with <Tab>) |
+| popupattrs | `{}` | Arguments passed to popup_create() (`:h popup_create-arguments`) |
+| wildignore | `v:true` | Respect 'wildignore' during file completion |
+| addons | `v:true` | Enable addons (`:VSxxx` commands) |
+| ctrl_np | `v:false` | <C-n/p> selects menu when 'true'; otherwise, recalls history |
 
 ### Search Completion Configuration
 
@@ -134,18 +134,18 @@ let s:vim_suggest.search = {
 
 | Variable Name | Default Value | Comment |
 |---------------|---------------|---------|
-| enable | v:true | Enable/disable search completion |
-| pum | v:true | Use flat menu (v:true for stacked) |
-| fuzzy | v:false | Enable fuzzy completion |
-| alwayson | v:true | Auto-open popup (v:false to open with <Tab>) |
-| popupattrs | {'maxheight': 12} | Arguments passed to popup_create() (`:h popup_create-arguments`) |
-| range | 100 | Lines to search in each batch |
-| timeout | 200 | Non-async search timeout (ms) |
-| async | v:true | Use asynchronous searching |
-| async_timeout | 3000 | Async search timeout (ms) |
-| async_minlines | 1000 | Min lines to trigger async search |
-| highlight | v:true | 'false' to disable menu highlighting (for performance) |
-| ctrl_np | v:false | <C-n/p> selects menu when 'true'; otherwise, recalls history |
+| enable | `v:true` | Enable/disable search completion |
+| pum | `v:true` | `v:true` for stacked menu, `v:false` for flat menu |
+| fuzzy | `v:false` | Enable fuzzy completion |
+| alwayson | `v:true` | Auto-open popup (`v:false` to open with `<Tab>`) |
+| popupattrs | `{'maxheight': 12}` | Arguments passed to popup_create() (`:h popup_create-arguments`) |
+| range | `100` | Lines to search in each batch |
+| timeout | `200` | Non-async search timeout (ms) |
+| async | `v:true` | Use asynchronous searching |
+| async_timeout | `3000` | Async search timeout (ms) |
+| async_minlines | `1000` | Min lines to trigger async search |
+| highlight | `v:true` | 'false' to disable menu highlighting (for performance) |
+| ctrl_np | `v:false` | <C-n/p> selects menu when 'true'; otherwise, recalls history |
 
 > [!IMPORTANT]
 > 1. Searching large files will not cause any lag. By default, searching is concurrent. Even though no external jobs are used, a timer pauses the task at regular intervals to check if there are pending keys on the typehead.
@@ -242,6 +242,7 @@ Note: Keys used in command-line editing (`:h cmdline-editing`) remain unmodified
 >    augroup END
 >    ```
 > 3. To perform a multi-word search using the `/` or `?` command, type the first word followed by `<Space>` to trigger auto-completion for the next word. At the end of a line, press `\n` to continue the search on the next line. Note that enabling the fuzzy search option will disable multi-word search functionality.
+> 4. When completing files during `:edit` command, `<Tab>` selects subsequent items in the menu. In order to step into a directory press `/`, and it will populate items from that directory.
 
 ## Addons
 
