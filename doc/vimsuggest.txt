@@ -56,7 +56,7 @@ Command Completion Configuration:~
         \ 'pum': v:true,
         \ 'fuzzy': v:false,
         \ 'exclude': [],
-        \ 'onspace': [],
+        \ 'onspace': ['b\%[uffer]','colo\%[rscheme]'],
         \ 'alwayson': v:true,
         \ 'popupattrs': {},
         \ 'wildignore': v:true,
@@ -79,7 +79,7 @@ s:vim_suggest.cmd is a dictionary containing the following options:
                 Default: []
 
     'onspace'   Commands to complete after space (e.g., 'buffer')
-                Default: []
+                Default: ['b\%[uffer]','colo\%[rscheme]']
 
     'alwayson'  Auto-open popup (v:false to open with <Tab>)
                 Default: v:true
