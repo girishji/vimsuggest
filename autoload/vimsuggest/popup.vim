@@ -16,9 +16,12 @@ export class PopupMenu
     var _items: list<list<any>> = [[]]
     var _index: number = -1 # index to items array
     var _hmenu = {text: '', ibegin: 0, iend: 0, selHiId: 0}
+    var _reversed: bool
 
-    def new(FilterFn: func(number, string): bool, CallbackFn: func(number, any), attributes: dict<any>, pum: bool)
+    def new(FilterFn: func(number, string): bool, CallbackFn: func(number, any),
+            attributes: dict<any>, pum: bool, reversed: bool = false)
         this._pum = pum
+        this._reversed = reversed
         if this._winid->popup_getoptions() == {} # popup does not exist
             var attr = {
                 cursorline: false, # do not automatically select the first item
@@ -52,15 +55,17 @@ export class PopupMenu
             def MakeDict(idx: number, v: string): dict<any>
                 return {text: v}
             enddef
-            return this._pum ? items[0]->mapnew(MakeDict) : [{text: this._hmenu.text}]
+            var itemslist = this._reversed ? items[0]->copy()->reverse() : items[0]
+            return this._pum ? itemslist->mapnew(MakeDict) : [{text: this._hmenu.text}]
         endif
         if this._pum
-            return items[0]->mapnew((idx, v) => {
+            var formatted = items[0]->mapnew((idx, v) => {
                 var mlen = items[2][idx]
                 return {text: v, props: items[1][idx]->mapnew((_, c) => {
                     return {col: c + 1, length: mlen, type: 'VimSuggestMatch'}
                 })}
             })
+            return this._reversed ? formatted->copy()->reverse() : formatted
         else
             var offset = this._hmenu.offset + 1
             var props = []
@@ -93,7 +98,8 @@ export class PopupMenu
             endif
             this._winid->popup_settext(this._Printify())
             this._winid->popup_setoptions({cursorline: false})
-            win_execute(this._winid, "normal! gg")
+            win_execute(this._winid, this._reversed ? "norm! ggG" : "norm! gg")
+            # Note: ggG vs G: Without 'ggG' (above) menu shrinks to 1 line (VSGrep)
         else
             this._HMenu(0, 'left')
             try
@@ -146,14 +152,15 @@ export class PopupMenu
         const items = this._items
 
         def SelectVert()
+            var realdir = this._reversed ? (direction == 'j' ? 'k' : 'j') : direction
             if !this._winid->popup_getoptions().cursorline
                 this._winid->popup_setoptions({cursorline: true})
                 if direction ==# 'k'
                     this._index = 0
-                    this._winid->popup_filter_menu(direction)
+                    this._winid->popup_filter_menu(realdir)
                 endif
             else
-                this._winid->popup_filter_menu(direction)
+                this._winid->popup_filter_menu(realdir)
             endif
             this._index += (direction ==# 'j' ? 1 : -1)
             if this._index < 0
@@ -273,14 +280,16 @@ export class PopupMenu
 
     def PageUp()
         if this._pum
-            win_execute(this._winid, 'normal! ' .. "\<C-u>")
+            win_execute(this._winid, 'normal! ' ..
+                (this._reversed ? "\<C-d>" : "\<C-u>"))
             :redraw
         endif
     enddef
 
     def PageDown()
         if this._pum
-            win_execute(this._winid, 'normal! ' .. "\<C-d>")
+            win_execute(this._winid, 'normal! ' ..
+                (this._reversed ? "\<C-u>" : "\<C-d>"))
             :redraw
         endif
     enddef
