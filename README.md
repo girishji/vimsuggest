@@ -285,7 +285,7 @@ When the `addons` option is set to `v:true`, the following commands are made ava
 
    ```
    :VSBuffer [fuzzy_pattern]
-   :VSGitFind [fuzzy_pattern]
+   :VSGitFind [dir] [fuzzy_pattern]
    :VSMru [fuzzy_pattern]
    :VSKeymap [fuzzy_pattern]
    :VSMark [fuzzy_pattern]
@@ -297,7 +297,7 @@ When the `addons` option is set to `v:true`, the following commands are made ava
       - Displays matching buffers as you type
    - `VSGitFind`: Smart file search with Git awareness
       - In Git repositories: Searches tracked files
-      - Outside Git: Falls back to regular file search (like `VSFind`)
+      - Outside Git (or if 'dir' is given): Falls back to regular file search (like `VSFind`)
    - `VSMru`: Access recently used files
       - Lists files from Vim's `v:oldfiles` history
       - Example: Quickly return to files you edited yesterday

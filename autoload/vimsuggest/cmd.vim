@@ -28,7 +28,7 @@ class State
     var saved_ttimeout: bool
     var saved_ttimeoutlen: number
     # Following characters often do not provide meaningful completions.
-    var exclude = ['~', '!', '%', '(', ')', '+', '-', '=', '<', '>', '?', ',']
+    var exclude = ['~', '!', '%', '(', ')', '+', '=', '<', '>', '?', ',']
     public var items: list<list<any>>
     public var insertion_point: number
     public var exit_key: string = null_string # Key pressed before closing the menu
