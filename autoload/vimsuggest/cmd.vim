@@ -153,10 +153,10 @@ def DoComplete(oldcontext: string, timer: number)
     var cmdlead = CmdLead()
     var excl_pattern_present =
         options.exclude->reduce((a, v) => a || (cmdstr->match(v) != -1), false)
-    var onspace_pattern_present = cmdstr =~ '^\s*\S\+\s\+$' &&
+    var onspace_pattern_present =
         options.onspace->reduce((a, v) => a || (cmdlead->match(v) != -1), false)
     if excl_pattern_present ||
-            (options.alwayson && context =~ '\s$' && !onspace_pattern_present &&
+            (options.alwayson && cmdstr =~ '^\s*\S\+\s\+$' && !onspace_pattern_present &&
             !State.onspace_hook->has_key(cmdlead))
         # Note: Use 'context' (line until cursor) instead of getcmdline() to
         # check ending space.
@@ -181,7 +181,7 @@ def DoComplete(oldcontext: string, timer: number)
         endif
     catch # Catch (for ex.) -> E1245: Cannot expand <sfile> in a Vim9 function
     endtry
-    if completions->len() == 0  # Check :s// and :g/ completion
+    if completions->len() == 0  # :s// and :g/ completion
         completions = aux.GetCompletionSG(context)
         if completions->len() > 0 && &hlsearch && &incsearch
             # Restore 'hls' and 'incsearch' hightlight (removed when popup_show() redraws).
@@ -212,6 +212,9 @@ export def SetPopupMenu(items: list<any>)
         state.items = state.highlight_hook[cmdname](arglead, items)
     else
         state.items = [items]
+        if state.items[0]->len() > 0
+            DoHighlight($'\c{arglead}')
+        endif
     endif
     var pos = state.items[0]->len() > 0 ? InsertionPoint(state.items[0][0]) + 1 : 1
     state.insertion_point = pos - 1
@@ -362,6 +365,16 @@ def SendToQickfixList()
         timer_start(0, (_) => {
             :execute $'doautocmd <nomodeline> QuickFixCmdPost clist'
         })
+    endif
+enddef
+
+export def DoHighlight(pattern: string, group = 'VimSuggestMatch')
+    win_execute(state.pmenu.Winid(), $"syn clear {group}")
+    if pattern != null_string
+        try
+            win_execute(state.pmenu.Winid(), $'syn match {group} ''{pattern}''')
+        catch # ignore any rogue exceptions.
+        endtry
     endif
 enddef
 

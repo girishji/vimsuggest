@@ -188,8 +188,8 @@ def GlobalComplete(arglead: string, cmdline: string, cursorpos: number): list<an
         return []
     })
     cmd.AddHighlightHook(cmd.CmdLead(), (_: string, itms: list<any>): list<any> => {
-        exec.DoHighlight(exec.ArgsStr())
-        exec.DoHighlight('^\s*\d\+', 'VimSuggestMute')
+        cmd.DoHighlight(exec.ArgsStr())
+        cmd.DoHighlight('^\s*\d\+', 'VimSuggestMute')
         return [itms]
     })
     return lines
@@ -225,8 +225,8 @@ def InclSearchComplete(arglead: string, cmdline: string, cursorpos: number): lis
         var cmdlead = cmd.CmdLead()
         cmd.AddSelectItemHook(cmdlead, SelectItemPostCallback)
         cmd.AddHighlightHook(cmdlead, (_: string, itms: list<any>): list<any> => {
-            exec.DoHighlight(exec.ArgsStr())
-            exec.DoHighlight('^\(\S\+$\|\s*\d\+:\s\+\d\+\)', 'VimSuggestMute')
+            cmd.DoHighlight(exec.ArgsStr())
+            cmd.DoHighlight('^\(\S\+$\|\s*\d\+:\s\+\d\+\)', 'VimSuggestMute')
             return [itms]
         })
     endif
