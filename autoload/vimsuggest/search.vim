@@ -7,6 +7,7 @@ vim9script
 # functions to enhance the search experience in Vim.
 
 import autoload './popup.vim'
+import autoload './aux.vim'
 
 # Configuration options
 export var options: dict<any> = {
@@ -215,9 +216,9 @@ def FilterFn(winid: number, key: string): bool
         state.pmenu.SelectItem('j', SelectItemPost) # Next item
     elseif key == "\<S-Tab>" || ((key == "\<C-p>" || key == "\<Up>") && options.ctrl_np)
         state.pmenu.SelectItem('k', SelectItemPost) # Prev item
-    elseif key == "\<PageUp>"
+    elseif key == "\<PageUp>" || key == "\<S-Up>"
         state.pmenu.PageUp()
-    elseif key == "\<PageDown>"
+    elseif key == "\<PageDown>" || key == "\<S-Down>"
         state.pmenu.PageDown()
     elseif key == "\<C-s>"
         IncSearchHighlightClear()
@@ -232,12 +233,14 @@ def FilterFn(winid: number, key: string): bool
     elseif key == "\<CR>"
         IncSearchHighlightClear()
         return false
-    elseif key == "\<ESC>"
+    elseif key == "\<ESC>" || key == "\<C-[>"
         IncSearchHighlightClear()
         if State.saved_searchreg != null_string
             setreg('/', State.saved_searchreg) # Restore previous hlsearch
         endif
         return false  # 'false' causes search to be abandoned, and trigger CmdlineLeave
+    elseif aux.CursorMovementKey(key)
+        return false
     else
         IncSearchHighlightClear()
         state.pmenu.Hide()

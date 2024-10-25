@@ -220,11 +220,11 @@ When the popup window is open, you can use the following key mappings:
 
 | Key | Action |
 |-----|--------|
-| `<PageDown>` | Scroll down one page |
-| `<PageUp>` | Scroll up one page |
+| `<PageDown>`/`<S-Down>` | Scroll down one page |
+| `<PageUp>`/`<S-Up>` | Scroll up one page |
 | `<Tab>` | Move to next item |
 | `<Shift-Tab>` | Move to previous item |
-| `<Esc>` or `<Ctrl-c>` | Close popup |
+| `<Esc>`/`<C-[>`/`<Ctrl-c>` | Dismiss popup |
 | `<Ctrl-s>` | Dismiss auto-completion and revert to default Vim behavior |
 | `<Enter>` | Confirm selection |
 | `<Ctrl-j>` | Open file selection in a split window |

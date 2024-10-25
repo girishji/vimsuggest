@@ -30,10 +30,11 @@ class State
     var saved_ttimeoutlen: number
     # Following characters often do not provide meaningful completions.
     var exclude = ['~', '!', '%', '(', ')', '+', '=', '<', '>', '?', ',']
-    public var items: list<list<any>>
+    public var items: list<list<any>> = [[]]
     public var insertion_point: number
     public var exit_key: string = null_string # Key pressed before closing the menu
     public var char_removed: bool
+    public var tab_pressed = false    # <Tab> pressed when cursr is in the middle of cmdline
     # Following callbacks are used by addons.
     public static var onspace_hook = {}  # Complete after space anywhere (unlike options.onspace)
     public var highlight_hook = {}
@@ -104,19 +105,31 @@ def DisableCmdline()
     autocmd! VimSuggestCmdAutocmds CmdlineChanged :
 enddef
 
-def TabComplete()
+def TabPressed(): number
     var lastcharpos = getcmdpos() - 2
     var cmdline = getcmdline()
     if cmdline[lastcharpos] ==? "\<tab>"
         setcmdline(cmdline->slice(0, lastcharpos) .. cmdline->slice(lastcharpos + 1))
         # XXX setcmdpos() does not work here
-        if getcmdpos() != lastcharpos + 1
-            feedkeys("\<home>", 'n')
-            foreach(range(lastcharpos), (_, _) => feedkeys("\<right>", 'n'))
-            timer_start(0, (_) => Complete())
+        if getcmdpos() != lastcharpos + 1  # After setcmdline, cursor is at end of line
+            foreach(range(lastcharpos), (_, _) => feedkeys("\<right>", 'in'))
+            feedkeys("\<home>", 'in')
+            return 2  # <Tab> in the middle of cmdlin
         else
-            Complete()
+            return 1  # <Tab> at end of cmdline
         endif
+    endif
+    return 0  # <Tab> not present
+enddef
+
+def TabComplete()
+    var tab = TabPressed()
+    if tab == 2
+        timer_start(1, (_) => Complete())
+    elseif tab == 1
+        Complete()
+    elseif state.items[0]->len() > 0  # popup window is showing (but set to hidden)
+        Complete()
     else
         HideMenu()
     endif
@@ -153,38 +166,43 @@ def DoComplete(oldcontext: string, timer: number)
     if state == null_object  # Additional check
         return
     endif
-
-    # xxx
-    # var lastcharpos = getcmdpos() - 2
-    # var cmdline = getcmdline()
-    # if cmdline[lastcharpos] == "\<Tab>"
-    #     setcmdline(cmdline->slice(0, lastcharpos) .. cmdline->slice(lastcharpos + 1))
-    #     if state.items[0]->len() > 0  # popup window is showing (but set to hidden)
-    #         return
-    #     endif
-    # endif
-
+    var tab = TabPressed()
+    var nofilter = false
+    if tab == 2
+        state.tab_pressed = true
+        timer_start(1, (_) => Complete())
+    elseif tab == 1 || state.tab_pressed
+        state.tab_pressed = false
+        if state.items[0]->len() > 0  # popup window is showing (but set to hidden)
+            return
+        else
+            nofilter = true
+        endif
+    endif
     var cmdstr = context->CmdStr()
     var cmdlead = CmdLead()
     var excl_pattern_present =
         options.exclude->reduce((a, v) => a || (cmdstr->match(v) != -1), false)
     var onspace_pattern_present =
         options.onspace->reduce((a, v) => a || (cmdlead->match(v) != -1), false)
-    if excl_pattern_present ||
-            (options.alwayson && cmdstr =~ '^\s*\S\+\s\+$' && !onspace_pattern_present &&
-            !State.onspace_hook->has_key(cmdlead))
-        # Note: Second space in ':VSGrep "foo "' should be completed. Spaces
-        # after cursor are not relevant. (Use 'context' instead of getcmdline()).
-        HideMenu()
-        return
+    if !nofilter && options.alwayson
+        if excl_pattern_present ||
+                (cmdstr =~ '^\s*\S\+\s\+$' && !onspace_pattern_present &&
+                !State.onspace_hook->has_key(cmdlead))
+            # Note: Second space in ':VSGrep "foo "' should be completed. Spaces
+            # after cursor are not relevant. (Use 'context' instead of getcmdline()).
+            HideMenu()
+            return
+        endif
+        var unfiltered = ['h\%[elp]!\?', 'ta\%[g]!\?', 'e\%[dit]!\?', 'fin\%[d]!\?', 'b\%[uffer]!\?',
+            'let', 'call']
+        if cmdstr !~# $'^\s*\({unfiltered->join("\\|")}\)\s' &&
+                state.exclude->index(context[-1]) != -1
+            HideMenu()
+            return
+        endif
     endif
-    var unfiltered = ['h\%[elp]!\?', 'ta\%[g]!\?', 'e\%[dit]!\?', 'fin\%[d]!\?', 'b\%[uffer]!\?',
-        'let', 'call']
-    if cmdstr !~# $'^\s*\({unfiltered->join("\\|")}\)\s' &&
-            state.exclude->index(context[-1]) != -1
-        HideMenu()
-        return
-    endif
+
     var completions: list<any> = []
     try
         if options.wildignore && cmdstr =~# '^\s*\(e\%[dit]!\?\|fin\%[d]!\?\)\s'
@@ -279,8 +297,8 @@ export def SelectItemPost(index: number, dir: string)
         # XXX: setcmdpos() does not work here, vim put cursor at the end.
         # workaround:
         if getcmdpos() != newpos + 1
-            feedkeys("\<home>", 'n')
-            foreach(range(newpos), (_, _) => feedkeys("\<right>", 'n'))
+            foreach(range(newpos), (_, _) => feedkeys("\<right>", 'in'))
+            feedkeys("\<home>", 'in')
         endif
     endif
 enddef
@@ -291,13 +309,13 @@ def FilterFn(winid: number, key: string): bool
         state.pmenu.SelectItem('j', SelectItemPost) # Next item
     elseif key == "\<S-Tab>" || ((key == "\<C-p>" || key == "\<Up>") && options.ctrl_np)
         state.pmenu.SelectItem('k', SelectItemPost) # Prev item
-    elseif key == "\<PageUp>"
+    elseif key == "\<PageUp>" || key == "\<S-Up>"
         var cmdname = CmdLead()
         if state.select_item_hook->has_key(cmdname)  # stop async job, if any
             state.select_item_hook[cmdname](null_string, null_string)
         endif
         state.pmenu.PageUp()
-    elseif key == "\<PageDown>"
+    elseif key == "\<PageDown>" || key == "\<S-Down>"
         var cmdname = CmdLead()
         if state.select_item_hook->has_key(cmdname)  # stop async job, if any
             state.select_item_hook[cmdname](null_string, null_string)
@@ -327,8 +345,11 @@ def FilterFn(winid: number, key: string): bool
         state.pmenu.Hide()
         :redraw
         return false # Let Vim process these keys further
-    elseif key == "\<ESC>"
+    elseif key == "\<ESC>" || key == "\<C-[>"
         CmdlineAbortHook()
+        return false
+    elseif key == "\<C-d>"
+    elseif aux.CursorMovementKey(key)
         return false
     else
         if state.char_removed

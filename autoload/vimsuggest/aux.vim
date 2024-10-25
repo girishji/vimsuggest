@@ -277,3 +277,18 @@ export def TestRange()
     assert_equal([14, line('$') - 1], GetRange('?\Cpermission?+2,$-1'))
     foreach(v:errors, 'echom "Fail:" v:val')
 enddef
+
+export def CursorMovementKey(key: string): bool
+    return [
+        "\<Left>",
+        "\<Right>",
+        "\<C-Left>",
+        "\<C-Right>",
+        "\<S-Left>",
+        "\<S-Right>",
+        "\<C-b>",
+        "\<Home>",
+        "\<C-e>",
+        "\<End>",
+    ]->index(key) != -1
+enddef
