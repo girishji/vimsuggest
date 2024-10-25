@@ -113,6 +113,9 @@ let s:vim_suggest.cmd = {
 | ctrl_np | `v:false` | <C-n/p> selects menu when 'true'; otherwise, recalls history |
 | reverse | `v:false` | Reverse-sorted menu, with the most relevant item at the bottom (when `pum=v:true`) |
 
+> [!NOTE]
+> Typing `<Tab>` bypasses the `exclude` list and opens the completion menu.
+
 ### Search Completion Configuration
 
 ```vim
