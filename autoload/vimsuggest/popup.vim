@@ -171,7 +171,8 @@ export class PopupMenu
             if items->len() > 1
                 var mlen = items[2][this._index]
                 if items->len() > 1
-                    var pos = items[1][this._index]->mapnew((_, v) => [this._index + 1, v + 1, mlen])
+                    var lnum = this._reverse ? count - this._index : this._index + 1
+                    var pos = items[1][this._index]->mapnew((_, v) => [lnum, v + 1, mlen])
                     if !pos->empty()
                         this._matchid_sel = matchaddpos('VimSuggestMatchSel', pos, 13, -1, {window: this._winid})
                     endif

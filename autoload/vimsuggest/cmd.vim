@@ -118,7 +118,7 @@ def TabComplete()
             Complete()
         endif
     else
-        :redraw
+        HideMenu()
     endif
 enddef
 
@@ -129,11 +129,15 @@ def Complete()
     endif
     var context = Context()
     if context == '' || context =~ '^\s\+$'
-        :redraw  # Needed to hide popup after <bs> and cmdline is empty
-                 # popup_hide() already called in FilterFn, redraw to hide the popup
+        HideMenu()  # Needed to hide popup after <bs> and cmdline is empty
         return
     endif
     timer_start(1, function(DoComplete, [context]))
+enddef
+
+def HideMenu()
+    :redraw # popup_hide() already called in FilterFn, redraw to hide the popup
+    state.items = [[]]
 enddef
 
 def DoComplete(oldcontext: string, timer: number)
@@ -149,6 +153,17 @@ def DoComplete(oldcontext: string, timer: number)
     if state == null_object  # Additional check
         return
     endif
+
+    # xxx
+    # var lastcharpos = getcmdpos() - 2
+    # var cmdline = getcmdline()
+    # if cmdline[lastcharpos] == "\<Tab>"
+    #     setcmdline(cmdline->slice(0, lastcharpos) .. cmdline->slice(lastcharpos + 1))
+    #     if state.items[0]->len() > 0  # popup window is showing (but set to hidden)
+    #         return
+    #     endif
+    # endif
+
     var cmdstr = context->CmdStr()
     var cmdlead = CmdLead()
     var excl_pattern_present =
@@ -158,16 +173,16 @@ def DoComplete(oldcontext: string, timer: number)
     if excl_pattern_present ||
             (options.alwayson && cmdstr =~ '^\s*\S\+\s\+$' && !onspace_pattern_present &&
             !State.onspace_hook->has_key(cmdlead))
-        # Note: Use 'context' (line until cursor) instead of getcmdline() to
-        # check ending space.
-        :redraw # popup_hide() already called in FilterFn, redraw to hide the popup
+        # Note: Second space in ':VSGrep "foo "' should be completed. Spaces
+        # after cursor are not relevant. (Use 'context' instead of getcmdline()).
+        HideMenu()
         return
     endif
     var unfiltered = ['h\%[elp]!\?', 'ta\%[g]!\?', 'e\%[dit]!\?', 'fin\%[d]!\?', 'b\%[uffer]!\?',
         'let', 'call']
     if cmdstr !~# $'^\s*\({unfiltered->join("\\|")}\)\s' &&
             state.exclude->index(context[-1]) != -1
-        :redraw
+        HideMenu()
         return
     endif
     var completions: list<any> = []
@@ -198,7 +213,7 @@ def DoComplete(oldcontext: string, timer: number)
     endif
     if completions->len() == 0 || (completions->len() == 1 && context->strridx(completions[0]) != -1)
         # No completions found, or this completion is already inserted.
-        :redraw
+        HideMenu()
         return
     endif
     SetPopupMenu(completions)
