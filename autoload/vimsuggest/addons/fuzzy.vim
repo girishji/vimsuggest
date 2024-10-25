@@ -44,7 +44,7 @@ export def Complete(arglead: string, line: string, cursorpos: number,
         items->mapnew((_, v) => v.text) : items
     var lastword = getcmdline()->matchstr('\S\+$')
     if lastword != null_string
-        matches = text_items->matchfuzzypos(lastword, {matchseq: 1, limit: 100})
+        matches = text_items->matchfuzzypos(lastword, {matchseq: 1, limit: FuzzyLimit(lastword)})
         matches[1]->map((idx, v) => {
             # Char to byte index (needed by matchaddpos)
             return v->mapnew((_, c) => matches[0][idx]->byteidx(c))
@@ -242,22 +242,40 @@ def AddFindHooks(name: string)
 enddef
 
 def FuzzyMatchFiles(pat: string): list<any>
-    # Filenames that match appear before directories that match.
-    var m = items->matchfuzzypos(pat, {matchseq: 1, limit: 100})
+    var m = items->matchfuzzypos(pat, {matchseq: 1, limit: FuzzyLimit(pat)})
     var filtered = [[], [], []]
-    for Fn in [(k, v) => m[0][v]->fnamemodify(':t') =~# $'^{pat}', (k, v) => m[0][v]->fnamemodify(':t') !~# $'^{pat}']
-        for idx in range(m[0]->len())->copy()->filter(Fn)
-            filtered[0]->add(m[0][idx])
-            filtered[1]->add(m[1][idx])
-            filtered[2]->add(m[2][idx])
+    if m[0]->len() < 1000
+        # Filenames that match appear before directories that match.
+        for Fn in [(k, v) => m[0][v]->fnamemodify(':t') =~# $'^{pat}',
+                (k, v) => m[0][v]->fnamemodify(':t') !~# $'^{pat}']
+            for idx in range(m[0]->len())->copy()->filter(Fn)
+                filtered[0]->add(m[0][idx])
+                filtered[1]->add(m[1][idx])
+                filtered[2]->add(m[2][idx])
+            endfor
         endfor
-    endfor
+    else
+        filtered = m
+    endif
     filtered[1]->map((idx, v) => {
         # Char to byte index (needed by matchaddpos)
         return v->mapnew((_, c) => filtered[0][idx]->byteidx(c))
     })
     filtered[2]->map((_, _) => 1)
     return filtered
+enddef
+
+def FuzzyLimit(pat: string): number
+    var l = pat->len()
+    if l == 1
+        return 100
+    elseif l == 2
+        return 10000
+    elseif l == 3
+        return 100000
+    else
+        return 1000000
+    endif
 enddef
 
 def Clear()

@@ -280,16 +280,18 @@ export class PopupMenu
 
     def PageUp()
         if this._pum
-            win_execute(this._winid, 'normal! ' ..
-                (this._reverse ? "\<C-d>" : "\<C-u>"))
+            # win_execute(this._winid, 'normal! ' ..
+            #     (this._reverse ? "\<C-d>" : "\<C-u>"))
+            win_execute(this._winid, 'normal! ' .. "\<C-u>")
             :redraw
         endif
     enddef
 
     def PageDown()
         if this._pum
-            win_execute(this._winid, 'normal! ' ..
-                (this._reverse ? "\<C-u>" : "\<C-d>"))
+            # win_execute(this._winid, 'normal! ' ..
+            #     (this._reverse ? "\<C-u>" : "\<C-d>"))
+            win_execute(this._winid, 'normal! ' .. "\<C-d>")
             :redraw
         endif
     enddef
