@@ -181,10 +181,12 @@ def DoComplete(oldcontext: string, timer: number)
     endif
     var cmdstr = context->CmdStr()
     var cmdlead = CmdLead()
+    var excl_list = (options.exclude->type() == v:t_list) ? options.exclude : [options.exclude]
     var excl_pattern_present =
-        options.exclude->reduce((a, v) => a || (cmdstr->match(v) != -1), false)
+        excl_list->reduce((a, v) => a || (cmdstr->match(v) != -1), false)
+    var onspace_list = (options.onspace->type() == v:t_list) ? options.onspace : [options.onspace]
     var onspace_pattern_present =
-        options.onspace->reduce((a, v) => a || (cmdlead->match(v) != -1), false)
+        onspace_list->reduce((a, v) => a || (cmdlead->match(v) != -1), false)
     if !nofilter && options.alwayson
         if excl_pattern_present ||
                 (cmdstr =~ '^\s*\S\+\s\+$' && !onspace_pattern_present &&
