@@ -197,7 +197,7 @@ def DoComplete(oldcontext: string, timer: number)
             return
         endif
         var unfiltered = ['h\%[elp]!\?', 'ta\%[g]!\?', 'e\%[dit]!\?', 'fin\%[d]!\?', 'b\%[uffer]!\?',
-            'let', 'call']
+            'let', 'call', 'VSGrep', 'VSFind', 'VSGitFind']
         if cmdstr !~# $'^\s*\({unfiltered->join("\\|")}\)\s' &&
                 state.exclude->index(context[-1]) != -1
             HideMenu()
