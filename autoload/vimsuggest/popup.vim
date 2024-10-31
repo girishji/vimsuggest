@@ -99,7 +99,7 @@ export class PopupMenu
             this._winid->popup_settext(this._Printify())
             this._winid->popup_setoptions({cursorline: false})
             win_execute(this._winid, this._reverse ? "norm! ggG" : "norm! gg")
-            # Note: ggG vs G: Without 'ggG' (above) menu shrinks to 1 line (VSGrep)
+            # Note: ggG vs G: Without 'gg' before 'G' menu shrinks to 1 line (VSGrep)
         else
             this._HMenu(0, 'left')
             try
