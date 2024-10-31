@@ -90,7 +90,7 @@ export def FindComplete(arglead: string, line: string, cursorpos: number,
     if cmdname == null_string || cname !=# cmdname  # When a command is overwritten
         Clear()
         cmdname = cname
-        prevdir = dirpath ?? '.'
+        prevdir = dirpath ?? null_string
         if findcmd == null_string
             findcmd = FindCmd(prevdir)
         endif
