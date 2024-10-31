@@ -155,7 +155,7 @@ enable_hook->add(() => {
 #    ```
 #    Or, to list various artifacts in a vim9 script:
 #    ```
-#    nnoremap <buffer> <key> :VSGlobal \v\c(^<bar>\s)(def<bar>:?com%[mand]<bar>:?hi%[ghlight])!?\s.{-}
+#    nnoremap <buffer> <key> :VSGlobal \v\c(^<bar>\s)(def<bar>com%[mand]<bar>:?hi%[ghlight])!?\s.{-}
 #    ```
 #    You can search specific file types by wrapping the keymaps in autocmds (see
 #    `:h :autocmd`).
