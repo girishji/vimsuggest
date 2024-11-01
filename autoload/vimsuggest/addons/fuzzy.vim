@@ -92,7 +92,7 @@ export def FindComplete(arglead: string, line: string, cursorpos: number,
         cmdname = cname
         prevdir = dirpath ?? null_string
         if findcmd == null_string
-            findcmd = FindCmd(prevdir)
+            findcmd = FindCmd(prevdir ?? '.')
         endif
         regenerate_items = true
         AddFindHooks(cmdname)
