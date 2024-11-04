@@ -12,7 +12,7 @@ export class PopupMenu
     var _winid: number
     var _winid_bg: number
     var _pum: bool
-    var _matchid_sel: number = 0
+    var _matchsel_id: number = 0
     var _items: list<list<any>> = [[]]
     var _index: number = -1 # index to items array
     var _hmenu = {text: '', ibegin: 0, iend: 0, selHiId: 0}
@@ -83,10 +83,17 @@ export class PopupMenu
         endif
     enddef
 
+    def _ClearMatchSel()
+        if this._matchsel_id > 0
+            matchdelete(this._matchsel_id, this._winid)
+            this._matchsel_id = 0
+        endif
+    enddef
+
     def _ClearMatches()
         this._winid->clearmatches()
         this._hmenu.selHiId = 0
-        this._matchid_sel = 0
+        this._matchsel_id = 0
     enddef
 
     def SetText(items: list<any>, moveto = 0)
@@ -108,7 +115,7 @@ export class PopupMenu
             endtry
         endif
         this._index = -1
-        this._matchid_sel = 0
+        this._matchsel_id = 0
     enddef
 
     def _HMenu(startidx: number, position: string)
@@ -170,12 +177,10 @@ export class PopupMenu
             endif
             if items->len() > 1
                 var mlen = items[2][this._index]
-                if items->len() > 1
-                    var lnum = this._reverse ? count - this._index : this._index + 1
-                    var pos = items[1][this._index]->mapnew((_, v) => [lnum, v + 1, mlen])
-                    if !pos->empty()
-                        this._matchid_sel = matchaddpos('VimSuggestMatchSel', pos, 13, -1, {window: this._winid})
-                    endif
+                var lnum = this._reverse ? count - this._index : this._index + 1
+                var pos = items[1][this._index]->mapnew((_, v) => [lnum, v + 1, mlen])
+                if !pos->empty()
+                    this._matchsel_id = matchaddpos('VimSuggestMatchSel', pos, 13, -1, {window: this._winid})
                 endif
             endif
         enddef
@@ -220,16 +225,12 @@ export class PopupMenu
                 var mlen = items[2][this._index]
                 var pos = items[1][this._index]->mapnew((_, v) => [1, v + offset, mlen])
                 if !pos->empty()
-                    this._matchid_sel = matchaddpos('VimSuggestMatchSel', pos, 13, -1, {window: this._winid})
+                    this._matchsel_id = matchaddpos('VimSuggestMatchSel', pos, 13, -1, {window: this._winid})
                 endif
             endif
         enddef
 
-        if this._matchid_sel > 0
-            matchdelete(this._matchid_sel, this._winid)
-            this._matchid_sel = 0
-        endif
-
+        this._ClearMatchSel()
         this._pum ? SelectVert() : SelectHoriz()
         if CallbackFn != null_function
             CallbackFn(this._index, direction)

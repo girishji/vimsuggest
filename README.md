@@ -87,7 +87,6 @@ let s:vim_suggest = {}
 let s:vim_suggest.cmd = {
     \ 'enable': v:true,
     \ 'pum': v:true,
-    \ 'fuzzy': v:false,
     \ 'exclude': [],
     \ 'onspace': ['b\%[uffer]','colo\%[rscheme]'],
     \ 'alwayson': v:true,
@@ -103,7 +102,6 @@ let s:vim_suggest.cmd = {
 |---------------|---------------|---------|
 | enable | `v:true` | Enable/disable command completion |
 | pum | `v:true` | `v:true` for stacked menu, `v:false` for flat menu |
-| fuzzy | `v:false` | Enable fuzzy completion matching |
 | exclude | `[]` | Regex patterns to exclude from completion |
 | onspace | `['b\%[uffer]','colo\%[rscheme]']` | Commands (regex) to complete after typing space |
 | alwayson | `v:true` | Auto-open popup (v:false to open with <Tab>) |

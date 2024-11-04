@@ -11,7 +11,6 @@ import autoload './aux.vim'
 export var options: dict<any> = {
     enable: true,         # Enable/disable the completion functionality
     pum: true,            # 'true' for stacked popup menu, 'false' for flat
-    fuzzy: false,         # Enable fuzzy completion matching
     exclude: [],          # List of (regex) patterns to exclude from completion
     onspace: ['colo\%[rscheme]', 'b\%[uffer]', 'sy\%[ntax]'],
                           # Complete after the space after the command
@@ -302,6 +301,10 @@ export def SelectItemPost(index: number, dir: string)
             foreach(range(newpos), (_, _) => feedkeys("\<right>", 'in'))
             feedkeys("\<home>", 'in')
         endif
+    endif
+    if !state.highlight_hook->has_key(cmdname)
+        # Since cmdline has selected item, match highlight has no meaning.
+        win_execute(state.pmenu.Winid(), "syn clear VimSuggestMatch")
     endif
 enddef
 

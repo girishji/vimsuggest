@@ -54,7 +54,6 @@ Command Completion Configuration:~
     let s:vim_suggest.cmd = {
         \ 'enable': v:true,
         \ 'pum': v:true,
-        \ 'fuzzy': v:false,
         \ 'exclude': [],
         \ 'onspace': ['b\%[uffer]','colo\%[rscheme]'],
         \ 'alwayson': v:true,
@@ -72,9 +71,6 @@ s:vim_suggest.cmd is a dictionary containing the following options:
 
     'pum'       Use stacked popup menu (v:false for flat)
                 Default: v:true
-
-    'fuzzy'     Enable fuzzy completion matching
-                Default: v:false
 
     'exclude'   Regex patterns to exclude from completion
                 Default: []
