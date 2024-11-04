@@ -297,6 +297,10 @@ export class PopupMenu
         endif
     enddef
 
+    def Index(): number
+        return this._index
+    enddef
+
     def Winid(): number
         return this._winid
     enddef

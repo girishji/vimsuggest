@@ -111,7 +111,12 @@ export def FindComplete(arglead: string, line: string, cursorpos: number,
         if async
             def ProcessItems(fpaths: list<any>)
                 items = fpaths
+                var idx = cmd.state.pmenu.Index()
                 cmd.SetPopupMenu(items)
+                # If item is selected, keep it (otherwise item gets unselected)
+                if idx >= 0 && idx < 10 && exec.ArgsStr() == null_string
+                    foreach(range(idx + 1), (_, _) => cmd.state.pmenu.SelectItem('j', null_function))
+                endif
             enddef
             var cmdany = shellpre == null_string ? findcmd : shellpre->split() + [findcmd]
             job.Start(cmdany, ProcessItems, timeout, max_items)

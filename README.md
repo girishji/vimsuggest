@@ -187,7 +187,7 @@ VimSuggest uses custom highlight groups:
 
 - `VimSuggestMatch`: Highlights matched portion of the text. Linked to `PmenuMatch` by default.
 - `VimSuggestMatchSel`: Highlights matched text in the selected item of the menu. Linked to `PmenuMatchSel` by default.
-- `VimSuggestMute`: Highlights passive text like line numbers in `grep` output. Linked to `NonText` by default.
+- `VimSuggestMute`: Highlights passive text like line numbers in `grep` output. Linked to `LineNr` by default.
 
 ### Customization Examples
 

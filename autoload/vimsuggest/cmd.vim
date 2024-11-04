@@ -13,7 +13,7 @@ export var options: dict<any> = {
     pum: true,            # 'true' for stacked popup menu, 'false' for flat
     fuzzy: false,         # Enable fuzzy completion matching
     exclude: [],          # List of (regex) patterns to exclude from completion
-    onspace: ['colo\%[rscheme]', 'b\%[uffer]'],
+    onspace: ['colo\%[rscheme]', 'b\%[uffer]', 'sy\%[ntax]'],
                           # Complete after the space after the command
     alwayson: true,       # If 'false', press <tab> to open the popup menu manually
     popupattrs: {},       # Attributes for configuring the popup window
