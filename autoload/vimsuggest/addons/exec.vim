@@ -238,11 +238,14 @@ enddef
 
 export def VisitFile(key: string, filename: string, lnum: number = -1)
     var keymap = {"\<C-j>": 'split', "\<C-v>": 'vert split', "\<C-t>": 'tabe'}
-    if lnum > 0
-        exe $":{keymap->get(key, 'e')} +{lnum} {filename}"
-    else
-        exe $":{keymap->get(key, 'e')} {filename}"
-    endif
+    try
+        if lnum > 0
+            exe $":{keymap->get(key, 'e')} +{lnum} {filename}"
+        else
+            exe $":{keymap->get(key, 'e')} {filename}"
+        endif
+    catch /^Vim\%((\a\+)\)\=:E325:/ # catch error E325
+    endtry
 enddef
 
 def Strip(pat: string): string # Remove surrounding quotes if any
