@@ -33,7 +33,7 @@ class State
     public var insertion_point: number
     public var exit_key: string = null_string # Key pressed before closing the menu
     public var char_removed: bool
-    public var tab_pressed = false    # <Tab> pressed when cursr is in the middle of cmdline
+    public var tab_pressed = false    # <Tab> pressed when cursor is in the middle of cmdline
     # Following callbacks are used by addons.
     public static var onspace_hook = {}  # Complete after space anywhere (unlike options.onspace)
     public var highlight_hook = {}
@@ -215,7 +215,7 @@ def DoComplete(oldcontext: string, timer: number)
         endif
     catch # Catch (for ex.) -> E1245: Cannot expand <sfile> in a Vim9 function
     endtry
-    if completions->len() == 0  # :s// and :g/ completion
+    if completions->len() == 0  # Try completing :s// and :g/
         completions = aux.GetCompletionSG(context)
         if completions->len() > 0 && &hlsearch && &incsearch
             # Restore 'hls' and 'incsearch' hightlight (removed when popup_show() redraws).
