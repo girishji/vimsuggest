@@ -30,11 +30,11 @@ export var options: dict<any> = {
 
 # Represents the state of the current search
 class State
-    public var items: list<any> = []            # Items to be displayed in the popup menu
-    public var candidates: list<any> = []       # Completion candidates (saved for async invocation)
-    public var context: string = null_string    # Cached command-line contents
-    public static var saved_searchreg: string = null_string
-    var saved_esc_keymap: dict<any> = null_dict
+    public var items = []            # Items to be displayed in the popup menu
+    public var candidates = []       # Completion candidates (saved for async invocation)
+    public var context = null_string # Cached command-line contents
+    public static var saved_searchreg = null_string
+    var saved_esc_keymap = null_dict
     var saved_ttimeout: bool
     var saved_ttimeoutlen: number
     var pmenu: popup.PopupMenu = null_object

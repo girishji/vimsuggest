@@ -9,17 +9,17 @@ import autoload './addons/addons.vim'
 import autoload './aux.vim'
 
 export var options: dict<any> = {
-    enable: true,         # Enable/disable the completion functionality
-    pum: true,            # 'true' for stacked popup menu, 'false' for flat
-    exclude: [],          # List of (regex) patterns to exclude from completion
+    enable: true,      # Enable/disable the completion functionality
+    pum: true,         # 'true' for stacked popup menu, 'false' for flat
+    exclude: [],       # List of (regex) patterns to exclude from completion
     onspace: ['colo\%[rscheme]', 'b\%[uffer]', 'sy\%[ntax]'],
-                          # Complete after the space after the command
-    alwayson: true,       # If 'false', press <tab> to open the popup menu manually
-    popupattrs: {},       # Attributes for configuring the popup window
-    wildignore: true,     # Exclude wildignore patterns during file completion
-    addons: true,         # Enable additional completion addons (like fuzzy file finder)
-    ctrl_np: false,       # 'true' to select menu using <C-n/p>, 'false' for history recall
-    reverse: false,       # Upside-down menu
+                       # Complete after the space after the command
+    alwayson: true,    # If 'false', press <tab> to open the popup menu manually
+    popupattrs: {},    # Attributes for configuring the popup window
+    wildignore: true,  # Exclude wildignore patterns during file completion
+    addons: true,      # Enable additional completion addons (like fuzzy file finder)
+    ctrl_np: false,    # 'true' to select menu using <C-n/p>, 'false' for history recall
+    reverse: false,    # Upside-down menu
 }
 
 class State
@@ -33,7 +33,6 @@ class State
     public var insertion_point: number
     public var exit_key: string = null_string # Key pressed before closing the menu
     public var char_removed: bool
-    public var tab_pressed = false    # <Tab> pressed when cursor is in the middle of cmdline
     # Following callbacks are used by addons.
     public static var onspace_hook = {}  # Complete after space anywhere (unlike options.onspace)
     public var highlight_hook = {}
@@ -41,6 +40,8 @@ class State
     public var cmdline_leave_hook = {}
     public static var cmdline_enter_hook = []
     public static var cmdline_abort_hook = []  # Cmdline contents not available when <c-c> aborted
+    var saved_tab_keymap = null_dict
+    var saved_s_tab_keymap = null_dict
 
     def new()
         this.saved_ttimeout = &ttimeout  # Needs to be set, otherwise <esc> delays when closing menu 
@@ -48,6 +49,8 @@ class State
         :set ttimeout ttimeoutlen=100
         this.saved_wildchar = &wildchar
         :set wildchar=<C-z>
+        this.saved_tab_keymap = maparg('<tab>', 'c', 0, 1) # Save <tab> keymap in case it was mapped
+        this.saved_s_tab_keymap = maparg('<s-tab>', 'c', 0, 1)
         this.pmenu = popup.PopupMenu.new(FilterFn, CallbackFn, options.popupattrs,
             options.pum, options.reverse)
     enddef
@@ -57,6 +60,12 @@ class State
         if this.saved_ttimeout
             :set ttimeout
             &ttimeoutlen = this.saved_ttimeoutlen
+        endif
+        if this.saved_tab_keymap != null_dict
+            mapset('c', 0, this.saved_tab_keymap)
+        endif
+        if this.saved_s_tab_keymap != null_dict
+            mapset('c', 0, this.saved_s_tab_keymap)
         endif
         this.pmenu.Close()
     enddef
@@ -69,16 +78,20 @@ export def Setup()
         augroup VimSuggestCmdAutocmds | autocmd!
             autocmd CmdlineEnter    :  {
                 state = State.new()
-                EnableCmdline()
+                if options.alwayson
+                    EnableCmdline()
+                else
+                    KeyMap()
+                endif
                 for Hook in State.cmdline_enter_hook
                     Hook()
                 endfor
             }
-            autocmd CmdlineChanged  :  options.alwayson ? Complete() : TabComplete()
             autocmd CmdlineLeave    :  {
                 if state != null_object # <c-s> removes this object
                     CmdlineLeaveHook(state.pmenu.SelectedItem(),
                         state.pmenu.FirstItem(), state.exit_key)
+                    DisableCmdline()
                     state.Clear()
                     state = null_object
                 endif
@@ -97,54 +110,43 @@ export def Teardown()
 enddef
 
 def EnableCmdline()
-    autocmd! VimSuggestCmdAutocmds CmdlineChanged : options.alwayson ? Complete() : TabComplete()
+    autocmd! VimSuggestCmdAutocmds CmdlineChanged : Complete()
+    KeyMap()
 enddef
 
 def DisableCmdline()
     autocmd! VimSuggestCmdAutocmds CmdlineChanged :
+    KeyUnMap()
 enddef
 
-def TabPressed(): number
-    var lastcharpos = getcmdpos() - 2
-    var cmdline = getcmdline()
-    if cmdline[lastcharpos] ==? "\<tab>"
-        setcmdline(cmdline->slice(0, lastcharpos) .. cmdline->slice(lastcharpos + 1))
-        # XXX setcmdpos() does not work here
-        if getcmdpos() != lastcharpos + 1  # After setcmdline, cursor is at end of line
-            foreach(range(lastcharpos), (_, _) => feedkeys("\<right>", 'in'))
-            feedkeys("\<home>", 'in')
-            return 2  # <Tab> in the middle of cmdlin
-        else
-            return 1  # <Tab> at end of cmdline
+def KeyMap()
+    for k in ["<tab>", "<s-tab>"]
+        if k->mapcheck('c') == null_string
+            exec 'cnoremap <expr>' k 'Complete(true)'
         endif
-    endif
-    return 0  # <Tab> not present
+    endfor
 enddef
 
-def TabComplete()
-    var tab = TabPressed()
-    if tab == 2
-        timer_start(1, (_) => Complete())
-    elseif tab == 1
-        Complete()
-    elseif state.items[0]->len() > 0  # popup window is showing (but set to hidden)
-        Complete()
-    else
-        HideMenu()
-    endif
+def KeyUnMap()
+    for k in ["<tab>", "<s-tab>"]
+        if k->mapcheck('c') != null_string
+            exec 'cunmap' k
+        endif
+    endfor
 enddef
 
-def Complete()
+def Complete(skip_none = false): string
     if state.char_removed
         state.char_removed = false
-        return
+        return null_string
     endif
     var context = Context()
-    if context == '' || context =~ '^\s\+$'
+    if context == null_string || context =~ '^\s\+$'
         HideMenu()  # Needed to hide popup after <bs> and cmdline is empty
-        return
+        return null_string
     endif
-    timer_start(1, function(DoComplete, [context]))
+    timer_start(1, function(DoComplete, [context, skip_none]))
+    return null_string
 enddef
 
 def HideMenu()
@@ -152,7 +154,7 @@ def HideMenu()
     state.items = [[]]
 enddef
 
-def DoComplete(oldcontext: string, timer: number)
+def DoComplete(oldcontext: string, skip_none: bool, timer: number)
     var context = Context()
     if context !=# oldcontext
         # Likely pasted text or coming from a keymap (if {rhs} is, say, 'nohls',
@@ -165,28 +167,15 @@ def DoComplete(oldcontext: string, timer: number)
     if state == null_object  # Additional check
         return
     endif
-    var tab = TabPressed()
-    var nofilter = false
-    if tab == 2
-        state.tab_pressed = true
-        timer_start(1, (_) => Complete())
-    elseif tab == 1 || state.tab_pressed
-        state.tab_pressed = false
-        if state.items[0]->len() > 0  # popup window is showing (but set to hidden)
-            return
-        else
-            nofilter = true
-        endif
-    endif
     var cmdstr = context->CmdStr()
     var cmdlead = CmdLead()
-    var excl_list = (options.exclude->type() == v:t_list) ? options.exclude : [options.exclude]
-    var excl_pattern_present =
-        excl_list->reduce((a, v) => a || (cmdstr->match(v) != -1), false)
-    var onspace_list = (options.onspace->type() == v:t_list) ? options.onspace : [options.onspace]
-    var onspace_pattern_present =
-        onspace_list->reduce((a, v) => a || (cmdlead->match(v) != -1), false)
-    if !nofilter && options.alwayson
+    if !skip_none
+        var excl_list = (options.exclude->type() == v:t_list) ? options.exclude : [options.exclude]
+        var excl_pattern_present =
+            excl_list->reduce((a, v) => a || (cmdstr->match(v) != -1), false)
+        var onspace_list = (options.onspace->type() == v:t_list) ? options.onspace : [options.onspace]
+        var onspace_pattern_present =
+            onspace_list->reduce((a, v) => a || (cmdlead->match(v) != -1), false)
         if excl_pattern_present ||
                 (cmdstr =~ '^\s*\S\+\s\+$' && !onspace_pattern_present &&
                 !State.onspace_hook->has_key(cmdlead))
