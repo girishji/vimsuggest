@@ -6,7 +6,7 @@ vim9script
 
 import autoload './popup.vim'
 import autoload './addons/addons.vim'
-import autoload './aux.vim'
+import autoload './auxiliary.vim'
 
 export var options: dict<any> = {
     enable: true,      # Enable/disable the completion functionality
@@ -205,7 +205,7 @@ def DoComplete(oldcontext: string, skip_none: bool, timer: number)
     catch # Catch (for ex.) -> E1245: Cannot expand <sfile> in a Vim9 function
     endtry
     if completions->len() == 0  # Try completing :s// and :g/
-        completions = aux.GetCompletionSG(context)
+        completions = auxiliary.GetCompletionSG(context)
         if completions->len() > 0 && &hlsearch && &incsearch
             # Restore 'hls' and 'incsearch' hightlight (removed when popup_show() redraws).
             var charpos = getcmdpos() - 2
@@ -254,9 +254,9 @@ enddef
 # When ':range' is present, insertion of completion text should happen at the
 # end of range. Similary, :s// and :g//.
 def InsertionPoint(replacement: string): number
-    if aux.insertion_point != -1
-        var temp = aux.insertion_point
-        aux.insertion_point = -1
+    if auxiliary.insertion_point != -1
+        var temp = auxiliary.insertion_point
+        auxiliary.insertion_point = -1
         return temp
     endif
     var context = Context()
@@ -343,7 +343,7 @@ def FilterFn(winid: number, key: string): bool
         CmdlineAbortHook()
         return false
     elseif key == "\<C-d>"
-    elseif aux.CursorMovementKey(key)
+    elseif auxiliary.CursorMovementKey(key)
         return false
     else
         if state.char_removed

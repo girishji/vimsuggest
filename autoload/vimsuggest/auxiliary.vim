@@ -240,7 +240,7 @@ def GetRange(rstr: string, isglobal: bool = false): list<number>
     return [startl, endl]
 enddef
 
-# :call g:vimsuggest#aux#TestRange() while editing ../../LICENSE.
+# :call g:vimsuggest#auxiliary#TestRange() while editing ../../LICENSE.
 export def TestRange()
     :normal gg
     assert_equal([line('.'), line('.')], GetRange(''))
