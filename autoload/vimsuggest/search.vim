@@ -7,7 +7,7 @@ vim9script
 # functions to enhance the search experience in Vim.
 
 import autoload './popup.vim'
-import autoload './aux.vim'
+import autoload './auxiliary.vim'
 
 # Configuration options
 export var options: dict<any> = {
@@ -239,7 +239,7 @@ def FilterFn(winid: number, key: string): bool
             setreg('/', State.saved_searchreg) # Restore previous hlsearch
         endif
         return false  # 'false' causes search to be abandoned, and trigger CmdlineLeave
-    elseif aux.CursorMovementKey(key)
+    elseif auxiliary.CursorMovementKey(key)
         return false
     else
         IncSearchHighlightClear()
