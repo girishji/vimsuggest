@@ -41,7 +41,11 @@ enddef
 autocmd VimEnter * Reset()
 
 if empty(prop_type_get('VimSuggestMatch'))
-    :highlight default link VimSuggestMatch PmenuMatch
+    if !hlget('PmenuMatch')->empty()
+        :highlight default link VimSuggestMatch PmenuMatch
+    else
+        :highlight VimSuggestMatch cterm=underline
+    endif
     prop_type_add('VimSuggestMatch', {highlight: "VimSuggestMatch", override: false})
 endif
 :highlight default link VimSuggestMatchSel PmenuMatchSel
