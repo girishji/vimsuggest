@@ -175,7 +175,7 @@ def DoComplete(oldcontext: string, skip_none: bool, timer: number)
         var excl_pattern_present =
             excl_list->reduce((a, v) => a || (cmdstr->match(v) != -1), false)
         var onspace_list = (options.onspace->type() == v:t_list) ? options.onspace : [options.onspace]
-        var onspace_pattern_present = (onspace_list[0] == '*') ? true :
+        var onspace_pattern_present =
             onspace_list->reduce((a, v) => a || (cmdlead->match(v) != -1), false)
         if excl_pattern_present ||
                 (cmdstr =~ '^\s*\S\+\s\+$' && !onspace_pattern_present &&

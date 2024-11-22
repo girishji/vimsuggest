@@ -75,7 +75,8 @@ s:vim_suggest.cmd is a dictionary containing the following options:
     'exclude'   Regex patterns to exclude from completion
                 Default: []
 
-    'onspace'   Commands to complete after space (e.g., 'buffer')
+    'onspace'   Commands (regex) that trigger completion after space
+                Use '.*' for all
                 Default: ['b\%[uffer]','colo\%[rscheme]']
 
     'alwayson'  Auto-open popup (v:false to open with <Tab>)
