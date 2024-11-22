@@ -103,7 +103,7 @@ let s:vim_suggest.cmd = {
 | enable | `v:true` | Enable/disable command completion |
 | pum | `v:true` | `v:true` for stacked menu, `v:false` for flat menu |
 | exclude | `[]` | Regex patterns to exclude from completion |
-| onspace | `['b\%[uffer]','colo\%[rscheme]']` | Commands (regex) to complete after typing space |
+| onspace | `['b\%[uffer]','colo\%[rscheme]']` | Commands (regex) that trigger completion after space. Use `*` for all |
 | alwayson | `v:true` | Auto-open popup (v:false to open with <Tab>) |
 | popupattrs | `{}` | Arguments passed to popup_create() (`:h popup_create-arguments`) |
 | wildignore | `v:true` | Respect 'wildignore' during file completion |
