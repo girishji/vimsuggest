@@ -311,7 +311,13 @@ def DoMRUAction(arglead: string = null_string)
     })
 enddef
 def MRU(): list<any>
-    var mru = v:oldfiles->copy()->filter((_, v) => filereadable(fnamemodify(v, ":p")))
+    var mru = []
+    if has("win32")
+        # Windows is very slow checking if file exists. use non-filtered v:oldfiles.
+        mru = v:oldfiles
+    else
+        mru = v:oldfiles->copy()->filter((_, v) => filereadable(fnamemodify(v, ":p")))
+    endif
     mru->map((_, v) => v->fnamemodify(':.'))
     return mru
 enddef
