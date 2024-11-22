@@ -97,6 +97,10 @@ s:vim_suggest.cmd is a dictionary containing the following options:
                 Only when 'pum' is 'true'
                 Default: v:false
 
+    'auto_first' Auto-select first menu item on <Enter> if none chosen (Does
+                not affect 'addons' which always use first item)
+                Default: v:false
+
 Search Completion Configuration:~
 >
      let s:vim_suggest.search = {

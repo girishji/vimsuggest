@@ -20,6 +20,7 @@ export var options: dict<any> = {
     addons: true,      # Enable additional completion addons (like fuzzy file finder)
     ctrl_np: false,    # 'true' to select menu using <C-n/p>, 'false' for history recall
     reverse: false,    # Upside-down menu
+    auto_first: false, # Automatically select first item from menu if none selected
 }
 
 class State
@@ -334,6 +335,12 @@ def FilterFn(winid: number, key: string): bool
         state.exit_key = key
         feedkeys("\<cr>", 'n')
     elseif key == "\<CR>"
+        if options.auto_first && state.cmdline_leave_hook == null_dict &&
+                state.pmenu.SelectedItem() == null_string &&
+                state.pmenu.FirstItem() != null_string
+            feedkeys("\<Tab>\<CR>", 'in')
+            return true
+        endif
         # Note: When <cr> simply opens the message window (ex :filt Menu hi), popup
         # lingers unless it is explicitly hidden.
         state.pmenu.Hide()

@@ -110,6 +110,7 @@ let s:vim_suggest.cmd = {
 | addons | `v:true` | Enable addons (`:VSxxx` commands) |
 | ctrl_np | `v:false` | <C-n/p> selects menu when 'true'; otherwise, recalls history |
 | reverse | `v:false` | Reverse-sorted menu, with the most relevant item at the bottom (when `pum=v:true`) |
+| auto_first | `v:false` | Auto-select first menu item on `<Enter>` if none chosen (Does not affect 'addons' which always use first item) |
 
 > [!NOTE]
 > Typing `<Tab>` bypasses the `exclude` list and opens the completion menu.
@@ -238,14 +239,14 @@ When the popup window is open, you can use the following key mappings:
 Note: Keys used in command-line editing (`:h cmdline-editing`) remain unmodified.
 
 > [!TIP]
-> 1. If no item is selected, pressing `<Enter>` selects the first menu item (works only for 'addons' commands).
-> 2. To automatically open the quickfix list after using `<Ctrl-q>`, add the following to your `.vimrc`:
+> 1. To automatically open the quickfix list after using `<Ctrl-q>`, add the following to your `.vimrc`:
 >    ```vim
 >    augroup vimsuggest-qf-show
 >        autocmd!
 >        autocmd QuickFixCmdPost clist cwindow
 >    augroup END
 >    ```
+> 2. When `<Enter>` is pressed without selection: addons always use first item, other commands do so if `auto_first` is set.
 > 3. To perform a multi-word search using the `/` or `?` command, type the first word followed by `<Space>` to trigger auto-completion for the next word. At the end of a line, press `\n` to continue the search on the next line. Note that enabling the fuzzy search option will disable multi-word search functionality.
 > 4. When completing files during `:edit` command, `<Tab>` selects subsequent items in the menu. In order to step into a directory select the directory and press `/`; it will populate items from that directory.
 
