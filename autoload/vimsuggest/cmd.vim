@@ -336,6 +336,7 @@ def FilterFn(winid: number, key: string): bool
         feedkeys("\<cr>", 'n')
     elseif key == "\<CR>"
         if options.auto_first && state.cmdline_leave_hook == null_dict &&
+                getcmdline()->len() + 1 == getcmdpos() &&
                 state.pmenu.SelectedItem() == null_string &&
                 state.pmenu.FirstItem() != null_string
             feedkeys("\<Tab>\<CR>", 'in')
