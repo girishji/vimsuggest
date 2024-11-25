@@ -95,6 +95,7 @@ let s:vim_suggest.cmd = {
     \ 'addons': v:true,
     \ 'ctrl_np': v:false,
     \ 'reverse': v:false,
+    \ 'prefix': 1,
 \ }
 ```
 
@@ -111,6 +112,7 @@ let s:vim_suggest.cmd = {
 | ctrl_np | `v:false` | <C-n/p> selects menu when 'true'; otherwise, recalls history |
 | reverse | `v:false` | Reverse-sorted menu, with the most relevant item at the bottom (when `pum=v:true`) |
 | auto_first | `v:false` | Auto-select first menu item on `<Enter>` if none chosen (Does not affect 'addons' which always use first item) |
+| prefix | `1` | The minimum prefix length before the completion menu is displayed
 
 > [!NOTE]
 > Typing `<Tab>` bypasses the `exclude` list and opens the completion menu.
@@ -133,6 +135,7 @@ let s:vim_suggest.search = {
     \ 'async_minlines': 1000,
     \ 'highlight': v:true,
     \ 'ctrl_np': v:false,
+    \ 'prefix': 1,
 \ }
 ```
 
@@ -151,6 +154,7 @@ let s:vim_suggest.search = {
 | highlight | `v:true` | 'false' to disable menu highlighting (for performance) |
 | ctrl_np | `v:false` | <C-n/p> selects menu when 'true'; otherwise, recalls history |
 | reverse | `v:false` | Reverse-sorted menu, with the most relevant item at the bottom (when `pum=v:true`) |
+| prefix | `1` | The minimum prefix length before the completion menu is displayed
 
 > [!IMPORTANT]
 > 1. Searching large files will not cause any lag. By default, searching is concurrent. Even though no external jobs are used, a timer pauses the task at regular intervals to check if there are pending keys on the typehead.
