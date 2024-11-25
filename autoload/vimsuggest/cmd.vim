@@ -21,6 +21,7 @@ export var options: dict<any> = {
     ctrl_np: false,    # 'true' to select menu using <C-n/p>, 'false' for history recall
     reverse: false,    # Upside-down menu
     auto_first: false, # Automatically select first item from menu if none selected
+    prefix: 1,         # The minimum prefix length before the completion menu is displayed
 }
 
 class State
@@ -142,7 +143,7 @@ def Complete(skip_none = false): string
         return null_string
     endif
     var context = Context()
-    if context == null_string || context =~ '^\s\+$'
+    if context == null_string || context =~ '^\s\+$' || strlen(context) < options.prefix
         HideMenu()  # Needed to hide popup after <bs> and cmdline is empty
         return null_string
     endif
