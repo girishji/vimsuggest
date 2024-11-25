@@ -143,7 +143,7 @@ def Complete(skip_none = false): string
         return null_string
     endif
     var context = Context()
-    if context == null_string || context =~ '^\s\+$' || strlen(context) < options.prefix
+    if context == null_string || context =~ '^\s\+$' || context->strlen() < options.prefix
         HideMenu()  # Needed to hide popup after <bs> and cmdline is empty
         return null_string
     endif
