@@ -197,10 +197,13 @@ def DoComplete(oldcontext: string, skip_none: bool, timer: number)
 
     var completions: list<any> = []
     try
-        if options.wildignore && cmdstr =~# '^\s*\(e\%[dit]!\?\|fin\%[d]!\?\)\s' && cmdstr !~ '\$'
+        var cmdpat = '\%(e\%[dit]!\?\|fin\%[d]!\?\)'
+        if options.wildignore && cmdstr =~# $'^\s*{cmdpat}\s' && cmdstr !~ '\$'
             # 'file_in_path' respects wildignore, 'cmdline' does not.
             # ':VSxxx edit' and ':e $VIM' should not be completed this way.
             completions = cmdstr->matchstr('^\S\+\s\+\zs.*')->getcompletion('file_in_path')
+            completions->map((_, v) => fnameescape(v))
+            utils.insertion_point = context->match($'.\{{-}}{cmdpat}\s\+\zs.*')
         endif
         if completions->empty()
             completions = context->getcompletion('cmdline')
