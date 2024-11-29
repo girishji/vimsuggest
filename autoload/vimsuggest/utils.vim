@@ -52,7 +52,8 @@ export def GetCompletionSG(ctx: string): list<any>
         if startl <= 0
             return []
         endif
-        pat = (pat =~ '\(\\s\| \)' ? '\(\)' : '\(\w*\)') .. $'\({pat}\)\(\w*\)'
+        var word = '\%(\w\|[^\x00-\x7F]\)'  # Covers non-ascii mutli-byte chars.
+        pat = (pat =~ '\(\\s\| \)' ? '\(\)' : $'\({word}*\)') .. $'\({pat}\)\({word}*\)'
         try
             m = bufnr()->matchbufline(pat, startl, endl, {submatches: true})
             if m->len() > 0 && m[0].submatches[1] !~ '^\s*$' # ignore searches for only space characters
@@ -126,13 +127,13 @@ def GetRange(rstr: string, isglobal: bool = false): list<number>
     if m->len() > 0
         startl = LnumFromPat(m[0].submatches[0], m[0].submatches[1], true)
         startl = max([1, startl])
-        rangeto = str->slice(len(m[0].text))
+        rangeto = str->strpart(len(m[0].text))
     else
         m = matchstrlist([str], '\v^\s*\?(%(\\.|[^?])+)\?(.{-})%([,;]|\ze$)', {submatches: true})
         if m->len() > 0
             startl = LnumFromPat(m[0].submatches[0], m[0].submatches[1], false)
             startl = max([1, startl])
-            rangeto = str->slice(len(m[0].text))
+            rangeto = str->strpart(len(m[0].text))
         endif
     endif
     if rangeto == null_string
@@ -197,7 +198,7 @@ def GetRange(rstr: string, isglobal: bool = false): list<number>
                         pat = mt[0].submatches[3]
                         var sepidx = pat->stridx(sepchar)
                         if sepidx != -1
-                            pat = pat->slice(0, sepidx)
+                            pat = pat->strpart(0, sepidx)
                         endif
                         break
                     endif

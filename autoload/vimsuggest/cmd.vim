@@ -210,15 +210,18 @@ def DoComplete(oldcontext: string, skip_none: bool, timer: number)
         completions = utils.GetCompletionSG(context)
         if completions->len() > 0 && &hlsearch && &incsearch
             # Restore 'hls' and 'incsearch' hightlight (removed when popup_show() redraws).
-            var charpos = getcmdpos() - 2
             var cmdline = getcmdline()
-            setcmdline(cmdline->slice(0, charpos) .. cmdline->slice(charpos + 1))
-            if getcmdpos() != charpos + 1
+            var numchars = context->strcharlen()
+            setcmdline(cmdline->strcharpart(0, numchars - 1) .. cmdline->strcharpart(numchars))
+            var lastchar = context->strcharpart(numchars - 1)
+            var cursorpos = context->len() - lastchar->len()
+            if getcmdpos() != cursorpos + 1
                 feedkeys("\<home>", 'n')
-                foreach(range(charpos), (_, _) => feedkeys("\<right>", 'n'))
+                var cursorcharpos = numchars - 1
+                foreach(range(cursorcharpos), (_, _) => feedkeys("\<right>", 'n'))
             endif
             state.char_removed = true
-            feedkeys(context[-1], 'n')
+            feedkeys(lastchar, 'n')
         endif
     endif
     if completions->len() == 0 || (completions->len() == 1 && context->strridx(completions[0]) != -1)
@@ -267,10 +270,10 @@ def InsertionPoint(replacement: string): number
     if pos == context->len()
         return pos
     endif
-    var word = context->slice(pos)
+    var word = context->strpart(pos)
     var wordlen = word->len()
     for i in range(wordlen)
-        if word->slice(i) ==? replacement->slice(0, wordlen - i)
+        if word->strpart(i) ==? replacement->strpart(0, wordlen - i)
             return i + pos
         endif
     endfor
@@ -283,13 +286,14 @@ export def SelectItemPost(index: number, dir: string)
             !state.select_item_hook[cmdname](state.items[0][index], dir)
         var replacement = state.items[0][index]
         var cmdline = getcmdline()
-        setcmdline(cmdline->slice(0, state.insertion_point) ..
-            replacement .. cmdline->slice(getcmdpos() - 1))
+        setcmdline(cmdline->strpart(0, state.insertion_point) ..
+            replacement .. cmdline->strpart(getcmdpos() - 1))
         var newpos = state.insertion_point + replacement->len()
         # XXX: setcmdpos() does not work here, vim put cursor at the end.
         # workaround:
+        var newcharpos = state.insertion_point + replacement->strcharlen()
         if getcmdpos() != newpos + 1
-            foreach(range(newpos), (_, _) => feedkeys("\<right>", 'in'))
+            foreach(range(newcharpos), (_, _) => feedkeys("\<right>", 'in'))
             feedkeys("\<home>", 'in')
         endif
     endif

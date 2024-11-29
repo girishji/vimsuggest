@@ -351,11 +351,14 @@ def Batches(): list<any>
 enddef
 
 def BufMatchLine(batch: dict<any> = null_dict): list<any>
-    var pat = (state.context =~ '\(\\s\| \)' ? '\(\)' : '\(\w*\)') .. $'\({state.context}\)\(\w*\)' # \k includes 'foo.' and 'foo,'
+    var word = '\%(\w\|[^\x00-\x7F]\)'  # Covers non-ascii mutli-byte chars.
+    var pat = (state.context =~ '\(\\s\| \)' ? '\(\)' : $'\({word}*\)') ..
+        $'\({state.context}\)\({word}*\)' # \k includes 'foo.' and 'foo,' (not ideal)
     var matches = []
     var timeout = max([10, options.timeout])
     var starttime = reltime()
-    var notasync_batches = v:searchforward ? [{startl: line('.'), endl: line('$')}, {startl: 1, endl: line('.')}] :
+    var notasync_batches = v:searchforward ?
+        [{startl: line('.'), endl: line('$')}, {startl: 1, endl: line('.')}] :
         [{startl: line('.'), endl: 1}, {startl: line('$'), endl: line('.')}]
     var batches = batch == null_dict ? notasync_batches : [batch]
     try
@@ -384,7 +387,8 @@ def BufMatchMultiLine(batch: dict<any> = null_dict): list<any>
     var saved_cursor = getcurpos()
     var timeout = max([10, options.timeout])
     var flags = state.async ? (v:searchforward ? '' : 'b') : (v:searchforward ? 'w' : 'wb')
-    var pattern = state.context =~ '\s' ? $'{state.context}\w*' : $'\w*{state.context}\w*'
+    var word = '\%(\w\|[^\x00-\x7F]\)'
+    var pattern = state.context =~ '\s' ? $'{state.context}{word}*' : $'{word}*{state.context}{word}*'
     var [lnum, cnum] = [0, 0]
     var [startl, startc] = [0, 0]
     var dobatch = batch != null_dict
