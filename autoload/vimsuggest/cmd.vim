@@ -197,11 +197,12 @@ def DoComplete(oldcontext: string, skip_none: bool, timer: number)
 
     var completions: list<any> = []
     try
-        if options.wildignore && cmdstr =~# '^\s*\(e\%[dit]!\?\|fin\%[d]!\?\)\s'
+        if options.wildignore && cmdstr =~# '^\s*\(e\%[dit]!\?\|fin\%[d]!\?\)\s' && cmdstr !~ '\$'
             # 'file_in_path' respects wildignore, 'cmdline' does not.
-            # :VSxxx edit ... should not be here.
+            # ':VSxxx edit' and ':e $VIM' should not be completed this way.
             completions = cmdstr->matchstr('^\S\+\s\+\zs.*')->getcompletion('file_in_path')
-        else
+        endif
+        if completions->empty()
             completions = context->getcompletion('cmdline')
         endif
     catch # Catch (for ex.) -> E1245: Cannot expand <sfile> in a Vim9 function
