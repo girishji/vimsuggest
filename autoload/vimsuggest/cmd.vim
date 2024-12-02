@@ -207,6 +207,9 @@ def DoComplete(oldcontext: string, skip_none: bool, timer: number)
         endif
         if completions->empty()
             completions = context->getcompletion('cmdline')
+            if cmdstr =~ '\$' && !completions->empty() && completions[0]->getftype() != ''
+                utils.insertion_point = RightmostUnescapedCharIdx(context, '$')
+            endif
         endif
     catch # Catch (for ex.) -> E1245: Cannot expand <sfile> in a Vim9 function
     endtry
@@ -260,6 +263,15 @@ export def SetPopupMenu(items: list<any>)
     endif
 enddef
 
+def RightmostUnescapedCharIdx(str: string, char: string): number
+    for n in range(str->len() - 1, 0, -1)
+        if str[n] ==# char && (n == 0 || str[n - 1] !=# '\\')
+            return n
+        endif
+    endfor
+    return -1
+enddef
+
 # When ':range' is present, insertion of completion text should happen at the
 # end of range. Similary, :s// and :g//.
 def InsertionPoint(replacement: string): number
@@ -269,8 +281,8 @@ def InsertionPoint(replacement: string): number
         return temp
     endif
     var context = Context()
-    var pos = max([' ', '&', '$']->mapnew((_, v) => context->strridx(v))) + 1
     # '&' and '$' completes Vim options and env variables respectively.
+    var pos = max([' ', '&', '$']->mapnew((_, v) => RightmostUnescapedCharIdx(context, v))) + 1
     if pos == context->len()
         return pos
     endif
