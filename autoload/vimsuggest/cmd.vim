@@ -298,7 +298,7 @@ def InsertionPoint(replacement: string): number
     var context = Context()
     # '&' and '$' completes Vim options and env variables respectively.
     var pos = max([' ', '&', '$']->mapnew((_, v) => RightmostUnescapedCharIdx(context, v))) + 1
-    if pos == context->len()
+    if pos == context->len() || &wildoptions =~# 'fuzzy'
         return pos
     endif
     var word = context->strpart(pos)

@@ -73,6 +73,7 @@ export def GetCompletionSG(ctx: string): list<any>
     return []
 enddef
 
+# Given a string specifying range, obtain start and end lines.
 def GetRange(rstr: string, isglobal: bool = false): list<number>
 
     def Increment(linenum: number, val: string): number
@@ -241,16 +242,6 @@ def GetRange(rstr: string, isglobal: bool = false): list<number>
     return [startl, endl]
 enddef
 
-export def TriggerKeys(trigger: string, rev = false): list<string>
-    var lst = []
-    var trg = trigger ?? 't'
-    lst->extend(trg =~ 't' ? (rev ? ["\<S-Tab>"] : ["\<Tab>"]) : [])
-    # Note: <C-n> sends <Down> for first time when popup is open. For consistent
-    # behavior use these keys synonymously.
-    lst->extend(trg =~ 'n' ? (rev ? ["\<C-p>", "\<Up>"] : ["\<C-n>", "\<Down>"]) : [])
-    return lst
-enddef
-
 # :call g:vimsuggest#utils#TestRange() while editing ../../LICENSE.
 export def TestRange()
     :normal gg
@@ -287,6 +278,16 @@ export def TestRange()
     assert_equal([11, 11], GetRange('?\Cpermission?-1'))
     assert_equal([14, line('$') - 1], GetRange('?\Cpermission?+2,$-1'))
     foreach(v:errors, 'echom "Fail:" v:val')
+enddef
+
+export def TriggerKeys(trigger: string, rev = false): list<string>
+    var lst = []
+    var trg = trigger ?? 't'
+    lst->extend(trg =~ 't' ? (rev ? ["\<S-Tab>"] : ["\<Tab>"]) : [])
+    # Note: <C-n> sends <Down> for first time when popup is open. For consistent
+    # behavior use these keys synonymously.
+    lst->extend(trg =~ 'n' ? (rev ? ["\<C-p>", "\<Up>"] : ["\<C-n>", "\<Down>"]) : [])
+    return lst
 enddef
 
 export def CursorMovementKey(key: string): bool
