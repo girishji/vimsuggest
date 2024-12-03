@@ -93,7 +93,7 @@ let s:vim_suggest.cmd = {
     \ 'popupattrs': {},
     \ 'wildignore': v:true,
     \ 'addons': v:true,
-    \ 'ctrl_np': v:false,
+    \ 'trigger': 't',
     \ 'reverse': v:false,
     \ 'prefix': 1,
 \ }
@@ -101,21 +101,23 @@ let s:vim_suggest.cmd = {
 
 | Variable Name | Default Value | Comment |
 |---------------|---------------|---------|
-| enable | `v:true` | Enable/disable command completion |
-| pum | `v:true` | `v:true` for stacked menu, `v:false` for flat menu |
-| exclude | `[]` | Regex patterns to exclude from completion |
-| onspace | `['b\%[uffer]','colo\%[rscheme]']` | Commands (regex) that trigger completion after space. Use `.*` for all |
-| alwayson | `v:true` | Auto-open popup (v:false to open with <Tab>) |
-| popupattrs | `{}` | Arguments passed to popup_create() (`:h popup_create-arguments`) |
-| wildignore | `v:true` | Respect 'wildignore' during file completion |
-| addons | `v:true` | Enable addons (`:VSxxx` commands) |
-| ctrl_np | `v:false` | <C-n/p> selects menu when 'true'; otherwise, recalls history |
-| reverse | `v:false` | Reverse-sorted menu, with the most relevant item at the bottom (when `pum=v:true`) |
-| auto_first | `v:false` | Auto-select first menu item on `<Enter>` if none chosen (Does not affect 'addons' which always use first item) |
-| prefix | `1` | The minimum prefix length before the completion menu is displayed
+| `enable` | `v:true` | Enable/disable command completion |
+| `pum` | `v:true` | `v:true` for stacked menu, `v:false` for flat menu |
+| `exclude` | `[]` | Regex patterns to exclude from completion |
+| `onspace` | `['b\%[uffer]','colo\%[rscheme]']` | Commands (regex) that trigger completion after space. Use `.*` for all |
+| `alwayson` | `v:true` | Auto-open popup (`v:false` to open with `<Tab>`/`<C-d>`) |
+| `popupattrs` | `{}` | Arguments passed to popup_create() (`:h popup_create-arguments`) |
+| `wildignore` | `v:true` | Respect 'wildignore' during file completion |
+| `addons` | `v:true` | Enable addons (`:VSxxx` commands) |
+| `trigger` | `t` | `'t'` enables `<Tab>`/`<S-Tab>` as trigger characters, while `'n'` enables `<C-n>`/`<C-p>` and `<Up>/<Down>`. (See note below.) |
+| `reverse` | `v:false` | Reverse-sorted menu, with the most relevant item at the bottom (when `pum=v:true`) |
+| `auto_first` | `v:false` | Auto-select first menu item on `<Enter>` if none chosen (Does not affect 'addons' which always use first item) |
+| `prefix` | `1` | The minimum prefix length before the completion menu is displayed
 
 > [!NOTE]
-> Typing `<Tab>` bypasses the `exclude` list and opens the completion menu.
+> 1. The `trigger` option specifies the character used to select items in the popup menu or invoke the menu itself. When `<Tab>`/`<C-I>` is set as the trigger, it cannot be used to input tab characters while the popup is open. In this case, use `<C-V><Tab>`/`<C-V><C-I>`.
+>    - These trigger options can be combined. For instance, setting `tn` allows `<Tab>`/`<S-Tab>` as well as `<C-n>`/`<C-p>` and `<Up>`/`<Down>` to navigate the menu. However, history recall using the arrow keys will only work when the command-line is empty.
+> 2. If the popup menu does not appear due to a match in the `exclude` list, typing `<C-D>` will override the `exclude` list and immediately display the completion menu.
 
 ### Search Completion Configuration
 
@@ -134,27 +136,27 @@ let s:vim_suggest.search = {
     \ 'async_timeout': 3000,
     \ 'async_minlines': 1000,
     \ 'highlight': v:true,
-    \ 'ctrl_np': v:false,
+    \ 'trigger': 't',
     \ 'prefix': 1,
 \ }
 ```
 
 | Variable Name | Default Value | Comment |
 |---------------|---------------|---------|
-| enable | `v:true` | Enable/disable search completion |
-| pum | `v:true` | `v:true` for stacked menu, `v:false` for flat menu |
-| fuzzy | `v:false` | Enable fuzzy completion |
-| alwayson | `v:true` | Auto-open popup (`v:false` to open with `<Tab>`) |
-| popupattrs | `{'maxheight': 12}` | Arguments passed to popup_create() (`:h popup_create-arguments`) |
-| range | `100` | Lines to search in each batch |
-| timeout | `200` | Non-async search timeout (ms) |
-| async | `v:true` | Use asynchronous searching |
-| async_timeout | `3000` | Async search timeout (ms) |
-| async_minlines | `1000` | Min lines to trigger async search |
-| highlight | `v:true` | 'false' to disable menu highlighting (for performance) |
-| ctrl_np | `v:false` | <C-n/p> selects menu when 'true'; otherwise, recalls history |
-| reverse | `v:false` | Reverse-sorted menu, with the most relevant item at the bottom (when `pum=v:true`) |
-| prefix | `1` | The minimum prefix length before the completion menu is displayed
+| `enable` | `v:true` | Enable/disable search completion |
+| `pum` | `v:true` | `v:true` for stacked menu, `v:false` for flat menu |
+| `fuzzy` | `v:false` | Enable fuzzy completion |
+| `alwayson` | `v:true` | Auto-open popup (`v:false` to open with `<Tab>`/`<C-d>`) |
+| `popupattrs` | `{'maxheight': 12}` | Arguments passed to popup_create() (`:h popup_create-arguments`) |
+| `range` | `100` | Lines to search in each batch |
+| `timeout` | `200` | Non-async search timeout (ms) |
+| `async` | `v:true` | Use asynchronous searching |
+| `async_timeout` | `3000` | Async search timeout (ms) |
+| `async_minlines` | `1000` | Min lines to trigger async search |
+| `highlight` | `v:true` | 'false' to disable menu highlighting (for performance) |
+| `trigger` | `t` | `'t'` enables `<Tab>`/`<S-Tab>` as trigger characters, while `'n'` enables `<C-n>`/`<C-p>` and `<Up>/<Down>`. (See note above.) |
+| `reverse` | `v:false` | Reverse-sorted menu, with the most relevant item at the bottom (when `pum=v:true`) |
+| `prefix` | `1` | The minimum prefix length before the completion menu is displayed
 
 > [!IMPORTANT]
 > 1. Searching large files will not cause any lag. By default, searching is concurrent. Even though no external jobs are used, a timer pauses the task at regular intervals to check if there are pending keys on the typehead.
@@ -230,20 +232,23 @@ When the popup window is open, you can use the following key mappings:
 | `<PageUp>`/`<S-Up>` | Scroll up one page |
 | `<Tab>` | Move to next item |
 | `<Shift-Tab>` | Move to previous item |
-| `<Esc>`/`<C-[>`/`<Ctrl-c>` | Dismiss popup |
-| `<Ctrl-s>` | Dismiss auto-completion and revert to default Vim behavior |
+| `<C-n>`/`<Down>` | Move to next item (see `trigger` option) |
+| `<C-p>`/`<Up>` | Move to previous item  (see `trigger` option) |
+| `<Esc>`/`<C-[>`/`<C-c>` | Dismiss popup |
+| `<C-s>` | Dismiss auto-completion and revert to default Vim behavior |
 | `<Enter>` | Confirm selection |
-| `<Ctrl-j>` | Open file selection in a split window |
-| `<Ctrl-v>` | Open file selection in a vertical split |
-| `<Ctrl-t>` | Open file selection in a new tab |
-| `<Ctrl-q>` | Send items (grep lines or file paths) to the quickfix list |
-| `<Ctrl-l>` | Send items (file paths) to the argument list |
-| `<Ctrl-g>` | Copy items to system clipboard (`+` register) |
+| `<C-d>` | Open popup menu (override `exclude` list) |
+| `<C-j>` | Open file selection in a split window |
+| `<C-v>` | Open file selection in a vertical split |
+| `<C-t>` | Open file selection in a new tab |
+| `<C-q>` | Send items (grep lines or file paths) to the quickfix list |
+| `<C-l>` | Send items (file paths) to the argument list |
+| `<C-g>` | Copy items to system clipboard (`+` register) |
 
 Note: Keys used in command-line editing (`:h cmdline-editing`) remain unmodified.
 
 > [!TIP]
-> 1. To automatically open the quickfix list after using `<Ctrl-q>`, add the following to your `.vimrc`:
+> 1. To automatically open the quickfix list after using `<C-q>`, add the following to your `.vimrc`:
 >    ```vim
 >    augroup vimsuggest-qf-show
 >        autocmd!
@@ -252,7 +257,7 @@ Note: Keys used in command-line editing (`:h cmdline-editing`) remain unmodified
 >    ```
 > 2. When `<Enter>` is pressed without selection: addons always use first item, other commands do so if `auto_first` is set.
 > 3. To perform a multi-word search using the `/` or `?` command, type the first word followed by `<Space>` to trigger auto-completion for the next word. At the end of a line, press `\n` to continue the search on the next line. Note that enabling the fuzzy search option will disable multi-word search functionality.
-> 4. When completing files during `:edit` command, `<Tab>` selects subsequent items in the menu. In order to step into a directory select the directory and press `/`; it will populate items from that directory.
+> 4. When completing files during `:edit` command, `<Tab>` (trigger character) selects subsequent items in the menu. In order to step into a directory select the directory and press `/`; it will populate items from that directory.
 
 ## Addons
 

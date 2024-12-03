@@ -24,7 +24,7 @@ export var options: dict<any> = {
     async_timeout: 3000,  # Async timeout in milliseconds
     async_minlines: 1000, # Minimum lines to enable async search
     highlight: true,      # Disable menu highlighting (for performance)
-    ctrl_np: false,       # 'true' to select menu items using <C-n/p>, 'false' for history recall
+    trigger: 't',         # 't' for tab/s-tab, 'n' for ctrl-n/p and up/down arrows
     reverse: false,       # Upside-down menu
     prefix: 1,            # The minimum prefix length before the completion menu is displayed
 }
@@ -128,16 +128,20 @@ enddef
 def TabComplete()
     var lastcharpos = getcmdpos() - 2
     var cmdline = getcmdline()
-    if cmdline[lastcharpos] ==? "\<tab>"
+    var lastchar = cmdline[lastcharpos]
+    if lastchar ==? "\<tab>" || lastchar ==? "\<C-d>"
         setcmdline(cmdline->slice(0, lastcharpos) .. cmdline->slice(lastcharpos + 1))
-        # XXX setcmdpos() does not work here
-        if getcmdpos() != lastcharpos + 1
-            feedkeys("\<home>", 'n')
-            foreach(range(lastcharpos), (_, _) => feedkeys("\<right>", 'n'))
-            timer_start(0, (_) => Complete())
-        else
+        # Note: setcmdpos() does not work here, since it puts cursor at the beginning.
+        # XXX: Comment out the following. Causes E1360 intermittently. Side
+        # effect is that if '/a<cursor>a' then <tab> will cause cursor to jump
+        # to the end and it tries to complete 'aa' instead of 'a'.
+        # if getcmdpos() != lastcharpos + 1
+        #     foreach(range(lastcharpos), (_, _) => feedkeys("\<right>", 'in'))
+        #     feedkeys("\<home>", 'in')
+        #     timer_start(1, (_) => Complete())
+        # else
             Complete()
-        endif
+        # endif
     else
         :redraw
     endif
@@ -213,9 +217,9 @@ def SelectItemPost(index: number, dir: string)
 enddef
 
 def FilterFn(winid: number, key: string): bool
-    if key == "\<Tab>" || ((key == "\<C-n>" || key == "\<Down>") && options.ctrl_np)
+    if utils.TriggerKeys(options.trigger)->index(key) != -1
         state.pmenu.SelectItem('j', SelectItemPost) # Next item
-    elseif key == "\<S-Tab>" || ((key == "\<C-p>" || key == "\<Up>") && options.ctrl_np)
+    elseif utils.TriggerKeys(options.trigger, true)->index(key) != -1
         state.pmenu.SelectItem('k', SelectItemPost) # Prev item
     elseif key == "\<PageUp>" || key == "\<S-Up>"
         state.pmenu.PageUp()

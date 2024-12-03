@@ -241,6 +241,16 @@ def GetRange(rstr: string, isglobal: bool = false): list<number>
     return [startl, endl]
 enddef
 
+export def TriggerKeys(trigger: string, rev = false): list<string>
+    var lst = []
+    var trg = trigger ?? 't'
+    lst->extend(trg =~ 't' ? (rev ? ["\<S-Tab>"] : ["\<Tab>"]) : [])
+    # Note: <C-n> sends <Down> for first time when popup is open. For consistent
+    # behavior use these keys synonymously.
+    lst->extend(trg =~ 'n' ? (rev ? ["\<C-p>", "\<Up>"] : ["\<C-n>", "\<Down>"]) : [])
+    return lst
+enddef
+
 # :call g:vimsuggest#utils#TestRange() while editing ../../LICENSE.
 export def TestRange()
     :normal gg

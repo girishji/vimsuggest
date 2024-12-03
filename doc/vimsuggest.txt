@@ -60,7 +60,7 @@ Command Completion Configuration:~
         \ 'popupattrs': {},
         \ 'wildignore': v:true,
         \ 'addons': v:true,
-        \ 'ctrl_np': v:false,
+        \ 'trigger': 't',
         \ 'reverse': v:false,
     \ }
 <
@@ -79,7 +79,7 @@ s:vim_suggest.cmd is a dictionary containing the following options:
                 Use '.*' for all
                 Default: ['b\%[uffer]','colo\%[rscheme]']
 
-    'alwayson'  Auto-open popup (v:false to open with <Tab>)
+    'alwayson'  Auto-open popup ('v:false' to open with <Tab>/<C-d>)
                 Default: v:true
 
     'popupattrs' Arguments passed to popup_create()
@@ -91,8 +91,9 @@ s:vim_suggest.cmd is a dictionary containing the following options:
     'addons'    Enable addons (:VSxxx commands)
                 Default: v:true
 
-    'ctrl_np'   <C-n/p> selects menu when 'true'; otherwise, recalls history
-                Default: v:false
+    'trigger'  't' enables <Tab>/<S-Tab> as trigger characters, while 'n'
+                enables <C-n>/<C-p> and <Up>/<Down>.
+                Default: 't'
 
     'reverse'   Reverse-sorted menu, with the most relevant item at the bottom
                 Only when 'pum' is 'true'
@@ -118,7 +119,7 @@ Search Completion Configuration:~
          \ 'async_timeout': 3000,
          \ 'async_minlines': 1000,
          \ 'highlight': v:true,
-         \ 'ctrl_np': v:false,
+         \ 'trigger': 't',
          \ 'reverse': v:false,
      \ }
 
@@ -133,7 +134,7 @@ s:vim_suggest.search is a dictionary containing the following options:
     'fuzzy'     Enable fuzzy completion
                 Default: v:false
 
-    'alwayson'  Auto-open popup (v:false to open with <Tab>)
+    'alwayson'  Auto-open popup ('v:false' to open with <Tab>/<C-d>)
                 Default: v:true
 
     'popupattrs' Arguments passed to popup_create()
@@ -159,8 +160,9 @@ s:vim_suggest.search is a dictionary containing the following options:
     'highlight' 'false' to disable menu highlighting (for performance)
                 Default: v:true
 
-    'ctrl_np'   <C-n/p> selects menu when 'true'; otherwise, recalls history
-                Default: v:false
+    'trigger'  't' enables <Tab>/<S-Tab> as trigger characters, while 'n'
+                enables <C-n>/<C-p> and <Up>/<Down>.
+                Default: 't'
 
     'reverse'   Reverse-sorted menu, with the most relevant item at the bottom
                 Only when 'pum' is 'true'
@@ -224,16 +226,17 @@ When the popup window is open, you can use the following key mappings:
     <Tab>        Move to next item
     <Shift-Tab>  Move to previous item
     <Esc>        Dismiss popup
-    <Ctrl-[>     Dismiss popup
-    <Ctrl-c>     Dismiss popup
-    <Ctrl-s>     Dismiss auto-completion and revert to default Vim behavior
+    <C-[>        Dismiss popup
+    <C-c>        Dismiss popup
+    <C-s>        Dismiss auto-completion and revert to default Vim behavior
     <Enter>      Confirm selection
-    <Ctrl-j>     Open file selection in a split window
-    <Ctrl-v>     Open file selection in a vertical split
-    <Ctrl-t>     Open file selection in a new tab
-    <Ctrl-q>     Send items (grep lines or file paths) to the quickfix list
-    <Ctrl-l>     Send items (file paths) to the argument list
-    <Ctrl-g>     Copy items to system clipboard (`+` register)
+    <C-d>        Open popup menu (override 'exclude' list)
+    <C-j>        Open file selection in a split window
+    <C-v>        Open file selection in a vertical split
+    <C-t>        Open file selection in a new tab
+    <C-q>        Send items (grep lines or file paths) to the quickfix list
+    <C-l>        Send items (file paths) to the argument list
+    <C-g>        Copy items to system clipboard (`+` register)
 
 Note: Keys used in command-line editing (:h cmdline-editing) remain unmodified.
 

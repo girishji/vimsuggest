@@ -18,7 +18,7 @@ export var options: dict<any> = {
     popupattrs: {},    # Attributes for configuring the popup window
     wildignore: true,  # Exclude wildignore patterns during file completion
     addons: true,      # Enable additional completion addons (like fuzzy file finder)
-    ctrl_np: false,    # 'true' to select menu using <C-n/p>, 'false' for history recall
+    trigger: 't',      # 't' for tab/s-tab, 'n' for ctrl-n/p and up/down arrows
     reverse: false,    # Upside-down menu
     auto_first: false, # Automatically select first item from menu if none selected
     prefix: 1,         # The minimum prefix length before the completion menu is displayed
@@ -83,7 +83,7 @@ export def Setup()
                 if options.alwayson
                     EnableCmdline()
                 else
-                    KeyMap()
+                    MapTabKey()
                 endif
                 for Hook in State.cmdline_enter_hook
                     Hook()
@@ -109,28 +109,43 @@ export def Teardown()
     augroup VimSuggestCmdAutocmds | autocmd!
     augroup END
     addons.Disable()
+    UnMapTabKey()
 enddef
 
 def EnableCmdline()
     autocmd! VimSuggestCmdAutocmds CmdlineChanged : Complete()
-    KeyMap()
+    if options.alwayson
+        if "<C-D>"->mapcheck('c') == null_string
+            cnoremap <expr> <C-D> Complete(true)
+        endif
+    else
+        MapTabKey()
+    endif
 enddef
 
 def DisableCmdline()
     autocmd! VimSuggestCmdAutocmds CmdlineChanged :
-    KeyUnMap()
+    if options.alwayson
+        if "<C-D>"->mapcheck('c') != null_string
+            cunmap <C-D>
+        endif
+    else
+        UnMapTabKey()
+    endif
 enddef
 
-def KeyMap()
-    for k in ["<tab>", "<s-tab>"]
+def MapTabKey()
+    # Note: Use only <tab> for triggering manually. Using <C-n> or arrows will
+    # disable them from doing history recall.
+    for k in ["<tab>", "<c-d>"]
         if k->mapcheck('c') == null_string
             exec 'cnoremap <expr>' k 'Complete(true)'
         endif
     endfor
 enddef
 
-def KeyUnMap()
-    for k in ["<tab>", "<s-tab>"]
+def UnMapTabKey()
+    for k in ["<tab>", "<c-d>"]
         if k->mapcheck('c') != null_string
             exec 'cunmap' k
         endif
@@ -305,7 +320,7 @@ export def SelectItemPost(index: number, dir: string)
         setcmdline(cmdline->strpart(0, state.insertion_point) ..
             replacement .. cmdline->strpart(getcmdpos() - 1))
         var newpos = state.insertion_point + replacement->len()
-        # XXX: setcmdpos() does not work here, vim put cursor at the end.
+        # Note: setcmdpos() does not work here, vim puts cursor at the end.
         # workaround:
         var newcharpos = state.insertion_point + replacement->strcharlen()
         if getcmdpos() != newpos + 1
@@ -321,9 +336,9 @@ enddef
 
 def FilterFn(winid: number, key: string): bool
     # <C-n> sends :h t_kb (down arrow) and <C-p> sends t_ku (up arrow)
-    if key == "\<Tab>" || ((key == "\<C-n>" || key == "\<Down>") && options.ctrl_np)
+    if utils.TriggerKeys(options.trigger)->index(key) != -1
         state.pmenu.SelectItem('j', SelectItemPost) # Next item
-    elseif key == "\<S-Tab>" || ((key == "\<C-p>" || key == "\<Up>") && options.ctrl_np)
+    elseif utils.TriggerKeys(options.trigger, true)->index(key) != -1
         state.pmenu.SelectItem('k', SelectItemPost) # Prev item
     elseif key == "\<PageUp>" || key == "\<S-Up>"
         var cmdname = CmdLead()
