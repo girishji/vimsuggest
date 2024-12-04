@@ -169,7 +169,7 @@ def GetRange(rstr: string, isglobal: bool = false): list<number>
             if m->len() > 0
                 return Increment(str2nr(m[0].submatches[0]), m[0].submatches[1])
             endif
-            m = matchstrlist([rng], '\v^\s*(''\S)\s*(.*)', {submatches: true})
+            m = matchstrlist([rng], '\v^\s*(''\S)\s*(.*)', {submatches: true})  # mark
             if m->len() > 0
                 var [bufnum, lnum] = getpos(m[0].submatches[0])[0 : 1]
                 if bufnum == 0 || bufnum == bufnr()
@@ -179,11 +179,11 @@ def GetRange(rstr: string, isglobal: bool = false): list<number>
             if rng =~ '^\s*[+-]'
                 return Increment(line('.'), rng)
             endif
-            m = matchstrlist([rng], '\v^\s*(\\/)\s*(.*)', {submatches: true})
+            m = matchstrlist([rng], '\v^\s*(\\/)\s*(.*)', {submatches: true})  # /foo
             if m->len() > 0
                 return LnumFromPat(getreg("/"), m[0].submatches[1], v:searchforward) + 1
             endif
-            m = matchstrlist([rng], '\v^\s*(\\\?)\s*(.*)', {submatches: true})
+            m = matchstrlist([rng], '\v^\s*(\\\?)\s*(.*)', {submatches: true})  # ?foo
             if m->len() > 0
                 return LnumFromPat(getreg("/"), m[0].submatches[1], v:searchforward) - 1
             endif
@@ -226,12 +226,6 @@ def GetRange(rstr: string, isglobal: bool = false): list<number>
     endif
     if endl <= 0 && startl > 0
         endl = startl
-    endif
-    if startl <= 0
-        startl = 1
-    endif
-    if endl <= 0
-        endl = line('$')
     endif
     if endl < startl
         [startl, endl] = [endl, startl]
