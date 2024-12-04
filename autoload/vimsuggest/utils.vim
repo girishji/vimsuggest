@@ -239,6 +239,7 @@ enddef
 # :call g:vimsuggest#utils#TestRange() while editing ../../LICENSE.
 export def TestRange()
     :normal gg
+    assert_equal([-1, -1], GetRange('Foo has_a'))
     assert_equal([line('.'), line('.')], GetRange(''))
     assert_equal([line('.'), line('.')], GetRange('.'))
     assert_equal([1, line('$')], GetRange('%'))
