@@ -22,6 +22,7 @@ export var options: dict<any> = {
     reverse: false,    # Upside-down menu
     auto_first: false, # Automatically select first item from menu if none selected
     prefix: 1,         # The minimum prefix length before the completion menu is displayed
+    complete_sg: true, # Complete :s// :g//
 }
 
 class State
@@ -228,7 +229,7 @@ def DoComplete(oldcontext: string, skip_none: bool, timer: number)
         endif
     catch # Catch (for ex.) -> E1245: Cannot expand <sfile> in a Vim9 function
     endtry
-    if completions->len() == 0  # Try completing :s// and :g/
+    if options.complete_sg && completions->len() == 0  # Try completing :s// and :g/
         completions = utils.GetCompletionSG(context)
         if completions->len() > 0 && &hlsearch && &incsearch
             # Restore 'hls' and 'incsearch' hightlight (removed when popup_show() redraws).

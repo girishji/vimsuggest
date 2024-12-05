@@ -113,6 +113,7 @@ let s:vim_suggest.cmd = {
 | `reverse` | `v:false` | Reverse-sorted menu, with the most relevant item at the bottom (when `pum=v:true`) |
 | `auto_first` | `v:false` | Auto-select first menu item on `<Enter>` if none chosen (Does not affect 'addons' which always use first item) |
 | `prefix` | `1` | The minimum prefix length before the completion menu is displayed
+| `complete_sg` | `v:true` | Enables word completion (from the buffer) for the `:substitute` (`:s`) and `:global` (`:g`) commands |
 
 > [!NOTE]
 > 1. The `trigger` option specifies the character used to select items in the popup menu or invoke the menu itself. When `<Tab>`/`<C-I>` is set as the trigger, it cannot be used to input tab characters while the popup is open. In this case, use `<C-V><Tab>`/`<C-V><C-I>`.
