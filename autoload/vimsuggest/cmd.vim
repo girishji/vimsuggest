@@ -362,7 +362,7 @@ def FilterFn(winid: number, key: string): bool
     elseif key == "\<C-q>" # Add to quickfix list
         SendToQickfixList()
         state.pmenu.Close(-1)
-    elseif key == "\<C-r>"  # Add to arglist
+    elseif key == "\<C-l>"  # Add to arglist
         execute($'argadd {state.items[0]->join(" ")}')
         state.pmenu.Close(-1)
     elseif key == "\<C-g>"  # Add to system clipboard ("+ register)
