@@ -284,7 +284,8 @@ export class PopupMenu
         if this._pum
             # win_execute(this._winid, 'normal! ' ..
             #     (this._reverse ? "\<C-d>" : "\<C-u>"))
-            win_execute(this._winid, 'normal! ' .. "\<C-u>")
+            # win_execute(this._winid, 'normal! ' .. "\<C-u>")
+            win_execute(this._winid, 'normal! ' .. "\<PageUp>")
             :redraw
         endif
     enddef
@@ -293,7 +294,8 @@ export class PopupMenu
         if this._pum
             # win_execute(this._winid, 'normal! ' ..
             #     (this._reverse ? "\<C-u>" : "\<C-d>"))
-            win_execute(this._winid, 'normal! ' .. "\<C-d>")
+            # win_execute(this._winid, 'normal! ' .. "\<C-d>")
+            win_execute(this._winid, 'normal! ' .. "\<PageDown>")
             :redraw
         endif
     enddef
