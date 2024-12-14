@@ -337,9 +337,9 @@ enddef
 
 def FilterFn(winid: number, key: string): bool
     # <C-n> sends :h t_kb (down arrow) and <C-p> sends t_ku (up arrow)
-    if utils.TriggerKeys(options.trigger)->index(key) != -1
+    if utils.TriggerKeys(options.trigger, options.reverse)->index(key) != -1
         state.pmenu.SelectItem('j', SelectItemPost) # Next item
-    elseif utils.TriggerKeys(options.trigger, true)->index(key) != -1
+    elseif utils.TriggerKeys(options.trigger, options.reverse, false)->index(key) != -1
         state.pmenu.SelectItem('k', SelectItemPost) # Prev item
     elseif key == "\<PageUp>" || key == "\<S-Up>"
         var cmdname = CmdLead()

@@ -275,13 +275,17 @@ export def TestRange()
     foreach(v:errors, 'echom "Fail:" v:val')
 enddef
 
-export def TriggerKeys(trigger: string, rev = false): list<string>
+export def TriggerKeys(trigger: string, reverse: bool, fwd = true): list<string>
     var lst = []
     var trg = trigger ?? 't'
-    lst->extend(trg =~ 't' ? (rev ? ["\<S-Tab>"] : ["\<Tab>"]) : [])
+    lst->extend(trg =~ 't' ? (fwd ? ["\<Tab>"] : ["\<S-Tab>"]) : [])
     # Note: <C-n> sends <Down> for first time when popup is open. For consistent
     # behavior use these keys synonymously.
-    lst->extend(trg =~ 'n' ? (rev ? ["\<C-p>", "\<Up>"] : ["\<C-n>", "\<Down>"]) : [])
+    if reverse
+        lst->extend(trg =~ 'n' ? (fwd ? ["\<C-n>", "\<Up>"] : ["\<C-p>", "\<Down>"]) : [])
+    else
+        lst->extend(trg =~ 'n' ? (fwd ? ["\<C-n>", "\<Down>"] : ["\<C-p>", "\<Up>"]) : [])
+    endif
     return lst
 enddef
 

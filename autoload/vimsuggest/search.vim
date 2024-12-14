@@ -217,9 +217,9 @@ def SelectItemPost(index: number, dir: string)
 enddef
 
 def FilterFn(winid: number, key: string): bool
-    if utils.TriggerKeys(options.trigger)->index(key) != -1
+    if utils.TriggerKeys(options.trigger, options.reverse)->index(key) != -1
         state.pmenu.SelectItem('j', SelectItemPost) # Next item
-    elseif utils.TriggerKeys(options.trigger, true)->index(key) != -1
+    elseif utils.TriggerKeys(options.trigger, options.reverse, false)->index(key) != -1
         state.pmenu.SelectItem('k', SelectItemPost) # Prev item
     elseif key == "\<PageUp>" || key == "\<S-Up>"
         state.pmenu.PageUp()
