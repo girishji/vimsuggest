@@ -26,7 +26,7 @@ export var options: dict<any> = {
     highlight: true,      # Disable menu highlighting (for performance)
     trigger: 't',         # 't' for tab/s-tab, 'n' for ctrl-n/p and up/down arrows
     reverse: false,       # Upside-down menu
-    prefix: 1,            # The minimum prefix length before the completion menu is displayed
+    prefixlen: 1,         # The minimum prefix length before the completion menu is displayed
 }
 
 # Represents the state of the current search
@@ -149,7 +149,7 @@ enddef
 
 def Complete()
     var context = Context()
-    if context == '' || context =~ '^\s\+$' || strlen(context) < options.prefix
+    if context == '' || context =~ '^\s\+$' || strlen(context) < options.prefixlen
         :redraw
         return
     endif

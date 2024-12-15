@@ -21,7 +21,7 @@ export var options: dict<any> = {
     trigger: 't',      # 't' for tab/s-tab, 'n' for ctrl-n/p and up/down arrows
     reverse: false,    # Upside-down menu
     auto_first: false, # Automatically select first item from menu if none selected
-    prefix: 1,         # The minimum prefix length before the completion menu is displayed
+    prefixlen: 1,      # The minimum prefix length before the completion menu is displayed
     complete_sg: true, # Complete :s// :g//
 }
 
@@ -160,7 +160,7 @@ def Complete(from_keymap = false): string
     endif
     var context = Context()
     var skip_completion = false
-    if context->strlen() < options.prefix
+    if context->strlen() < options.prefixlen
         var lastcharpos = getcmdpos() - 2
         var cmdline = getcmdline()
         var lastchar = cmdline[lastcharpos]

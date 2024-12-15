@@ -103,7 +103,7 @@ s:vim_suggest.cmd is a dictionary containing the following options:
                 not affect 'addons' which always use first item)
                 Default: v:false
 
-    'prefix'    The minimum prefix length before the completion menu is displayed
+    'prefixlen' The minimum prefix length before the completion menu is displayed
                 Default: 1
 
     'complete_sg' Enables word completion (from the buffer) for the `:substitute` 
@@ -170,6 +170,9 @@ s:vim_suggest.search is a dictionary containing the following options:
     'trigger'  't' enables <Tab>/<S-Tab> as trigger characters, while 'n'
                 enables <C-n>/<C-p> and <Up>/<Down>.
                 Default: 't'
+
+    'prefixlen' The minimum prefix length before the completion menu is displayed
+                Default: 1
 
     'reverse'   Reverse-sorted menu, with the most relevant item at the bottom
                 Only when 'pum' is 'true'

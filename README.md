@@ -95,7 +95,7 @@ let s:vim_suggest.cmd = {
     \ 'addons': v:true,
     \ 'trigger': 't',
     \ 'reverse': v:false,
-    \ 'prefix': 1,
+    \ 'prefixlen': 1,
 \ }
 ```
 
@@ -112,7 +112,7 @@ let s:vim_suggest.cmd = {
 | `trigger` | `t` | `'t'` enables `<Tab>`/`<S-Tab>` as trigger characters, while `'n'` enables `<C-n>`/`<C-p>` and `<Up>/<Down>`. (See note below.) |
 | `reverse` | `v:false` | Reverse-sorted menu, with the most relevant item at the bottom (when `pum=v:true`) |
 | `auto_first` | `v:false` | Auto-select first menu item on `<Enter>` if none chosen (Does not affect 'addons' which always use first item) |
-| `prefix` | `1` | The minimum prefix length before the completion menu is displayed
+| `prefixlen` | `1` | The minimum prefix length before the completion menu is displayed
 | `complete_sg` | `v:true` | Enables word completion (from the buffer) for the `:substitute` (`:s`) and `:global` (`:g`) commands |
 
 > [!NOTE]
@@ -138,7 +138,7 @@ let s:vim_suggest.search = {
     \ 'async_minlines': 1000,
     \ 'highlight': v:true,
     \ 'trigger': 't',
-    \ 'prefix': 1,
+    \ 'prefixlen': 1,
 \ }
 ```
 
@@ -157,7 +157,7 @@ let s:vim_suggest.search = {
 | `highlight` | `v:true` | 'false' to disable menu highlighting (for performance) |
 | `trigger` | `t` | `'t'` enables `<Tab>`/`<S-Tab>` as trigger characters, while `'n'` enables `<C-n>`/`<C-p>` and `<Up>/<Down>`. (See note above.) |
 | `reverse` | `v:false` | Reverse-sorted menu, with the most relevant item at the bottom (when `pum=v:true`) |
-| `prefix` | `1` | The minimum prefix length before the completion menu is displayed
+| `prefixlen` | `1` | The minimum prefix length before the completion menu is displayed
 
 > [!IMPORTANT]
 > 1. Searching large files will not cause any lag. By default, searching is concurrent. Even though no external jobs are used, a timer pauses the task at regular intervals to check if there are pending keys on the typehead.
