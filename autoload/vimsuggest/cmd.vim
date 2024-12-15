@@ -136,8 +136,8 @@ def DisableCmdline()
 enddef
 
 def MapTabKey()
-    # Note: Use only <tab> for triggering manually. Using <C-n> or arrows will
-    # disable them from doing history recall.
+    # Note: Use only <tab> and <C-d> for triggering manually. Using <C-n> or
+    # arrows will disable them from doing history recall.
     for k in ["<tab>", "<c-d>"]
         if k->mapcheck('c') == null_string
             exec 'cnoremap <expr>' k 'Complete(true)'
@@ -153,17 +153,29 @@ def UnMapTabKey()
     endfor
 enddef
 
-def Complete(skip_none = false): string
+def Complete(from_keymap = false): string
     if state.char_removed
         state.char_removed = false
         return null_string
     endif
     var context = Context()
-    if context == null_string || context =~ '^\s\+$' || context->strlen() < options.prefix
+    var skip_completion = false
+    if context->strlen() < options.prefix
+        var lastcharpos = getcmdpos() - 2
+        var cmdline = getcmdline()
+        var lastchar = cmdline[lastcharpos]
+        if lastchar ==? "\<tab>"
+            setcmdline(cmdline->slice(0, lastcharpos) .. cmdline->slice(lastcharpos + 1))
+            context = Context()
+        else
+            skip_completion = true
+        endif
+    endif
+    if context == null_string || context =~ '^\s\+$' || skip_completion
         HideMenu()  # Needed to hide popup after <bs> and cmdline is empty
         return null_string
     endif
-    timer_start(1, function(DoComplete, [context, skip_none]))
+    timer_start(1, function(DoComplete, [context, from_keymap]))
     return null_string
 enddef
 
@@ -172,7 +184,7 @@ def HideMenu()
     state.items = [[]]
 enddef
 
-def DoComplete(oldcontext: string, skip_none: bool, timer: number)
+def DoComplete(oldcontext: string, from_keymap: bool, timer: number)
     var context = Context()
     if context !=# oldcontext
         # Likely pasted text or coming from a keymap (if {rhs} is, say, 'nohls',
@@ -187,7 +199,7 @@ def DoComplete(oldcontext: string, skip_none: bool, timer: number)
     endif
     var cmdstr = context->CmdStr()
     var cmdlead = CmdLead()
-    if !skip_none
+    if !from_keymap
         var excl_list = (options.exclude->type() == v:t_list) ? options.exclude : [options.exclude]
         var excl_pattern_present =
             excl_list->reduce((a, v) => a || (cmdstr->match(v) != -1), false)
