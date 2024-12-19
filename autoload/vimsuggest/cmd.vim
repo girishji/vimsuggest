@@ -160,10 +160,11 @@ def Complete(from_keymap = false): string
     endif
     var context = Context()
     var skip_completion = false
-    if context->strlen() < options.prefixlen
-        var lastcharpos = getcmdpos() - 2
-        var cmdline = getcmdline()
-        var lastchar = cmdline[lastcharpos]
+    var cmdline = getcmdline()
+    var lastcharpos = getcmdpos() - 2
+    var lastchar = cmdline[lastcharpos]
+    if context->strlen() < options.prefixlen || (lastchar ==? "\<tab>" &&
+            context->strlen() == options.prefixlen)
         if lastchar ==? "\<tab>"
             setcmdline(cmdline->slice(0, lastcharpos) .. cmdline->slice(lastcharpos + 1))
             context = Context()
