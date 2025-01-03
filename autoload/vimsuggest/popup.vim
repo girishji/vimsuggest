@@ -163,18 +163,12 @@ export class PopupMenu
             if !this._winid->popup_getoptions().cursorline
                 this._winid->popup_setoptions({cursorline: true})
                 if direction ==# 'k'
-                    this._index = 0
                     this._winid->popup_filter_menu(realdir)
                 endif
             else
                 this._winid->popup_filter_menu(realdir)
             endif
-            this._index += (direction ==# 'j' ? 1 : -1)
-            if this._index < 0
-                this._index = count - 1
-            else
-                this._index %= count
-            endif
+            this._index = line('.', this._winid) - 1
             if items->len() > 1
                 var mlen = items[2][this._index]
                 var lnum = this._reverse ? count - this._index : this._index + 1
