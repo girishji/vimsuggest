@@ -168,7 +168,11 @@ export class PopupMenu
             else
                 this._winid->popup_filter_menu(realdir)
             endif
-            this._index = line('.', this._winid) - 1
+            if this._reverse
+                this._index = line('$', this._winid) - line('.', this._winid)
+            else
+                this._index = line('.', this._winid) - 1
+            endif
             if items->len() > 1
                 var mlen = items[2][this._index]
                 var lnum = this._reverse ? count - this._index : this._index + 1
