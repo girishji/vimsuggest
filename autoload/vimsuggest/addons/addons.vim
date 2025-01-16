@@ -434,21 +434,25 @@ enddef
 
 ##
 
-export def Enable()
-    for fn in enable_hook
-        function(fn)()
-    endfor
-enddef
+augroup VimSuggestCmdInit | autocmd!
+    def Enable()
+        for fn in enable_hook
+            function(fn)()
+        endfor
+    enddef
+    autocmd User VimSuggestCmdSetup Enable()
 
-export def Disable()
-    for c in ['VSFind', 'VSGrep', 'VSFindL', 'VSExec', 'VSGlobal',
-            'VSInclSearch', 'VSBuffer', 'VSMru', 'VSKeymap', 'VSMark',
-            'VSRegister', 'VSChangelist']
-        if exists($":{c}") == 2
-            :exec $'delcommand {c}'
-        endif
-    endfor
-enddef
+    def Disable()
+        for c in ['VSFind', 'VSGrep', 'VSFindL', 'VSExec', 'VSGlobal',
+                'VSInclSearch', 'VSBuffer', 'VSMru', 'VSKeymap', 'VSMark',
+                'VSRegister', 'VSChangelist']
+            if exists($":{c}") == 2
+                :exec $'delcommand {c}'
+            endif
+        endfor
+    enddef
+    autocmd User VimSuggestCmdTeardown Disable()
+augroup END
 
 :defcompile  # Debug: See note above.
 

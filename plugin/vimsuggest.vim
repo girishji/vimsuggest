@@ -8,6 +8,7 @@ vim9script
 g:loaded_vimsuggest = true
 
 import autoload '../autoload/vimsuggest/search.vim'
+import '../autoload/vimsuggest/addons/addons.vim'  # import this before cmd.vim so 'User' autocmds are registered
 import autoload '../autoload/vimsuggest/cmd.vim'
 
 def! g:VimSuggestSetOptions(opts: dict<any>)

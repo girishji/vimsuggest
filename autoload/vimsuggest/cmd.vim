@@ -5,7 +5,6 @@ vim9script
 # popup window.
 
 import autoload './popup.vim'
-import autoload './addons/addons.vim'
 import autoload './utils.vim'
 
 export var options: dict<any> = {
@@ -101,7 +100,9 @@ export def Setup()
             }
         augroup END
         if options.addons
-            addons.Enable()
+            if exists('#User#VimSuggestCmdSetup')
+                doautocmd User VimSuggestCmdSetup
+            endif
         endif
     endif
 enddef
@@ -109,7 +110,9 @@ enddef
 export def Teardown()
     augroup VimSuggestCmdAutocmds | autocmd!
     augroup END
-    addons.Disable()
+    if exists('#User#VimSuggestCmdTeardown')
+        doautocmd User VimSuggestCmdTeardown
+    endif
     UnMapTabKey()
 enddef
 
