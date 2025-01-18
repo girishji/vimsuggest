@@ -159,14 +159,14 @@ export class PopupMenu
         const items = this._items
 
         def SelectVert()
-            var realdir = this._reverse ? (direction == 'j' ? 'k' : 'j') : direction
+            var realdirn = this._reverse ? (direction == 'j' ? 'k' : 'j') : direction
             if !this._winid->popup_getoptions().cursorline
                 this._winid->popup_setoptions({cursorline: true})
-                if direction ==# 'k'
-                    this._winid->popup_filter_menu(realdir)
-                endif
+                var pos = this._winid->popup_getpos()
+                win_execute(this._winid,
+                    $'normal! {direction ==# "k" ? pos.lastline : pos.firstline}G')
             else
-                this._winid->popup_filter_menu(realdir)
+                this._winid->popup_filter_menu(realdirn)
             endif
             if this._reverse
                 this._index = line('$', this._winid) - line('.', this._winid)
