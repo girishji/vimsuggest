@@ -163,8 +163,10 @@ export class PopupMenu
             if !this._winid->popup_getoptions().cursorline
                 this._winid->popup_setoptions({cursorline: true})
                 var pos = this._winid->popup_getpos()
-                win_execute(this._winid,
-                    $'normal! {direction ==# "k" ? pos.lastline : pos.firstline}G')
+                var jumpto = this._reverse ?
+                    $'normal! {direction ==# "k" ? pos.firstline : pos.lastline}G' :
+                    $'normal! {direction ==# "k" ? pos.lastline : pos.firstline}G'
+                win_execute(this._winid, jumpto)
             else
                 this._winid->popup_filter_menu(realdirn)
             endif
