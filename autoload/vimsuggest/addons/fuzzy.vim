@@ -115,7 +115,9 @@ export def FindComplete(arglead: string, line: string, cursorpos: number,
                 cmd.SetPopupMenu(items)
                 # If item is selected, keep it (otherwise item gets unselected)
                 if idx >= 0 && idx < 10 && exec.ArgsStr() == null_string
-                    foreach(range(idx + 1), (_, _) => cmd.state.pmenu.SelectItem('j', null_function))
+                    for _ in range(idx + 1)
+                        cmd.state.pmenu.SelectItem('j', null_function)
+                    endfor
                 endif
             enddef
             var cmdany = shellpre == null_string ? findcmd : shellpre->split() + [findcmd]

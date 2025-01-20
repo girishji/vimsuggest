@@ -272,7 +272,10 @@ export def TestRange()
     :normal G
     assert_equal([11, 11], GetRange('?\Cpermission?-1'))
     assert_equal([14, line('$') - 1], GetRange('?\Cpermission?+2,$-1'))
-    foreach(v:errors, 'echom "Fail:" v:val')
+    # foreach(v:errors, 'echom "Fail:" v:val')
+    for er in v:errors
+       echom "Fail:" er
+    endfor
 enddef
 
 export def TriggerKeys(trigger: string, reverse: bool, fwd = true): list<string>

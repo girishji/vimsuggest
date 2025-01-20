@@ -212,7 +212,9 @@ def SelectItemPost(index: number, dir: string)
     # XXX: setcmdpos() does not work here, vim put cursor at the end.
     if getcmdpos() != newpos + 1
         feedkeys("\<home>", 'n')
-        foreach(range(newpos), (_, _) => feedkeys("\<right>", 'n'))
+        for _ in range(newpos)
+            feedkeys("\<right>", 'n')
+        endfor
     endif
 enddef
 

@@ -257,7 +257,9 @@ def DoComplete(oldcontext: string, from_keymap: bool, timer: number)
             if getcmdpos() != cursorpos + 1
                 feedkeys("\<home>", 'n')
                 var cursorcharpos = numchars - 1
-                foreach(range(cursorcharpos), (_, _) => feedkeys("\<right>", 'n'))
+                for _ in range(cursorcharpos)
+                    feedkeys("\<right>", 'n')
+                endfor
             endif
             state.char_removed = true
             feedkeys(lastchar, 'n')
@@ -341,7 +343,9 @@ export def SelectItemPost(index: number, dir: string)
         # workaround:
         var newcharpos = state.insertion_point + replacement->strcharlen()
         if getcmdpos() != newpos + 1
-            foreach(range(newcharpos), (_, _) => feedkeys("\<right>", 'in'))
+            for _ in range(newcharpos)
+                feedkeys("\<right>", 'in')
+            endfor
             feedkeys("\<home>", 'in')
         endif
     endif
