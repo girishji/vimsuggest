@@ -228,6 +228,7 @@ def DoComplete(oldcontext: string, from_keymap: bool, timer: number)
     endif
 
     var completions: list<any> = []
+    var insertion_point = -1
     try
         var cmdpat = '\%(e\%[dit]!\?\|fin\%[d]!\?\)'
         if options.wildignore && cmdstr =~# $'^\s*{cmdpat}\s' && cmdstr !~ '\$'
@@ -235,18 +236,20 @@ def DoComplete(oldcontext: string, from_keymap: bool, timer: number)
             # ':VSxxx edit' and ':e $VIM' should not be completed this way.
             completions = cmdstr->matchstr('^\S\+\s\+\zs.*')->getcompletion('file_in_path')
             completions->map((_, v) => fnameescape(v))
-            utils.insertion_point = context->match($'.\{{-}}{cmdpat}\s\+\zs.*')
+            insertion_point = context->match($'.\{{-}}{cmdpat}\s\+\zs.*')
         endif
         if completions->empty()
             completions = context->getcompletion('cmdline')
             if cmdstr =~ '\$' && !completions->empty() && completions[0]->getftype() != ''
-                utils.insertion_point = RightmostUnescapedCharIdx(context, '$')
+                insertion_point = RightmostUnescapedCharIdx(context, '$')
             endif
         endif
     catch # Catch (for ex.) -> E1245: Cannot expand <sfile> in a Vim9 function
     endtry
     if options.complete_sg && completions->len() == 0  # Try completing :s// and :g/
-        completions = utils.GetCompletionSG(context)
+        var compl = utils.GetCompletionSG(context)
+        completions = compl.compl
+        insertion_point = compl.ip
         if completions->len() > 0 && &hlsearch && &incsearch
             # Restore 'hls' and 'incsearch' hightlight (removed when popup_show() redraws).
             var cmdline = getcmdline()
@@ -270,10 +273,10 @@ def DoComplete(oldcontext: string, from_keymap: bool, timer: number)
         HideMenu()
         return
     endif
-    SetPopupMenu(completions)
+    SetPopupMenu(completions, insertion_point)
 enddef
 
-export def SetPopupMenu(items: list<any>)
+export def SetPopupMenu(items: list<any>, insertion_point = -1)
     var context = Context()  # Popup should be next to cursor
     var cmdname = CmdLead()
     var arglead = context->matchstr('\S\+$')
@@ -285,7 +288,8 @@ export def SetPopupMenu(items: list<any>)
             DoHighlight($'\c{arglead}')
         endif
     endif
-    var pos = state.items[0]->len() > 0 ? InsertionPoint(state.items[0][0]) + 1 : 1
+    var ip = (insertion_point == -1) ? InsertionPoint(state.items[0][0]) : insertion_point
+    var pos = state.items[0]->len() > 0 ? ip + 1 : 1
     state.insertion_point = pos - 1
     state.pmenu.SetText(state.items, options.pum ? pos : 1)
     if state.items[0]->len() > 0
@@ -309,11 +313,6 @@ enddef
 # When ':range' is present, insertion of completion text should happen at the
 # end of range. Similary, :s// and :g//.
 def InsertionPoint(replacement: string): number
-    if utils.insertion_point != -1
-        var temp = utils.insertion_point
-        utils.insertion_point = -1
-        return temp
-    endif
     var context = Context()
     # '&' and '$' completes Vim options and env variables respectively.
     var pos = max([' ', '&', '$']->mapnew((_, v) => RightmostUnescapedCharIdx(context, v))) + 1

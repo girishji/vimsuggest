@@ -1,14 +1,12 @@
 vim9script
 
-export var insertion_point = -1
-
 var slead = 's\%[ubstitute]!\?'
 var glead = 'g\%[lobal]!\?'
 var sep = '[^"\!|a-zA-Z0-9]'
 
 # Completion candidates for :s// and :g//
-export def GetCompletionSG(ctx: string): list<any>
-    insertion_point = -1
+export def GetCompletionSG(ctx: string): dict<any>
+    var insertion_point = -1
     var pat = null_string
     var range = null_string
     var isglobal = false
@@ -16,6 +14,10 @@ export def GetCompletionSG(ctx: string): list<any>
     if m != []  # :g// :g//s//
         isglobal = true
         range = m[0].submatches[0]
+        var [startl, endl] = GetRange(range, isglobal)
+        if startl <= 0  # Issue #24
+            return {compl: [], ip: insertion_point}
+        endif
         var sepchar = m[0].submatches[2]
         pat = m[0].submatches[3]
         insertion_point = range->len() + len(m[0].submatches[1]) + 1
@@ -50,7 +52,7 @@ export def GetCompletionSG(ctx: string): list<any>
     if pat != null_string
         var [startl, endl] = GetRange(range, isglobal)
         if startl <= 0
-            return []
+            return {compl: [], ip: insertion_point}
         endif
         var word = '\%(\w\|[^\x00-\x7F]\)'  # Covers non-ascii mutli-byte chars.
         pat = (pat =~ '\(\\s\| \)' ? '\(\)' : $'\({word}*\)') .. $'\({pat}\)\({word}*\)'
@@ -65,12 +67,12 @@ export def GetCompletionSG(ctx: string): list<any>
                         matches->add(item.text)
                     endif
                 endfor
-                return matches
+                return {compl: matches, ip: insertion_point}
             endif
         catch # '\' throws E55
         endtry
     endif
-    return []
+    return {compl: [], ip: insertion_point}
 enddef
 
 # Given a string specifying range, obtain start and end lines.
