@@ -119,6 +119,7 @@ let s:vim_suggest.cmd = {
 > 1. The `trigger` option specifies the character used to select items in the popup menu or invoke the menu itself. When `<Tab>`/`<C-I>` is set as the trigger, it cannot be used to input tab characters while the popup is open. In this case, use `<C-V><Tab>`/`<C-V><C-I>`.
 >    - These trigger options can be combined. For instance, setting `tn` allows `<Tab>`/`<S-Tab>` as well as `<C-n>`/`<C-p>` and `<Up>`/`<Down>` to navigate the menu. However, history recall using the arrow keys will only work when the command-line is empty.
 > 2. If the popup menu does not appear due to a match in the `exclude` list, typing `<C-D>` will override the `exclude` list and immediately display the completion menu.
+> 3. To enable fuzzy completion matching, use the command `:set wildoptions+=fuzzy`.
 
 ### Search Completion Configuration
 
