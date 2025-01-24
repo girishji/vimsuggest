@@ -29,8 +29,9 @@ class State
     var saved_wildchar: number
     var saved_ttimeout: bool
     var saved_ttimeoutlen: number
+    public var cmdline = null_string # Cached command-line contents
     # Following characters often do not provide meaningful completions.
-    var exclude = ['~', '!', '%', '(', ')', '+', '=', '<', '>', '?', ',']
+    const exclude = ['~', '!', '%', '(', ')', '+', '=', '<', '>', '?', ',']
     public var items: list<list<any>> = [[]]
     public var insertion_point: number
     public var exit_key: string = null_string # Key pressed before closing the menu
@@ -201,6 +202,7 @@ def DoComplete(oldcontext: string, from_keymap: bool, timer: number)
     if state == null_object  # Additional check
         return
     endif
+    state.cmdline = getcmdline()
     var cmdstr = context->CmdStr()
     var cmdlead = CmdLead()
     if !from_keymap
@@ -378,6 +380,11 @@ def FilterFn(winid: number, key: string): bool
         state.Clear()
         CmdlineAbortHook()
         state = null_object
+    elseif key == "\<C-e>"  # Dismiss popup but keep auto-completion state
+        state.pmenu.Hide()
+        setcmdline(state.cmdline)
+        :redraw
+        EnableCmdline()
     elseif key == "\<C-q>" # Add to quickfix list
         SendToQickfixList()
         state.pmenu.Close(-1)

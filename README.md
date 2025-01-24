@@ -237,6 +237,7 @@ When the popup window is open, you can use the following key mappings:
 | `<C-p>`/`<Up>` | Move to previous item  (see `trigger` option) |
 | `<Esc>`/`<C-[>`/`<C-c>` | Dismiss popup |
 | `<C-s>` | Dismiss auto-completion and revert to default Vim behavior |
+| `<C-e>` | Dismiss auto-completion popup temporarily |
 | `<Enter>` | Confirm selection |
 | `<C-d>` | Open popup menu (override `exclude` list) |
 | `<C-j>` | Open file selection in a split window |

@@ -237,6 +237,15 @@ def FilterFn(winid: number, key: string): bool
         # Remove the popup menu and resign from autocompletion.
         state.Clear()
         state = null_object
+    elseif key == "\<C-e>"
+        IncSearchHighlightClear()
+        state.pmenu.Hide()
+        setcmdline('')
+        feedkeys(state.context, 'n')
+        if State.saved_searchreg != null_string
+            setreg('/', State.saved_searchreg) # Restore previous hlsearch
+        endif
+        timer_start(1, (_) => EnableCmdline())
     elseif key == "\<CR>"
         IncSearchHighlightClear()
         return false

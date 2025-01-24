@@ -32,6 +32,7 @@ export class PopupMenu
                 border: [0, 0, 0, 0],
                 filtermode: 'c',
                 filter: FilterFn,
+                mapping: false,
                 hidden: true,
                 callback: CallbackFn,
             }
