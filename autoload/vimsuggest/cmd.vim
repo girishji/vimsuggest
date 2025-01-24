@@ -290,9 +290,11 @@ export def SetPopupMenu(items: list<any>, insertion_point = -1)
             DoHighlight($'\c{arglead}')
         endif
     endif
-    var ip = (insertion_point == -1) ? InsertionPoint(state.items[0][0]) : insertion_point
-    var pos = state.items[0]->len() > 0 ? ip + 1 : 1
-    state.insertion_point = pos - 1
+    state.insertion_point = insertion_point
+    if insertion_point == -1 && state.items[0]->len() > 0
+        state.insertion_point = InsertionPoint(state.items[0][0])
+    endif
+    var pos = state.insertion_point + 1
     state.pmenu.SetText(state.items, options.pum ? pos : 1)
     if state.items[0]->len() > 0
         state.pmenu.Show()
