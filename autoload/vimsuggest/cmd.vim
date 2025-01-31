@@ -404,7 +404,8 @@ def FilterFn(winid: number, key: string): bool
                 getcmdline()->len() + 1 == getcmdpos() &&
                 state.pmenu.SelectedItem() == null_string &&
                 state.pmenu.FirstItem() != null_string
-            feedkeys("\<Tab>\<CR>", 'in')
+            state.pmenu.SelectItem('j', SelectItemPost) # Select first item
+            feedkeys("\<CR>", 'in')
             return true
         endif
         # Note: When <cr> simply opens the message window (ex :filt Menu hi), popup
