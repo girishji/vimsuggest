@@ -223,7 +223,10 @@ export def GrepVisitFile(key: string, line: string)
 enddef
 
 export def VisitBuffer(key: string, bufnr: number, lnum = -1, col = -1, visualcol = false)
-    var keymap = {"\<C-j>": 'sb', "\<C-v>": 'vert sb', "\<C-t>": 'tab sb'}
+    var keymap = {"\<C-j>": 'sb', "\<C-v>": 'vert sb', "\<C-t>": 'tab sb',
+        "\<Plug>(vimsuggest-split-open)": 'sb',
+        "\<Plug>(vimsuggest-vsplit-open)": 'vert sb',
+        "\<Plug>(vimsuggest-tab-open)": 'tab sb'}
     var cmdstr = keymap->get(key, 'b')
     if lnum > 0
         if col > 0
@@ -237,7 +240,10 @@ export def VisitBuffer(key: string, bufnr: number, lnum = -1, col = -1, visualco
 enddef
 
 export def VisitFile(key: string, filename: string, lnum: number = -1)
-    var keymap = {"\<C-j>": 'split', "\<C-v>": 'vert split', "\<C-t>": 'tabe'}
+    var keymap = {"\<C-j>": 'split', "\<C-v>": 'vert split', "\<C-t>": 'tabe',
+        "\<Plug>(vimsuggest-split-open)": 'split',
+        "\<Plug>(vimsuggest-vsplit-open)": 'vert split',
+        "\<Plug>(vimsuggest-tab-open)": 'tabe'}
     try
         if lnum > 0
             exe $":{keymap->get(key, 'e')} +{lnum} {filename}"

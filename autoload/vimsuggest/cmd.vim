@@ -22,6 +22,7 @@ export var options: dict<any> = {
     auto_first: false, # Automatically select first item from menu if none selected
     prefixlen: 1,      # The minimum prefix length before the completion menu is displayed
     complete_sg: true, # Complete :s// :g//
+    bindkeys: true,    # Map keys
 }
 
 class State
@@ -364,39 +365,49 @@ def FilterFn(winid: number, key: string): bool
         state.pmenu.SelectItem('j', SelectItemPost) # Next item
     elseif utils.TriggerKeys(options.trigger, options.reverse, false)->index(key) != -1
         state.pmenu.SelectItem('k', SelectItemPost) # Prev item
-    elseif key == "\<PageUp>" || key == "\<S-Up>"
+    elseif key == "\<Plug>(vimsuggest-pageup)" ||
+            (options.bindkeys && (key == "\<PageUp>" || key == "\<S-Up>"))
         var cmdname = CmdLead()
         if state.select_item_hook->has_key(cmdname)  # stop async job, if any
             state.select_item_hook[cmdname](null_string, null_string)
         endif
         state.pmenu.PageUp()
-    elseif key == "\<PageDown>" || key == "\<S-Down>"
+    elseif key == "\<Plug>(vimsuggest-pagedown)" ||
+            (options.bindkeys && (key == "\<PageDown>" || key == "\<S-Down>"))
         var cmdname = CmdLead()
         if state.select_item_hook->has_key(cmdname)  # stop async job, if any
             state.select_item_hook[cmdname](null_string, null_string)
         endif
         state.pmenu.PageDown()
-    elseif key == "\<C-s>"  # Dismiss auto-completion
+    elseif key == "\<Plug>(vimsuggest-quit)" ||
+            (options.bindkeys && key == "\<C-s>")  # Dismiss auto-completion
         state.pmenu.Hide()
         :redraw
         state.Clear()
         CmdlineAbortHook()
         state = null_object
-    elseif key == "\<C-e>"  # Dismiss popup but keep auto-completion state
+    elseif key == "\<Plug>(vimsuggest-dismiss)" ||
+            (options.bindkeys && key == "\<C-e>")  # Dismiss popup but keep auto-completion state
         state.pmenu.Hide()
         setcmdline(state.cmdline)
         :redraw
         EnableCmdline()
-    elseif key == "\<C-q>" # Add to quickfix list
+    elseif key == "\<Plug>(vimsuggest-set-qflist)" ||
+            (options.bindkeys && key == "\<C-q>") # Add to quickfix list
         SendToQickfixList()
         state.pmenu.Close(-1)
-    elseif key == "\<C-l>"  # Add to arglist
+    elseif key == "\<Plug>(vimsuggest-set-arglist)" ||
+            (options.bindkeys && key == "\<C-l>") # Add to arg list
         execute($'argadd {state.items[0]->join(" ")}')
         state.pmenu.Close(-1)
-    elseif key == "\<C-g>"  # Add to system clipboard ("+ register)
+    elseif key == "\<Plug>(vimsuggest-set-clipboard)" ||
+            (options.bindkeys && key == "\<C-g>")  # Add to system clipboard ("+ register)
         setreg('+', state.items[0]->join("\n"))
         state.pmenu.Close(-1)
-    elseif key == "\<C-j>" || key == "\<C-v>" || key == "\<C-t>"
+    elseif key == "\<Plug>(vimsuggest-split-open)" ||
+            key == "\<Plug>(vimsuggest-vsplit-open)" ||
+            key == "\<Plug>(vimsuggest-tab-open)" ||
+            (options.bindkeys && (key == "\<C-j>" || key == "\<C-v>" || key == "\<C-t>"))
         state.exit_key = key
         feedkeys("\<cr>", 'n')
     elseif key == "\<CR>"
@@ -541,6 +552,10 @@ export def PrintHooks()
     echom state.cmdline_leave_hook
     echom state.select_item_hook
     echom state.highlight_hook
+enddef
+
+export def MenuVisible(): bool
+    return state != null_object && !state.pmenu.Hidden()
 enddef
 
 # vim: tabstop=8 shiftwidth=4 softtabstop=4 expandtab

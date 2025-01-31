@@ -23,6 +23,10 @@ def! g:VimSuggestSetOptions(opts: dict<any>)
     Reset()
 enddef
 
+def! g:VimSuggestMenuVisible(): bool
+    return search.MenuVisible() || cmd.MenuVisible()
+enddef
+
 def VimSuggestEnable(flag: bool)
     search.options.enable = flag
     cmd.options.enable = flag

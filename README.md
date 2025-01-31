@@ -96,6 +96,8 @@ let s:vim_suggest.cmd = {
     \ 'trigger': 't',
     \ 'reverse': v:false,
     \ 'prefixlen': 1,
+    \ 'complete_sg': v:true,
+    \ 'bindkeys': v:true,
 \ }
 ```
 
@@ -114,6 +116,7 @@ let s:vim_suggest.cmd = {
 | `auto_first` | `v:false` | Auto-select first menu item on `<Enter>` if none chosen (Does not affect 'addons' which always use first item) |
 | `prefixlen` | `1` | The minimum prefix length before the completion menu is displayed
 | `complete_sg` | `v:true` | Enables word completion (from the buffer) for the `:substitute` (`:s`) and `:global` (`:g`) commands |
+| `bindkeys` | `v:true` | Enable keybindings (see below) |
 
 > [!NOTE]
 > 1. The `trigger` option specifies the character used to select items in the popup menu or invoke the menu itself. When `<Tab>`/`<C-I>` is set as the trigger, it cannot be used to input tab characters while the popup is open. In this case, use `<C-V><Tab>`/`<C-V><C-I>`.
@@ -140,6 +143,7 @@ let s:vim_suggest.search = {
     \ 'highlight': v:true,
     \ 'trigger': 't',
     \ 'prefixlen': 1,
+    \ 'bindkeys': v:true,
 \ }
 ```
 
@@ -159,6 +163,7 @@ let s:vim_suggest.search = {
 | `trigger` | `t` | `'t'` enables `<Tab>`/`<S-Tab>` as trigger characters, while `'n'` enables `<C-n>`/`<C-p>` and `<Up>/<Down>`. (See note above.) |
 | `reverse` | `v:false` | Reverse-sorted menu, with the most relevant item at the bottom (when `pum=v:true`) |
 | `prefixlen` | `1` | The minimum prefix length before the completion menu is displayed
+| `bindkeys` | `v:true` | Enable keybindings (see below) |
 
 > [!IMPORTANT]
 > 1. Searching large files will not cause any lag. By default, searching is concurrent. Even though no external jobs are used, a timer pauses the task at regular intervals to check if there are pending keys on the typehead.
@@ -230,25 +235,30 @@ When the popup window is open, you can use the following key mappings:
 
 | Key | Action |
 |-----|--------|
-| `<PageDown>`/`<S-Down>` | Scroll down one page |
-| `<PageUp>`/`<S-Up>` | Scroll up one page |
+| `<PageDown>`/`<S-Down>`/`<Plug>(vimsuggest-pagedown)` | Scroll down one page |
+| `<PageUp>`/`<S-Up>`/`<Plug>(vimsuggest-pageup)` | Scroll up one page |
 | `<Tab>` | Move to next item |
 | `<Shift-Tab>` | Move to previous item |
 | `<C-n>`/`<Down>` | Move to next item (see `trigger` option) |
 | `<C-p>`/`<Up>` | Move to previous item  (see `trigger` option) |
 | `<Esc>`/`<C-[>`/`<C-c>` | Dismiss popup |
-| `<C-s>` | Dismiss auto-completion and revert to default Vim behavior |
-| `<C-e>` | Dismiss auto-completion popup temporarily |
+| `<C-s>`/`<Plug>(vimsuggest-quit)` | Dismiss auto-completion and revert to default Vim behavior |
+| `<C-e>`/`<Plug>(vimsuggest-dismiss)` | Dismiss auto-completion popup temporarily |
 | `<Enter>` | Confirm selection |
 | `<C-d>` | Open popup menu (override `exclude` list) |
-| `<C-j>` | Open file selection in a split window |
-| `<C-v>` | Open file selection in a vertical split |
-| `<C-t>` | Open file selection in a new tab |
-| `<C-q>` | Send items (grep lines or file paths) to the quickfix list |
-| `<C-l>` | Send items (file paths) to the argument list |
-| `<C-g>` | Copy items to system clipboard (`+` register) |
+| `<C-j>`/`<Plug>(vimsuggest-split-open)` | Open file selection in a split window |
+| `<C-v>`/`<Plug>(vimsuggest-vsplit-open)` | Open file selection in a vertical split |
+| `<C-t>`/`<Plug>(vimsuggest-tab-open)` | Open file selection in a new tab |
+| `<C-q>`/`<Plug>(vimsuggest-set-qflist)` | Send items (grep lines or file paths) to the quickfix list |
+| `<C-l>`/`<Plug>(vimsuggest-set-arglist)` | Send items (file paths) to the argument list |
+| `<C-g>`/`<Plug>(vimsuggest-set-clipboard)` | Copy items to system clipboard (`+` register) |
 
-Note: Keys used in command-line editing (`:h cmdline-editing`) remain unmodified.
+> [!NOTE]
+> 1. Key mappings that do not start with `<Plug>` are applied only when the `bindkeys` option is enabled. If you prefer to define your own key mappings, disable the `bindkeys` option and refer to the following example for guidance:
+>    ```vim
+>    cnoremap <expr> <your_key> g:VimSuggestMenuVisible() ? "\<Plug>(vimsuggest-pageup)" : "\<PageUp>"
+>    ```
+> 2. Keys used in command-line editing (`:h cmdline-editing`) remain unmodified.
 
 > [!TIP]
 > 1. To automatically open the quickfix list after using `<C-q>`, add the following to your `.vimrc`:

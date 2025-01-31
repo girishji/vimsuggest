@@ -27,6 +27,7 @@ export var options: dict<any> = {
     trigger: 't',         # 't' for tab/s-tab, 'n' for ctrl-n/p and up/down arrows
     reverse: false,       # Upside-down menu
     prefixlen: 1,         # The minimum prefix length before the completion menu is displayed
+    bindkeys: true,       # Map keys
 }
 
 # Represents the state of the current search
@@ -223,11 +224,14 @@ def FilterFn(winid: number, key: string): bool
         state.pmenu.SelectItem('j', SelectItemPost) # Next item
     elseif utils.TriggerKeys(options.trigger, options.reverse, false)->index(key) != -1
         state.pmenu.SelectItem('k', SelectItemPost) # Prev item
-    elseif key == "\<PageUp>" || key == "\<S-Up>"
+    elseif key == "\<Plug>(vimsuggest-pageup)" ||
+            (options.bindkeys && (key == "\<PageUp>" || key == "\<S-Up>"))
         state.pmenu.PageUp()
-    elseif key == "\<PageDown>" || key == "\<S-Down>"
+    elseif key == "\<Plug>(vimsuggest-pagedown)" ||
+            (options.bindkeys && (key == "\<PageDown>" || key == "\<S-Down>"))
         state.pmenu.PageDown()
-    elseif key == "\<C-s>"
+    elseif key == "\<Plug>(vimsuggest-quit)" ||
+            (options.bindkeys && key == "\<C-s>")
         IncSearchHighlightClear()
         setcmdline('')
         feedkeys(state.context, 'n')
@@ -237,7 +241,8 @@ def FilterFn(winid: number, key: string): bool
         # Remove the popup menu and resign from autocompletion.
         state.Clear()
         state = null_object
-    elseif key == "\<C-e>"
+    elseif key == "\<Plug>(vimsuggest-dismiss)" ||
+            (options.bindkeys && key == "\<C-e>")
         IncSearchHighlightClear()
         state.pmenu.Hide()
         setcmdline('')
@@ -581,6 +586,10 @@ enddef
 
 def Context(): string
     return getcmdline()->strpart(0, getcmdpos() - 1)
+enddef
+
+export def MenuVisible(): bool
+    return state != null_object && !state.pmenu.Hidden()
 enddef
 
 # vim: tabstop=8 shiftwidth=4 softtabstop=4 expandtab
