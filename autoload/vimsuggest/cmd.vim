@@ -270,6 +270,16 @@ def DoComplete(oldcontext: string, from_keymap: bool, timer: number)
             feedkeys(lastchar, 'n')
         endif
     endif
+    if insertion_point == -1 && !completions->empty()
+        var needles = cmdstr->tolower()->split('\zs')
+        var haystack = completions[0]->tolower()
+        if needles->filter((_, v) => haystack->stridx(v) >= 0)->empty()
+            # If auto_first is set, then :10 will not jump to line 10 since first
+            # item is something else. In cases where first item does not even match
+            # any character in command-line, do not show menu.
+            completions = []
+        endif
+    endif
     if completions->len() == 0 || (completions->len() == 1 && context->strridx(completions[0]) != -1)
         # No completions found, or this completion is already inserted.
         HideMenu()
