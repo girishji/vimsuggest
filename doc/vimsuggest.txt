@@ -251,6 +251,26 @@ When the popup window is open, you can use the following key mappings:
 
 Note: Keys used in command-line editing (:h cmdline-editing) remain unmodified.
 
+You can remap the following keys by configuring the option as shown below:
+>
+    let s:vim_suggest.keymap = {
+        \ 'page_up': ["\<PageUp>", "\<S-Up>"],
+        \ 'page_down': ["\<PageDown>", "\<S-Down>"],
+        \ 'hide': "\<C-e>",
+        \ 'dismiss': "\<C-s>",
+        \ 'send_to_qflist': "\<C-q>",
+        \ 'send_to_arglist': "\<C-l>",
+        \ 'send_to_clipboard': "\<C-g>",
+        \ 'split_open': "\<C-j>",
+        \ 'vsplit_open': "\<C-v>",
+        \ 'tab_open': "\<C-t>",
+    \ }
+<
+
+Apply the configuration as follows:
+>
+    call g:VimSuggestSetOptions(s:vim_suggest)
+<
 ==============================================================================
 6. Addons                                                 *vimsuggest-addons*
 
