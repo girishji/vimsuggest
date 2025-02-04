@@ -8,6 +8,7 @@ vim9script
 
 import autoload './popup.vim'
 import autoload './utils.vim'
+import autoload './keymap.vim' as km
 
 # Configuration options
 export var options: dict<any> = {
@@ -223,11 +224,11 @@ def FilterFn(winid: number, key: string): bool
         state.pmenu.SelectItem('j', SelectItemPost) # Next item
     elseif utils.TriggerKeys(options.trigger, options.reverse, false)->index(key) != -1
         state.pmenu.SelectItem('k', SelectItemPost) # Prev item
-    elseif key == "\<PageUp>" || key == "\<S-Up>"
+    elseif km.Equal(key, 'page_up')
         state.pmenu.PageUp()
-    elseif key == "\<PageDown>" || key == "\<S-Down>"
+    elseif km.Equal(key, 'page_down')
         state.pmenu.PageDown()
-    elseif key == "\<C-s>"
+    elseif km.Equal(key, 'dismiss')
         IncSearchHighlightClear()
         setcmdline('')
         feedkeys(state.context, 'n')
@@ -237,7 +238,7 @@ def FilterFn(winid: number, key: string): bool
         # Remove the popup menu and resign from autocompletion.
         state.Clear()
         state = null_object
-    elseif key == "\<C-e>"
+    elseif km.Equal(key, 'hide')
         IncSearchHighlightClear()
         state.pmenu.Hide()
         setcmdline('')

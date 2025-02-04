@@ -10,9 +10,10 @@ g:loaded_vimsuggest = true
 import autoload '../autoload/vimsuggest/search.vim'
 import '../autoload/vimsuggest/addons/addons.vim'  # import this before cmd.vim so 'User' autocmds are registered
 import autoload '../autoload/vimsuggest/cmd.vim'
+import autoload '../autoload/vimsuggest/keymap.vim'
 
 def! g:VimSuggestSetOptions(opts: dict<any>)
-    for tgt in ['search', 'cmd']
+    for tgt in ['search', 'cmd', 'keymap']
         if opts->has_key(tgt)
             eval($'{tgt}.options')->extend(opts[tgt])
         endif

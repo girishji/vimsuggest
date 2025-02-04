@@ -262,6 +262,37 @@ Note: Keys used in command-line editing (`:h cmdline-editing`) remain unmodified
 > 3. To perform a multi-word search using the `/` or `?` command, type the first word followed by `<Space>` to trigger auto-completion for the next word. At the end of a line, press `\n` to continue the search on the next line. Note that enabling the fuzzy search option will disable multi-word search functionality.
 > 4. When completing files during `:edit` command, `<Tab>` (trigger character) selects subsequent items in the menu. In order to step into a directory select the directory and press `/`; it will populate items from that directory.
 
+### Customizing Key Bindings
+
+You can remap the following keys by configuring the option as shown below:
+
+```vim
+let s:vim_suggest.keymap = {
+    \ 'page_up': ["\<PageUp>", "\<S-Up>"],
+    \ 'page_down': ["\<PageDown>", "\<S-Down>"],
+    \ 'hide': "\<C-e>",
+    \ 'dismiss': "\<C-s>",
+    \ 'send_to_qflist': "\<C-q>",
+    \ 'send_to_arglist': "\<C-l>",
+    \ 'send_to_clipboard': "\<C-g>",
+    \ 'split_open': "\<C-j>",
+    \ 'vsplit_open': "\<C-v>",
+    \ 'tab_open': "\<C-t>",
+\ }
+```
+
+Apply the configuration as follows:
+
+```vim
+call g:VimSuggestSetOptions(s:vim_suggest)
+```
+
+If you are using [vim-plug](https://github.com/junegunn/vim-plug) you may have to do:
+
+```vim
+autocmd VimEnter * call g:VimSuggestSetOptions(s:vim_suggest)
+```
+
 ## Addons
 
 When the `addons` option is set to `v:true`, the following commands are made available. You can use these commands directly or map them to your preferred keys.

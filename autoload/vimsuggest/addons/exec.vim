@@ -8,6 +8,7 @@ vim9script
 
 import autoload '../cmd.vim'
 import autoload './job.vim'
+import autoload '../keymap.vim' as km
 
 var items: list<any>
 var candidate: string
@@ -223,8 +224,14 @@ export def GrepVisitFile(key: string, line: string)
 enddef
 
 export def VisitBuffer(key: string, bufnr: number, lnum = -1, col = -1, visualcol = false)
-    var keymap = {"\<C-j>": 'sb', "\<C-v>": 'vert sb', "\<C-t>": 'tab sb'}
-    var cmdstr = keymap->get(key, 'b')
+    var cmdstr = 'b'
+    if km.Equal(key, 'split_open')
+        cmdstr = 'sb'
+    elseif km.Equal(key, 'vsplit_open')
+        cmdstr = 'vert sb'
+    elseif km.Equal(key, 'tab_open')
+        cmdstr = 'tab sb'
+    endif
     if lnum > 0
         if col > 0
             var pos = visualcol ? 'setcharpos' : 'setpos'
@@ -237,12 +244,19 @@ export def VisitBuffer(key: string, bufnr: number, lnum = -1, col = -1, visualco
 enddef
 
 export def VisitFile(key: string, filename: string, lnum: number = -1)
-    var keymap = {"\<C-j>": 'split', "\<C-v>": 'vert split', "\<C-t>": 'tabe'}
+    var cmdstr = 'e'
+    if km.Equal(key, 'split_open')
+        cmdstr = 'split'
+    elseif km.Equal(key, 'vsplit_open')
+        cmdstr = 'vert split'
+    elseif km.Equal(key, 'tab_open')
+        cmdstr = 'tabe'
+    endif
     try
         if lnum > 0
-            exe $":{keymap->get(key, 'e')} +{lnum} {filename}"
+            exe $":{cmdstr} +{lnum} {filename}"
         else
-            exe $":{keymap->get(key, 'e')} {filename}"
+            exe $":{cmdstr} {filename}"
         endif
     catch /^Vim\%((\a\+)\)\=:E325:/ # catch error E325
     endtry

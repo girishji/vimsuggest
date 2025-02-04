@@ -6,6 +6,7 @@ vim9script
 
 import autoload './popup.vim'
 import autoload './utils.vim'
+import autoload './keymap.vim' as km
 
 export var options: dict<any> = {
     enable: true,      # Enable/disable the completion functionality
@@ -374,39 +375,40 @@ def FilterFn(winid: number, key: string): bool
         state.pmenu.SelectItem('j', SelectItemPost) # Next item
     elseif utils.TriggerKeys(options.trigger, options.reverse, false)->index(key) != -1
         state.pmenu.SelectItem('k', SelectItemPost) # Prev item
-    elseif key == "\<PageUp>" || key == "\<S-Up>"
+    elseif km.Equal(key, 'page_up')
         var cmdname = CmdLead()
         if state.select_item_hook->has_key(cmdname)  # stop async job, if any
             state.select_item_hook[cmdname](null_string, null_string)
         endif
         state.pmenu.PageUp()
-    elseif key == "\<PageDown>" || key == "\<S-Down>"
+    elseif km.Equal(key, 'page_down')
         var cmdname = CmdLead()
         if state.select_item_hook->has_key(cmdname)  # stop async job, if any
             state.select_item_hook[cmdname](null_string, null_string)
         endif
         state.pmenu.PageDown()
-    elseif key == "\<C-s>"  # Dismiss auto-completion
+    elseif km.Equal(key, 'dismiss') # Dismiss auto-completion
         state.pmenu.Hide()
         :redraw
         state.Clear()
         CmdlineAbortHook()
         state = null_object
-    elseif key == "\<C-e>"  # Dismiss popup but keep auto-completion state
+    elseif km.Equal(key, 'hide') # Dismiss popup but keep auto-completion state
         state.pmenu.Hide()
         setcmdline(state.cmdline)
         :redraw
         EnableCmdline()
-    elseif key == "\<C-q>" # Add to quickfix list
+    elseif km.Equal(key, 'send_to_qflist') # Add to quickfix list
         SendToQickfixList()
         state.pmenu.Close(-1)
-    elseif key == "\<C-l>"  # Add to arglist
+    elseif km.Equal(key, 'send_to_arglist') # Add to arglist
         execute($'argadd {state.items[0]->join(" ")}')
         state.pmenu.Close(-1)
-    elseif key == "\<C-g>"  # Add to system clipboard ("+ register)
+    elseif km.Equal(key, 'send_to_clipboard') # Add to system clipboard ("+ register)
         setreg('+', state.items[0]->join("\n"))
         state.pmenu.Close(-1)
-    elseif key == "\<C-j>" || key == "\<C-v>" || key == "\<C-t>"
+    elseif km.Equal(key, 'split_open') || km.Equal(key, 'vsplit_open') ||
+            km.Equal(key, 'tab_open')
         state.exit_key = key
         feedkeys("\<cr>", 'n')
     elseif key == "\<CR>"
