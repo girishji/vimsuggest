@@ -193,7 +193,7 @@ Highlighting:~
 VimSuggest uses custom highlight groups:
 - `VimSuggestMatch`: Highlights matched portion of the text.
 - `VimSuggestMatchSel`: Highlights matched text in the selected item.
-- `VimSuggestMute`: Highlights passive text like line numbers in grep output.
+- `VimSuggestMute`: Highlights passive text, like line numbers in grep output.
 
 Customization Example:~
 >
