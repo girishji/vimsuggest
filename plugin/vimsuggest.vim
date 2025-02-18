@@ -1,5 +1,6 @@
 if !has('vim9script') || v:version < 901
     " Needs Vim version 9.1 and above
+    echoerr "Vim 9.1 and above needed"
     finish
 endif
 
