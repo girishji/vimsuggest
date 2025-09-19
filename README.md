@@ -1,3 +1,11 @@
+## ⚠️ Plugin Deprecated
+
+> **This plugin is obsolete and will no longer be maintained.**
+> Its core features, including autocompletion, are now part of Vim itself.
+> See `:h cmdline-autocompletion`, `:h fuzzy-file-picker`, and `:h live-grep` for details.
+
+---------
+
 # VimSuggest: Supercharge Your Vim Command-Line
 
 The ultimate auto-completion plugin for Vim command-line.
